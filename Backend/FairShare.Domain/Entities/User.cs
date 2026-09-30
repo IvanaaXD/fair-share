@@ -12,7 +12,6 @@ public class User : BaseEntity
     public string DefaultCurrency { get; set; } = "BAM";
     public UserRole Role { get; set; } = UserRole.Customer;
     public bool IsBlocked { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Навигационе особине
     public ICollection<Expense> Expenses { get; set; } = new List<Expense>();

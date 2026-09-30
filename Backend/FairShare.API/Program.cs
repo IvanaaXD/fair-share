@@ -1,19 +1,46 @@
+//using AutoMapper;
+using FairShare.Application.Abstractions;
 using FairShare.Infrastructure.Data;
+using FairShare.Infrastructure.Identity;
+using FairShare.WebAPI.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Dodavanje DbContext-a i povezivanje sa PostgreSQL bazom
-builder.Services.AddDbContext<FairShareDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+builder.Services.AddDbContext<FairShareDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+//builder.Services.AddAutoMapper(typeof(ICategoryService).Assembly);
+//builder.Services.AddAutoMapper(typeof(ICountryService).Assembly);
+//builder.Services.AddAutoMapper(typeof(IClientService).Assembly);
+//builder.Services.AddAutoMapper(typeof(IMemberService).Assembly);
+//builder.Services.AddAutoMapper(typeof(IProjectService).Assembly);
+
+builder.Services.AddRepositoryServices();
+
+//builder.Services.AddScoped<IActivityService, ActivityService>();
+//builder.Services.AddScoped<ICategoryService, CategoryService>();
+//builder.Services.AddScoped<ICountryService, CountryService>();
+//builder.Services.AddScoped<IClientService, ClientService>();
+//builder.Services.AddScoped<IMemberService, MemberService>();
+//builder.Services.AddScoped<IProjectService, ProjectService>();
+//builder.Services.AddScoped<IProjectLeadService, ProjectLeadService>();
+
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IIdentityService, IdentityService>();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+//builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+//builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -21,28 +48,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

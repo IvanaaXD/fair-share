@@ -6,8 +6,11 @@ D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\FairShare.AP
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\FairShare.API.runtimeconfig.json
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\FairShare.API.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\FairShare.API.pdb
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\BCrypt-Net-Next.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Humanizer.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.AspNetCore.OpenApi.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.Bcl.Cryptography.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.Build.Framework.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.CodeAnalysis.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.CodeAnalysis.CSharp.dll
@@ -20,6 +23,12 @@ D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.En
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Design.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Relational.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.Extensions.DependencyModel.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.OpenApi.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Microsoft.VisualStudio.SolutionPersistence.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\Mono.TextTemplating.dll
@@ -32,6 +41,7 @@ D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\System.Compo
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\System.Composition.Hosting.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\System.Composition.Runtime.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\System.Composition.TypedParts.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\cs\Microsoft.CodeAnalysis.resources.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\de\Microsoft.CodeAnalysis.resources.dll
 D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.API\bin\Debug\net10.0\es\Microsoft.CodeAnalysis.resources.dll
