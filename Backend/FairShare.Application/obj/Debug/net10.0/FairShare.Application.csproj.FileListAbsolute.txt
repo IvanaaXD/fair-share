@@ -1,0 +1,16 @@
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\bin\Debug\net10.0\FairShare.Application.deps.json
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\bin\Debug\net10.0\FairShare.Application.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\bin\Debug\net10.0\FairShare.Application.pdb
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\bin\Debug\net10.0\FairShare.Domain.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\bin\Debug\net10.0\FairShare.Domain.pdb
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShare.Application.csproj.AssemblyReference.cache
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShare.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShare.Application.AssemblyInfoInputs.cache
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShare.Application.AssemblyInfo.cs
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShare.Application.csproj.CoreCompileInputs.cache
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShare.Application.sourcelink.json
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShar.48D6908F.Up2Date
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShare.Application.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\refint\FairShare.Application.dll
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\FairShare.Application.pdb
+D:\SIIT\DIPLOMSKI\FairShare\Backend\FairShare.Application\obj\Debug\net10.0\ref\FairShare.Application.dll
