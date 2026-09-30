@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FairShare.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+249b63d71e4465127a0002dc6c9a37d91a3c7fe2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+efbb995fff9e623db6723c70eefb8240fa52607c")]
 [assembly: System.Reflection.AssemblyProductAttribute("FairShare.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FairShare.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
