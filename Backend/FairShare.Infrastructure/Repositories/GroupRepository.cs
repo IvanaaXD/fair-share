@@ -18,6 +18,7 @@ public class GroupRepository : GenericRepository<Group>, IGroupRepository
 
     public async Task<IReadOnlyList<Group>> GetByUserAsync(Guid userId, CancellationToken cancellationToken = default)
         => await DbSet.AsNoTracking()
+            .Include(g => g.Members).ThenInclude(m => m.User)
             .Where(g => g.Members.Any(m => m.UserId == userId))
             .ToListAsync(cancellationToken);
 }
