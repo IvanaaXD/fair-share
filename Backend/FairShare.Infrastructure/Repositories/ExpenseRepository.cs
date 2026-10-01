@@ -11,6 +11,8 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
     {
     }
 
+    // ИЗМЈЕНА: додат .Include(e => e.Category) - ExpenseService.MapToResponse чита
+    // expense.Category.Name директно, без додатног упита по трошку.
     public async Task<IReadOnlyList<Expense>> GetByUserAsync(
         Guid userId,
         DateTime? from = null,
@@ -18,7 +20,9 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
         Guid? categoryId = null,
         CancellationToken cancellationToken = default)
     {
-        var query = DbSet.AsNoTracking().Where(e => e.UserId == userId);
+        var query = DbSet.AsNoTracking()
+            .Include(e => e.Category)
+            .Where(e => e.UserId == userId);
 
         if (from.HasValue) query = query.Where(e => e.Date >= from.Value);
         if (to.HasValue) query = query.Where(e => e.Date <= to.Value);

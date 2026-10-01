@@ -13,15 +13,20 @@ public class GroupExpenseRepository : GenericRepository<GroupExpense>, IGroupExp
 
     public async Task<GroupExpense?> GetWithSplitsAsync(Guid groupExpenseId, CancellationToken cancellationToken = default)
         => await DbSet
-            .Include(ge => ge.Splits)
+            .Include(ge => ge.Splits).ThenInclude(s => s.User)
             .FirstOrDefaultAsync(ge => ge.Id == groupExpenseId, cancellationToken);
 
+    // ИЗМЈЕНА: додати Include-ови - GroupExpenseService.MapToResponse чита Category.Name,
+    // PaidByUser.FirstName/LastName и Splits[].User директно, без додатних упита.
     public async Task<IReadOnlyList<GroupExpense>> GetByGroupAsync(
         Guid groupId,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
         => await DbSet.AsNoTracking()
+            .Include(ge => ge.Category)
+            .Include(ge => ge.PaidByUser)
+            .Include(ge => ge.Splits).ThenInclude(s => s.User)
             .Where(ge => ge.GroupId == groupId)
             .OrderByDescending(ge => ge.Date)
             .Skip((page - 1) * pageSize)
