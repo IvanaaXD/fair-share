@@ -16,8 +16,6 @@ public class GroupExpenseRepository : GenericRepository<GroupExpense>, IGroupExp
             .Include(ge => ge.Splits).ThenInclude(s => s.User)
             .FirstOrDefaultAsync(ge => ge.Id == groupExpenseId, cancellationToken);
 
-    // ИЗМЈЕНА: додати Include-ови - GroupExpenseService.MapToResponse чита Category.Name,
-    // PaidByUser.FirstName/LastName и Splits[].User директно, без додатних упита.
     public async Task<IReadOnlyList<GroupExpense>> GetByGroupAsync(
         Guid groupId,
         int page,
@@ -31,5 +29,14 @@ public class GroupExpenseRepository : GenericRepository<GroupExpense>, IGroupExp
             .OrderByDescending(ge => ge.Date)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+    // НОВО
+    public async Task<IReadOnlyList<GroupExpense>> GetAllByGroupAsync(
+        Guid groupId,
+        CancellationToken cancellationToken = default)
+        => await DbSet.AsNoTracking()
+            .Include(ge => ge.Splits)
+            .Where(ge => ge.GroupId == groupId)
             .ToListAsync(cancellationToken);
 }

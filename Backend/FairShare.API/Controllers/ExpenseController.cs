@@ -46,7 +46,6 @@ public class ExpenseController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Претрага личних трошкова; сви параметри су опциони.</summary>
     [HttpGet("mine")]
     public async Task<ActionResult<IReadOnlyList<ExpenseResponse>>> GetMine(
         [FromQuery] DateTime? from,
