@@ -1,6 +1,7 @@
 using FairShare.Application.DTOs.Expenses;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
+using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
 using TimeSheet.Application.Common.Exceptions;
 
@@ -8,6 +9,14 @@ namespace FairShare.Application.Services;
 
 public class ExpenseService : IExpenseService
 {
+    // Прагови прекорачења буџета; провјеравају се од највишег ка најнижем, да се
+    // пошаље само једно обавјештење (за највиши праг који је управо пређен).
+    private static readonly (decimal Fraction, string Label)[] BudgetThresholds =
+    {
+        (1.0m, "100%"),
+        (0.8m, "80%")
+    };
+
     private readonly IUnitOfWork _unitOfWork;
 
     public ExpenseService(IUnitOfWork unitOfWork)
@@ -26,6 +35,14 @@ public class ExpenseService : IExpenseService
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
             ?? throw new NotFoundException("Категорија није пронађена.");
 
+        // Потрошња ПРИЈЕ додавања овог трошка - потребно да бисмо открили да ли се
+        // овим трошком тек сада "прелази" праг (а не слати обавјештење за сваки
+        // сљедећи трошак који остаје изнад прага).
+        var monthStart = new DateTime(request.Date.Year, request.Date.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
+        var previousTotal = await _unitOfWork.Expenses.GetTotalByUserAndCategoryAsync(
+            currentUserId, request.CategoryId, monthStart, monthEnd, cancellationToken);
+
         var expense = new Expense
         {
             UserId = currentUserId,
@@ -43,6 +60,14 @@ public class ExpenseService : IExpenseService
         };
 
         await _unitOfWork.Expenses.AddAsync(expense, cancellationToken);
+
+        var notification = await BuildBudgetExceededNotificationIfCrossedAsync(
+            currentUserId, request.CategoryId, category.Name, request.Currency,
+            request.Date.ToString("yyyy-MM"), previousTotal, previousTotal + request.Amount, cancellationToken);
+
+        if (notification is not null)
+            await _unitOfWork.Notifications.AddAsync(notification, cancellationToken);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return MapToResponse(expense);
@@ -78,6 +103,10 @@ public class ExpenseService : IExpenseService
         _unitOfWork.Expenses.Update(expense);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // НАПОМЕНА: намјерно не провјеравамо праг буџета овдје - измјена износа
+        // постојећег трошка је ријеђи случај и провјера уназад (кроз измјене) захтијева
+        // поређење са старим износом; за сада се обавјештење шаље само при креирању.
+
         return MapToResponse(expense);
     }
 
@@ -102,6 +131,45 @@ public class ExpenseService : IExpenseService
     {
         var expenses = await _unitOfWork.Expenses.GetByUserAsync(currentUserId, from, to, categoryId, cancellationToken);
         return expenses.Select(MapToResponse).ToList();
+    }
+
+    // ---------- провјера прага буџета ----------
+
+    private async Task<Notification?> BuildBudgetExceededNotificationIfCrossedAsync(
+        Guid userId,
+        Guid categoryId,
+        string categoryName,
+        string currency,
+        string month,
+        decimal previousTotal,
+        decimal newTotal,
+        CancellationToken cancellationToken)
+    {
+        var budget = await _unitOfWork.Budgets.GetByUserCategoryAndMonthAsync(userId, categoryId, month, cancellationToken);
+        if (budget is null || budget.MonthlyLimit <= 0)
+            return null;
+
+        foreach (var (fraction, label) in BudgetThresholds)
+        {
+            var limitAtThreshold = budget.MonthlyLimit * fraction;
+
+            // Обавјештење се шаље само у тренутку преласка прага, не и за сваки
+            // сљедећи трошак који остаје изнад њега.
+            if (previousTotal < limitAtThreshold && newTotal >= limitAtThreshold)
+            {
+                return new Notification
+                {
+                    UserId = userId,
+                    Type = NotificationType.BudgetExceeded,
+                    Message = $"Потрошња у категорији '{categoryName}' достигла је {label} мјесечног " +
+                              $"лимита од {budget.MonthlyLimit} {currency} за {month}.",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+            }
+        }
+
+        return null;
     }
 
     private static ExpenseResponse MapToResponse(Expense expense) => new()
