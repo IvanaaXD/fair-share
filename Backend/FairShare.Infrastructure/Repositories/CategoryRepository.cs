@@ -16,4 +16,9 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
 
     public async Task<Category?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
         => await DbSet.FirstOrDefaultAsync(c => c.Name == name, cancellationToken);
+
+    public async Task<bool> IsInUseAsync(Guid categoryId, CancellationToken cancellationToken = default)
+        => await Context.Set<Expense>().AnyAsync(e => e.CategoryId == categoryId, cancellationToken)
+           || await Context.Set<GroupExpense>().AnyAsync(ge => ge.CategoryId == categoryId, cancellationToken)
+           || await Context.Set<Budget>().AnyAsync(b => b.CategoryId == categoryId, cancellationToken);
 }
