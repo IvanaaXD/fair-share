@@ -23,6 +23,11 @@ namespace FairShare.WebAPI.Extensions
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+
+            // НОВО: упити за администраторску статистику (само читање)
+            services.AddScoped<IStatisticsRepository, StatisticsRepository>();
+
+            // сви апликациони сервиси раде преко IUnitOfWork
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;

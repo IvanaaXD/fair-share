@@ -22,10 +22,14 @@ namespace FairShare.WebAPI.Extensions
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IAnalyticsService, AnalyticsService>();
 
-            // НОВО: профил и QR плаћања
+            // профил и QR плаћања
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IQrPaymentService, QrPaymentService>();
             services.AddSingleton<IQrCodeImageGenerator, QrCoderImageGenerator>();
+
+            // НОВО: ревизиони дневник и администраторска статистика
+            services.AddScoped<IAuditLogService, AuditLogService>();
+            services.AddScoped<IAdminStatisticsService, AdminStatisticsService>();
 
             // ---------- e-mail (ред + позадинско слање) ----------
             services.Configure<EmailSettings>(config.GetSection("EmailSettings"));
