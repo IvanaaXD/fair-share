@@ -1,7 +1,7 @@
+using AutoMapper;
 using FairShare.Application.Abstractions;
 using FairShare.Application.DTOs.Users;
 using FairShare.Application.Interfaces;
-using FairShare.Domain.Entities;
 using FairShare.Domain.Interfaces;
 using TimeSheet.Application.Common.Exceptions;
 
@@ -11,11 +11,13 @@ public class UserManagementService : IUserManagementService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IMapper _mapper;
 
-    public UserManagementService(IUnitOfWork unitOfWork, IPasswordHasher passwordHasher)
+    public UserManagementService(IUnitOfWork unitOfWork, IPasswordHasher passwordHasher, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
+        _mapper = mapper;
     }
 
     public async Task<IReadOnlyList<UserResponse>> SearchAsync(
@@ -26,7 +28,7 @@ public class UserManagementService : IUserManagementService
         CancellationToken cancellationToken = default)
     {
         var users = await _unitOfWork.Users.SearchAsync(searchTerm, isBlocked, page, pageSize, cancellationToken);
-        return users.Select(MapToResponse).ToList();
+        return _mapper.Map<List<UserResponse>>(users);
     }
 
     public async Task BlockAsync(Guid userId, Guid currentAdminId, CancellationToken cancellationToken = default)
@@ -57,35 +59,18 @@ public class UserManagementService : IUserManagementService
         ChangePasswordRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Password strength is checked by ChangePasswordRequestValidator; here we check
+        // what needs the stored hash.
         var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken)
             ?? throw new NotFoundException("Корисник није пронађен.");
 
         if (!_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
             throw new ForbiddenException("Тренутна лозинка није тачна.");
 
-        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)
-            throw new ConflictException("Нова лозинка мора имати најмање 8 карактера.");
-
-        if (_passwordHasher.VerifyPassword(request.NewPassword, user.PasswordHash))
-            throw new ConflictException("Нова лозинка мора бити различита од тренутне.");
-
-        var newHash = _passwordHasher.HashPassword(request.NewPassword);
-        user.ChangePassword(newHash);
+        user.ChangePassword(_passwordHasher.HashPassword(request.NewPassword));
         user.MustChangePassword = false;
 
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
-
-    private static UserResponse MapToResponse(User user) => new()
-    {
-        Id = user.Id,
-        FirstName = user.FirstName,
-        LastName = user.LastName,
-        Email = user.Email,
-        Role = user.Role,
-        IsBlocked = user.IsBlocked,
-        MustChangePassword = user.MustChangePassword,
-        CreatedAt = user.CreatedAt
-    };
 }

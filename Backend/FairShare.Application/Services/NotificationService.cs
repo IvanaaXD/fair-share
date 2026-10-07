@@ -1,4 +1,6 @@
+using AutoMapper;
 using FairShare.Application.Abstractions;
+using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Notifications;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -12,11 +14,13 @@ public class NotificationService : INotificationService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEmailQueue _emailQueue;
+    private readonly IMapper _mapper;
 
-    public NotificationService(IUnitOfWork unitOfWork, IEmailQueue emailQueue)
+    public NotificationService(IUnitOfWork unitOfWork, IEmailQueue emailQueue, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _emailQueue = emailQueue;
+        _mapper = mapper;
     }
 
     public async Task NotifyAsync(
@@ -42,7 +46,7 @@ public class NotificationService : INotificationService
         await _unitOfWork.Notifications.AddAsync(notification, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // E-mail се шаље у позадини; грешка при слању не поништава обавјештење у апликацији.
+        // The e-mail is sent in the background; a failed send does not undo the in-app notification.
         await _emailQueue.EnqueueAsync(
             new EmailMessage(user.Email, $"{user.FirstName} {user.LastName}", subject, message),
             cancellationToken);
@@ -54,7 +58,7 @@ public class NotificationService : INotificationService
         CancellationToken cancellationToken = default)
     {
         var notifications = await _unitOfWork.Notifications.GetByUserAsync(currentUserId, isRead, cancellationToken);
-        return notifications.Select(MapToResponse).ToList();
+        return _mapper.Map<List<NotificationResponse>>(notifications);
     }
 
     public Task<int> GetUnreadCountAsync(Guid currentUserId, CancellationToken cancellationToken = default)
@@ -90,13 +94,4 @@ public class NotificationService : INotificationService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
-
-    private static NotificationResponse MapToResponse(Notification notification) => new()
-    {
-        Id = notification.Id,
-        Type = notification.Type,
-        Message = notification.Message,
-        IsRead = notification.IsRead,
-        CreatedAt = notification.CreatedAt
-    };
 }

@@ -1,3 +1,4 @@
+using AutoMapper;
 using FairShare.Application.DTOs.Admin;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -10,10 +11,12 @@ public class AuditLogService : IAuditLogService
     private const int MaxPageSize = 100;
 
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public AuditLogService(IUnitOfWork unitOfWork)
+    public AuditLogService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     public async Task LogAsync(
@@ -45,22 +48,13 @@ public class AuditLogService : IAuditLogService
         int pageSize,
         CancellationToken cancellationToken = default)
     {
+        // Query parameters are clamped instead of rejected - a too large page size is not an error.
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
 
         var entries = await _unitOfWork.AuditLogs.SearchAsync(
             userId, entityType, from, to, page, pageSize, cancellationToken);
 
-        return entries.Select(a => new AuditLogResponse
-        {
-            Id = a.Id,
-            UserId = a.UserId,
-            UserFullName = a.User is null ? string.Empty : $"{a.User.FirstName} {a.User.LastName}",
-            UserEmail = a.User?.Email ?? string.Empty,
-            Action = a.Action,
-            EntityType = a.EntityType,
-            EntityId = a.EntityId == Guid.Empty ? null : a.EntityId,
-            Timestamp = a.Timestamp
-        }).ToList();
+        return _mapper.Map<List<AuditLogResponse>>(entries);
     }
 }

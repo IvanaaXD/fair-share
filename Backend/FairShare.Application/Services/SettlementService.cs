@@ -1,3 +1,5 @@
+using AutoMapper;
+using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Settlements;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -11,12 +13,14 @@ namespace FairShare.Application.Services;
 public class SettlementService : ISettlementService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly INotificationService _notificationService; // НОВО
+    private readonly INotificationService _notificationService;
+    private readonly IMapper _mapper;
 
-    public SettlementService(IUnitOfWork unitOfWork, INotificationService notificationService)
+    public SettlementService(IUnitOfWork unitOfWork, INotificationService notificationService, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
+        _mapper = mapper;
     }
 
     public async Task<IReadOnlyList<BalanceResponse>> GetGroupBalancesAsync(
@@ -28,6 +32,7 @@ public class SettlementService : ISettlementService
 
         var balances = await CalculateNetBalancesAsync(groupId, cancellationToken);
 
+        // Balances are calculated values, not entity fields, so they are built by hand.
         return group.Members
             .Select(m => new BalanceResponse
             {
@@ -53,7 +58,7 @@ public class SettlementService : ISettlementService
 
         var balances = await CalculateNetBalancesAsync(groupId, cancellationToken);
 
-        // Стари, још неизмирени приједлози се замјењују новим прерачуном
+        // Old, still unsettled suggestions are replaced by the new calculation.
         var oldProposed = await _unitOfWork.SettlementTransactions.GetByGroupAsync(
             groupId, SettlementStatus.Proposed, cancellationToken);
         foreach (var old in oldProposed)
@@ -86,9 +91,10 @@ public class SettlementService : ISettlementService
             await _unitOfWork.SettlementTransactions.AddAsync(transaction, cancellationToken);
         }
 
+        // Removing old suggestions and adding new ones happens in a single transaction.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // НОВО: сваки дужник добија обавјештење о свом дијелу поравнања
+        // Every debtor is notified about their part of the settlement.
         foreach (var t in transactions)
         {
             await _notificationService.NotifyAsync(
@@ -100,7 +106,7 @@ public class SettlementService : ISettlementService
                 cancellationToken);
         }
 
-        return transactions.Select(MapToResponse).ToList();
+        return _mapper.Map<List<SettlementTransactionResponse>>(transactions);
     }
 
     public async Task<SettlementTransactionResponse> MarkAsSettledAsync(
@@ -122,7 +128,7 @@ public class SettlementService : ISettlementService
         _unitOfWork.SettlementTransactions.Update(transaction);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // НОВО: обавјештава се друга страна (она која није кликнула "измирено")
+        // The other party (the one who did not click "settled") is notified.
         var group = await _unitOfWork.Groups.GetByIdAsync(transaction.GroupId, cancellationToken);
         var otherUserId = transaction.DebtorUserId == currentUserId
             ? transaction.CreditorUserId
@@ -138,7 +144,7 @@ public class SettlementService : ISettlementService
             $"у групи '{group?.Name}' означено је као измирено.",
             cancellationToken);
 
-        return MapToResponse(transaction);
+        return _mapper.Map<SettlementTransactionResponse>(transaction);
     }
 
     public async Task<IReadOnlyList<SettlementTransactionResponse>> GetGroupSettlementsAsync(
@@ -147,15 +153,15 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken = default)
     {
         var transactions = await _unitOfWork.SettlementTransactions.GetByGroupAsync(groupId, status, cancellationToken);
-        return transactions.Select(MapToResponse).ToList();
+        return _mapper.Map<List<SettlementTransactionResponse>>(transactions);
     }
 
-    // ---------- рачунање нето салда ----------
+    // ---------- net balance calculation ----------
 
     /// <summary>
-    /// Нето салдо = (све што је корисник платио у групним трошковима) минус
-    /// (све што тренутно дугује по подјелама), умањено за већ измирена поравнања.
-    /// Позитивно = група му дугује, негативно = он дугује групи.
+    /// Net balance = (everything the user paid for group expenses) minus (everything the user
+    /// owes through splits), adjusted by settlements that were already completed.
+    /// Positive = the group owes the user, negative = the user owes the group.
     /// </summary>
     private async Task<Dictionary<Guid, decimal>> CalculateNetBalancesAsync(
         Guid groupId,
@@ -171,7 +177,7 @@ public class SettlementService : ISettlementService
                 Add(balances, split.UserId, -split.Amount);
         }
 
-        // Већ измирене трансакције смањују преостали дуг/потраживање
+        // Completed settlements reduce the remaining debt / claim.
         var settled = await _unitOfWork.SettlementTransactions.GetByGroupAsync(
             groupId, SettlementStatus.Settled, cancellationToken);
         foreach (var s in settled)
@@ -185,24 +191,4 @@ public class SettlementService : ISettlementService
 
     private static void Add(Dictionary<Guid, decimal> balances, Guid userId, decimal amount)
         => balances[userId] = balances.GetValueOrDefault(userId, 0m) + amount;
-
-    private static SettlementTransactionResponse MapToResponse(SettlementTransaction t) => new()
-    {
-        Id = t.Id,
-        GroupId = t.GroupId,
-        DebtorUserId = t.DebtorUserId,
-        DebtorName = $"{t.DebtorUser.FirstName} {t.DebtorUser.LastName}",
-        CreditorUserId = t.CreditorUserId,
-        CreditorName = $"{t.CreditorUser.FirstName} {t.CreditorUser.LastName}",
-        Amount = t.Amount,
-        Status = t.Status,
-        CreatedAt = t.CreatedAt,
-        QrPaymentData = t.QrPaymentData is null ? null : new QrPaymentDataResponse
-        {
-            RecipientAccount = t.QrPaymentData.RecipientAccount,
-            Amount = t.QrPaymentData.Amount,
-            Currency = t.QrPaymentData.Currency,
-            ReferenceCode = t.QrPaymentData.ReferenceCode
-        }
-    };
 }

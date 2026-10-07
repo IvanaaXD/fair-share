@@ -1,8 +1,11 @@
 using FairShare.Application.Abstractions;
 using FairShare.Application.Interfaces;
+using FairShare.Application.Mappings;
 using FairShare.Application.Services;
+using FairShare.Application.Validators;
 using FairShare.Infrastructure.Email;
 using FairShare.Infrastructure.Qr;
+using FluentValidation;
 
 namespace FairShare.WebAPI.Extensions
 {
@@ -10,7 +13,12 @@ namespace FairShare.WebAPI.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
         {
-            // ---------- пословна логика ----------
+            // ---------- AutoMapper + FluentValidation ----------
+            // Scans the Application assembly for every Profile and every AbstractValidator<T>.
+            services.AddAutoMapper(typeof(GroupMappingProfile).Assembly);
+            services.AddValidatorsFromAssemblyContaining<CreateGroupRequestValidator>();
+
+            // ---------- business logic ----------
             services.AddScoped<IGroupService, GroupService>();
             services.AddScoped<IExpenseService, ExpenseService>();
             services.AddScoped<IGroupExpenseService, GroupExpenseService>();
@@ -22,16 +30,16 @@ namespace FairShare.WebAPI.Extensions
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IAnalyticsService, AnalyticsService>();
 
-            // профил и QR плаћања
+            // profile and QR payments
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IQrPaymentService, QrPaymentService>();
             services.AddSingleton<IQrCodeImageGenerator, QrCoderImageGenerator>();
 
-            // НОВО: ревизиони дневник и администраторска статистика
+            // audit log and admin statistics
             services.AddScoped<IAuditLogService, AuditLogService>();
             services.AddScoped<IAdminStatisticsService, AdminStatisticsService>();
 
-            // ---------- e-mail (ред + позадинско слање) ----------
+            // ---------- e-mail (queue + background sender) ----------
             services.Configure<EmailSettings>(config.GetSection("EmailSettings"));
             services.AddSingleton<EmailQueue>();
             services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailQueue>());
