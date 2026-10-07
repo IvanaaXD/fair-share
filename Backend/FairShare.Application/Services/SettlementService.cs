@@ -25,12 +25,13 @@ public class SettlementService : ISettlementService
 
     public async Task<IReadOnlyList<BalanceResponse>> GetGroupBalancesAsync(
         Guid groupId,
+        Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var group = await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.");
+        var group = await LoadGroupForMemberAsync(
+            groupId, currentUserId, "Само члан групе може видјети салда групе.", cancellationToken);
 
-        var balances = await CalculateNetBalancesAsync(groupId, cancellationToken);
+        var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
 
         // Balances are calculated values, not entity fields, so they are built by hand.
         return group.Members
@@ -50,25 +51,27 @@ public class SettlementService : ISettlementService
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken))
-            throw new ForbiddenException("Само члан групе може генерисати приједлог поравнања.");
-
-        var group = await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.");
-
-        var balances = await CalculateNetBalancesAsync(groupId, cancellationToken);
-
-        // Old, still unsettled suggestions are replaced by the new calculation.
-        var oldProposed = await _unitOfWork.SettlementTransactions.GetByGroupAsync(
-            groupId, SettlementStatus.Proposed, cancellationToken);
-        foreach (var old in oldProposed)
-            _unitOfWork.SettlementTransactions.Remove(old);
-
-        var suggestions = useExactAlgorithm
-            ? DebtSimplifier.SimplifyExact(balances)
-            : DebtSimplifier.SimplifyGreedy(balances);
+        var group = await LoadGroupForMemberAsync(
+            groupId, currentUserId, "Само члан групе може генерисати приједлог поравнања.", cancellationToken);
 
         var usersById = group.Members.ToDictionary(m => m.UserId, m => m.User);
+        var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
+
+        // Members can leave only with a settled balance, so this should never happen. The check
+        // protects the algorithm: it relies on the balances of the listed users adding up to zero.
+        if (balances.Any(b => !usersById.ContainsKey(b.Key) && !GroupBalanceCalculator.IsSettled(b.Value)))
+            throw new ConflictException("У групи постоји неизмирен салдо корисника који више није члан, па приједлог није могуће генерисати.");
+
+        var memberBalances = balances
+            .Where(b => usersById.ContainsKey(b.Key))
+            .ToDictionary(b => b.Key, b => b.Value);
+
+        // Old, still unsettled suggestions are replaced by the new calculation.
+        await _unitOfWork.RemoveProposedSettlementsAsync(groupId, null, cancellationToken);
+
+        var suggestions = useExactAlgorithm
+            ? DebtSimplifier.SimplifyExact(memberBalances)
+            : DebtSimplifier.SimplifyGreedy(memberBalances);
 
         var transactions = new List<SettlementTransaction>();
         foreach (var suggestion in suggestions)
@@ -92,6 +95,9 @@ public class SettlementService : ISettlementService
         }
 
         // Removing old suggestions and adding new ones happens in a single transaction.
+        // If another request settled one of the old suggestions in the meantime, its row version
+        // no longer matches and the whole operation fails with HTTP 409 instead of deleting a
+        // settlement that was just paid.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Every debtor is notified about their part of the settlement.
@@ -110,13 +116,17 @@ public class SettlementService : ISettlementService
     }
 
     public async Task<SettlementTransactionResponse> MarkAsSettledAsync(
+        Guid groupId,
         Guid settlementTransactionId,
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
         var transaction = await _unitOfWork.SettlementTransactions.GetByIdWithDetailsAsync(
-            settlementTransactionId, cancellationToken)
-            ?? throw new NotFoundException("Трансакција поравнања није пронађена.");
+            settlementTransactionId, cancellationToken);
+
+        // A settlement of another group is reported exactly like a missing one.
+        if (transaction is null || transaction.GroupId != groupId)
+            throw new NotFoundException("Трансакција поравнања није пронађена.");
 
         if (transaction.DebtorUserId != currentUserId && transaction.CreditorUserId != currentUserId)
             throw new ForbiddenException("Само дужник или повјерилац могу означити поравнање као измирено.");
@@ -125,7 +135,10 @@ public class SettlementService : ISettlementService
             throw new ConflictException("Трансакција је већ измирена.");
 
         transaction.Status = SettlementStatus.Settled;
-        _unitOfWork.SettlementTransactions.Update(transaction);
+
+        // Protection against double settlement: if two requests pass the status check above at
+        // the same time, only the first UPDATE matches the row version. The second one throws
+        // DbUpdateConcurrencyException, which the middleware turns into HTTP 409.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // The other party (the one who did not click "settled") is notified.
@@ -150,45 +163,31 @@ public class SettlementService : ISettlementService
     public async Task<IReadOnlyList<SettlementTransactionResponse>> GetGroupSettlementsAsync(
         Guid groupId,
         SettlementStatus? status,
+        Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
+        if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken))
+            throw new ForbiddenException("Само члан групе може видјети поравнања групе.");
+
         var transactions = await _unitOfWork.SettlementTransactions.GetByGroupAsync(groupId, status, cancellationToken);
         return _mapper.Map<List<SettlementTransactionResponse>>(transactions);
     }
 
-    // ---------- net balance calculation ----------
+    // ---------- helpers ----------
 
-    /// <summary>
-    /// Net balance = (everything the user paid for group expenses) minus (everything the user
-    /// owes through splits), adjusted by settlements that were already completed.
-    /// Positive = the group owes the user, negative = the user owes the group.
-    /// </summary>
-    private async Task<Dictionary<Guid, decimal>> CalculateNetBalancesAsync(
+    /// <summary>Loads the group with its members and checks that the current user is one of them.</summary>
+    private async Task<Group> LoadGroupForMemberAsync(
         Guid groupId,
+        Guid currentUserId,
+        string forbiddenMessage,
         CancellationToken cancellationToken)
     {
-        var balances = new Dictionary<Guid, decimal>();
+        var group = await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
+            ?? throw new NotFoundException("Група није пронађена.");
 
-        var groupExpenses = await _unitOfWork.GroupExpenses.GetAllByGroupAsync(groupId, cancellationToken);
-        foreach (var expense in groupExpenses)
-        {
-            Add(balances, expense.PaidByUserId, expense.Amount);
-            foreach (var split in expense.Splits)
-                Add(balances, split.UserId, -split.Amount);
-        }
+        if (group.Members.All(m => m.UserId != currentUserId))
+            throw new ForbiddenException(forbiddenMessage);
 
-        // Completed settlements reduce the remaining debt / claim.
-        var settled = await _unitOfWork.SettlementTransactions.GetByGroupAsync(
-            groupId, SettlementStatus.Settled, cancellationToken);
-        foreach (var s in settled)
-        {
-            Add(balances, s.DebtorUserId, s.Amount);
-            Add(balances, s.CreditorUserId, -s.Amount);
-        }
-
-        return balances;
+        return group;
     }
-
-    private static void Add(Dictionary<Guid, decimal> balances, Guid userId, decimal amount)
-        => balances[userId] = balances.GetValueOrDefault(userId, 0m) + amount;
 }

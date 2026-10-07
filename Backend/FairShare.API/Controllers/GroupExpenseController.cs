@@ -27,9 +27,10 @@ public class GroupExpenseController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _groupExpenseService.CreateAsync(groupId, request, _currentUser.UserId, cancellationToken);
-        return CreatedAtAction(nameof(GetByGroup), new { groupId }, result);
+        return CreatedAtAction(nameof(GetById), new { groupId, groupExpenseId = result.Id }, result);
     }
 
+    /// <summary>Paged list of the group's expenses, newest first. Members only.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<GroupExpenseResponse>>> GetByGroup(
         [FromRoute] Guid groupId,
@@ -37,7 +38,45 @@ public class GroupExpenseController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var result = await _groupExpenseService.GetByGroupAsync(groupId, page, pageSize, cancellationToken);
+        var result = await _groupExpenseService.GetByGroupAsync(
+            groupId, page, pageSize, _currentUser.UserId, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("{groupExpenseId:guid}")]
+    public async Task<ActionResult<GroupExpenseResponse>> GetById(
+        [FromRoute] Guid groupId,
+        [FromRoute] Guid groupExpenseId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _groupExpenseService.GetByIdAsync(
+            groupId, groupExpenseId, _currentUser.UserId, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Replaces the expense and recalculates its splits. Allowed for the member who paid
+    /// the expense and for the group owner.
+    /// </summary>
+    [HttpPut("{groupExpenseId:guid}")]
+    public async Task<ActionResult<GroupExpenseResponse>> Update(
+        [FromRoute] Guid groupId,
+        [FromRoute] Guid groupExpenseId,
+        [FromBody] UpdateGroupExpenseRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _groupExpenseService.UpdateAsync(
+            groupId, groupExpenseId, request, _currentUser.UserId, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpDelete("{groupExpenseId:guid}")]
+    public async Task<IActionResult> Delete(
+        [FromRoute] Guid groupId,
+        [FromRoute] Guid groupExpenseId,
+        CancellationToken cancellationToken)
+    {
+        await _groupExpenseService.DeleteAsync(groupId, groupExpenseId, _currentUser.UserId, cancellationToken);
+        return NoContent();
     }
 }

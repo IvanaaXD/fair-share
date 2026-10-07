@@ -7,8 +7,10 @@ public enum NotificationType
     PasswordReset,
     PaymentConfirmation,
     BudgetExceeded,
-
-    // НОВО: додато на крај да се не помјере постојеће нумеричке вриједности у бази
     SettlementSuggested,
-    SettlementCompleted
+    SettlementCompleted,
+
+    // NEW: removed from a group, or became the group owner. Added at the end so the numeric
+    // values already stored in the database do not shift.
+    GroupMembershipChanged
 }

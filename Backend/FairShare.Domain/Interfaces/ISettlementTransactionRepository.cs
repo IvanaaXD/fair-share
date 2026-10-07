@@ -5,7 +5,16 @@ namespace FairShare.Domain.Interfaces;
 
 public interface ISettlementTransactionRepository : IRepository<SettlementTransaction>
 {
+    /// <summary>Read-only list with debtor, creditor and QR data - for displaying settlements.</summary>
     Task<IReadOnlyList<SettlementTransaction>> GetByGroupAsync(
+        Guid groupId,
+        SettlementStatus? status = null,
+        CancellationToken cancellationToken = default);
+
+    // NEW: tracked transactions WITHOUT related entities - for deleting them. Entities from the
+    // read-only list above must not be passed to Remove(): they carry their own copies of the
+    // users, which clash with users the DbContext already tracks.
+    Task<IReadOnlyList<SettlementTransaction>> GetForUpdateByGroupAsync(
         Guid groupId,
         SettlementStatus? status = null,
         CancellationToken cancellationToken = default);
@@ -14,9 +23,7 @@ public interface ISettlementTransactionRepository : IRepository<SettlementTransa
         Guid settlementTransactionId,
         CancellationToken cancellationToken = default);
 
-    // НОВО: учитава трансакцију заједно са дужником, повјериоцем и QR подацима -
-    // потребно SettlementService-у за MarkAsSettledAsync (мапирање одговора без
-    // додатних упита).
+    /// <summary>Tracked transaction with debtor, creditor and QR data.</summary>
     Task<SettlementTransaction?> GetByIdWithDetailsAsync(
         Guid id,
         CancellationToken cancellationToken = default);

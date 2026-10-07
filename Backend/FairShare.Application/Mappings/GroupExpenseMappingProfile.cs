@@ -21,6 +21,11 @@ namespace FairShare.Application.Mappings
             CreateMap<CreateGroupExpenseRequest, GroupExpense>()
                 .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date.AsUtc()))
                 .ForMember(dest => dest.Splits, opt => opt.Ignore());
+
+            // Used as _mapper.Map(request, existingExpense). IncludeBase reuses the configuration
+            // above (UTC date, ignored splits), so the two maps cannot drift apart.
+            CreateMap<UpdateGroupExpenseRequest, GroupExpense>()
+                .IncludeBase<CreateGroupExpenseRequest, GroupExpense>();
         }
     }
 }

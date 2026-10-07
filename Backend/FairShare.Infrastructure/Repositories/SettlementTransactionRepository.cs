@@ -12,8 +12,6 @@ public class SettlementTransactionRepository : GenericRepository<SettlementTrans
     {
     }
 
-    // ИЗМЈЕНА: додати Include-ови за DebtorUser/CreditorUser/QrPaymentData - потребно
-    // SettlementService.MapToResponse-у за имена и QR податке, без додатних упита.
     public async Task<IReadOnlyList<SettlementTransaction>> GetByGroupAsync(
         Guid groupId,
         SettlementStatus? status = null,
@@ -31,6 +29,21 @@ public class SettlementTransactionRepository : GenericRepository<SettlementTrans
         return await query.ToListAsync(cancellationToken);
     }
 
+    // NEW: tracked, no Includes. Related QR data and payments are removed by the database
+    // (ON DELETE CASCADE) when the transaction is deleted.
+    public async Task<IReadOnlyList<SettlementTransaction>> GetForUpdateByGroupAsync(
+        Guid groupId,
+        SettlementStatus? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.Where(s => s.GroupId == groupId);
+
+        if (status.HasValue)
+            query = query.Where(s => s.Status == status.Value);
+
+        return await query.ToListAsync(cancellationToken);
+    }
+
     public async Task<SettlementTransaction?> GetWithPaymentAsync(
         Guid settlementTransactionId,
         CancellationToken cancellationToken = default)
@@ -38,7 +51,6 @@ public class SettlementTransactionRepository : GenericRepository<SettlementTrans
             .Include(s => s.Payment)
             .FirstOrDefaultAsync(s => s.Id == settlementTransactionId, cancellationToken);
 
-    // НОВО
     public async Task<SettlementTransaction?> GetByIdWithDetailsAsync(
         Guid id,
         CancellationToken cancellationToken = default)

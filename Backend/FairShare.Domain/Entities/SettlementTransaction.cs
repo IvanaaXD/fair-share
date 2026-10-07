@@ -17,20 +17,25 @@ public class SettlementTransaction : BaseEntity
     public SettlementStatus Status { get; set; } = SettlementStatus.Proposed;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Веза "1" -- "1" : QR подаци се генеришу за сваку трансакцију поравнања
+    // NEW: optimistic concurrency token. Npgsql maps it to PostgreSQL's built-in "xmin" system
+    // column, which changes on every update of the row. If two requests try to settle (or
+    // delete) the same transaction at the same time, the second one fails instead of
+    // silently overwriting the first.
+    public uint Version { get; set; }
+
+    // One-to-one: QR data is generated for every settlement transaction.
     public QrPaymentData? QrPaymentData { get; set; }
 
-    // Веза "1" -- "0..1" : поравнање не мора увијек бити измирено картицом
+    // One-to-zero-or-one: a settlement does not have to be paid by card.
     public Payment? Payment { get; set; }
 
     /// <summary>
-    /// Генерише (или освјежава) QR податке за уплату. Рачун примаоца се узима из
-    /// профила повјериоца; ако га још није унио, остаје празан и QR слика се неће
-    /// моћи генерисати док га не унесе.
+    /// Creates (or refreshes) the QR payment data. The recipient account is taken from the
+    /// creditor's profile; if they have not entered one yet it stays empty, and the QR image
+    /// cannot be generated until they do.
     /// </summary>
     public QrPaymentData GenerateQrCode()
     {
-        // ИЗМЈЕНА: умјесто CreditorUserId користи се стварни број рачуна повјериоца
         var account = CreditorUser?.BankAccountNumber ?? string.Empty;
 
         if (QrPaymentData is null)
@@ -48,6 +53,7 @@ public class SettlementTransaction : BaseEntity
         {
             QrPaymentData.RecipientAccount = account;
             QrPaymentData.Amount = Amount;
+            QrPaymentData.ReferenceCode = Id.ToString("N");
         }
 
         return QrPaymentData;

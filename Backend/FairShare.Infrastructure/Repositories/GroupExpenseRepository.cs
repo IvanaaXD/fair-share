@@ -16,6 +16,14 @@ public class GroupExpenseRepository : GenericRepository<GroupExpense>, IGroupExp
             .Include(ge => ge.Splits).ThenInclude(s => s.User)
             .FirstOrDefaultAsync(ge => ge.Id == groupExpenseId, cancellationToken);
 
+    // NEW: tracked (no AsNoTracking), because the caller edits or deletes the expense.
+    public async Task<GroupExpense?> GetWithDetailsAsync(Guid groupExpenseId, CancellationToken cancellationToken = default)
+        => await DbSet
+            .Include(ge => ge.Category)
+            .Include(ge => ge.PaidByUser)
+            .Include(ge => ge.Splits).ThenInclude(s => s.User)
+            .FirstOrDefaultAsync(ge => ge.Id == groupExpenseId, cancellationToken);
+
     public async Task<IReadOnlyList<GroupExpense>> GetByGroupAsync(
         Guid groupId,
         int page,
@@ -31,7 +39,6 @@ public class GroupExpenseRepository : GenericRepository<GroupExpense>, IGroupExp
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-    // НОВО
     public async Task<IReadOnlyList<GroupExpense>> GetAllByGroupAsync(
         Guid groupId,
         CancellationToken cancellationToken = default)
