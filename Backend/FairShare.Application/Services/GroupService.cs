@@ -10,10 +10,12 @@ namespace FairShare.Application.Services;
 public class GroupService : IGroupService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notificationService; // НОВО
 
-    public GroupService(IUnitOfWork unitOfWork)
+    public GroupService(IUnitOfWork unitOfWork, INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
+        _notificationService = notificationService;
     }
 
     public async Task<GroupResponse> CreateGroupAsync(
@@ -22,7 +24,7 @@ public class GroupService : IGroupService
         CancellationToken cancellationToken = default)
     {
         var creator = await _unitOfWork.Users.GetByIdAsync(currentUserId, cancellationToken)
-            ?? throw new NotFoundException("Currently logged in user not found.");
+            ?? throw new NotFoundException("Тренутно улогован корисник није пронађен.");
 
         var group = new Group
         {
@@ -34,6 +36,7 @@ public class GroupService : IGroupService
 
         await _unitOfWork.Groups.AddAsync(group, cancellationToken);
 
+        // Творац групе аутоматски постаје власник (GroupRole.Owner)
         var owner = new GroupMember
         {
             GroupId = group.Id,
@@ -56,16 +59,20 @@ public class GroupService : IGroupService
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
+        // НОВО: учитавамо групу (провјера постојања + назив за обавјештење)
+        var group = await _unitOfWork.Groups.GetByIdAsync(groupId, cancellationToken)
+            ?? throw new NotFoundException("Група није пронађена.");
+
         var requesterIsMember = await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken);
         if (!requesterIsMember)
-            throw new ForbiddenException("Only group members can add new members.");
+            throw new ForbiddenException("Само члан групе може додавати нове чланове.");
 
         var userToAdd = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken)
-            ?? throw new NotFoundException($"User with email address '{request.Email}' does not exist.");
+            ?? throw new NotFoundException($"Корисник са email адресом '{request.Email}' не постоји.");
 
         var alreadyMember = await _unitOfWork.GroupMembers.IsMemberAsync(groupId, userToAdd.Id, cancellationToken);
         if (alreadyMember)
-            throw new ConflictException("User is already a member of this group.");
+            throw new ConflictException("Корисник је већ члан ове групе.");
 
         var member = new GroupMember
         {
@@ -79,6 +86,14 @@ public class GroupService : IGroupService
         await _unitOfWork.GroupMembers.AddAsync(member, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // НОВО: обавјештење додатом кориснику
+        await _notificationService.NotifyAsync(
+            userToAdd.Id,
+            NotificationType.GroupInvite,
+            "Нова група",
+            $"Додати сте у групу '{group.Name}'.",
+            cancellationToken);
+
         return MapToMemberResponse(member);
     }
 
@@ -89,6 +104,8 @@ public class GroupService : IGroupService
         var groups = await _unitOfWork.Groups.GetByUserAsync(currentUserId, cancellationToken);
         return groups.Select(MapToGroupResponse).ToList();
     }
+
+    // ---------- ручно мапирање (AutoMapper долази у каснијем кораку) ----------
 
     private static GroupResponse MapToGroupResponse(Group group) => new()
     {

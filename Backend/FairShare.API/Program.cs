@@ -4,6 +4,7 @@ using FairShare.Application.Abstractions;
 using FairShare.Application.Interfaces;
 using FairShare.Application.Services;
 using FairShare.Infrastructure.Data;
+using FairShare.Infrastructure.Email;
 using FairShare.Infrastructure.Identity;
 using FairShare.Infrastructure.Seed;
 using FairShare.WebAPI.Extensions;
@@ -48,8 +49,14 @@ builder.Services.AddControllers(options =>
     options.Filters.AddService<RequirePasswordChangeFilter>();
 });
 
-//builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-//builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
+builder.Services.AddSingleton<EmailQueue>();
+builder.Services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailQueue>());
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+builder.Services.AddHostedService<EmailBackgroundService>();
+
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 var app = builder.Build();
 

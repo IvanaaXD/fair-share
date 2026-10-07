@@ -18,10 +18,12 @@ public class ExpenseService : IExpenseService
     };
 
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notificationService; // НОВО
 
-    public ExpenseService(IUnitOfWork unitOfWork)
+    public ExpenseService(IUnitOfWork unitOfWork, INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
+        _notificationService = notificationService;
     }
 
     public async Task<ExpenseResponse> CreateAsync(
@@ -36,8 +38,7 @@ public class ExpenseService : IExpenseService
             ?? throw new NotFoundException("Категорија није пронађена.");
 
         // Потрошња ПРИЈЕ додавања овог трошка - потребно да бисмо открили да ли се
-        // овим трошком тек сада "прелази" праг (а не слати обавјештење за сваки
-        // сљедећи трошак који остаје изнад прага).
+        // овим трошком тек сада "прелази" праг.
         var monthStart = new DateTime(request.Date.Year, request.Date.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
         var previousTotal = await _unitOfWork.Expenses.GetTotalByUserAndCategoryAsync(
@@ -60,15 +61,22 @@ public class ExpenseService : IExpenseService
         };
 
         await _unitOfWork.Expenses.AddAsync(expense, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var notification = await BuildBudgetExceededNotificationIfCrossedAsync(
+        // ИЗМЈЕНА: обавјештење сада иде преко NotificationService-а (чува се у бази И шаље e-mail)
+        var budgetMessage = await GetCrossedBudgetThresholdMessageAsync(
             currentUserId, request.CategoryId, category.Name, request.Currency,
             request.Date.ToString("yyyy-MM"), previousTotal, previousTotal + request.Amount, cancellationToken);
 
-        if (notification is not null)
-            await _unitOfWork.Notifications.AddAsync(notification, cancellationToken);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (budgetMessage is not null)
+        {
+            await _notificationService.NotifyAsync(
+                currentUserId,
+                NotificationType.BudgetExceeded,
+                "Прекорачење буџета",
+                budgetMessage,
+                cancellationToken);
+        }
 
         return MapToResponse(expense);
     }
@@ -103,9 +111,7 @@ public class ExpenseService : IExpenseService
         _unitOfWork.Expenses.Update(expense);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // НАПОМЕНА: намјерно не провјеравамо праг буџета овдје - измјена износа
-        // постојећег трошка је ријеђи случај и провјера уназад (кроз измјене) захтијева
-        // поређење са старим износом; за сада се обавјештење шаље само при креирању.
+        // НАПОМЕНА: праг буџета се провјерава само при креирању трошка.
 
         return MapToResponse(expense);
     }
@@ -135,7 +141,8 @@ public class ExpenseService : IExpenseService
 
     // ---------- провјера прага буџета ----------
 
-    private async Task<Notification?> BuildBudgetExceededNotificationIfCrossedAsync(
+    /// <summary>Враћа текст обавјештења ако је овим трошком управо пређен неки праг, иначе null.</summary>
+    private async Task<string?> GetCrossedBudgetThresholdMessageAsync(
         Guid userId,
         Guid categoryId,
         string categoryName,
@@ -153,19 +160,11 @@ public class ExpenseService : IExpenseService
         {
             var limitAtThreshold = budget.MonthlyLimit * fraction;
 
-            // Обавјештење се шаље само у тренутку преласка прага, не и за сваки
-            // сљедећи трошак који остаје изнад њега.
+            // Обавјештење само у тренутку преласка прага, не за сваки сљедећи трошак изнад њега.
             if (previousTotal < limitAtThreshold && newTotal >= limitAtThreshold)
             {
-                return new Notification
-                {
-                    UserId = userId,
-                    Type = NotificationType.BudgetExceeded,
-                    Message = $"Потрошња у категорији '{categoryName}' достигла је {label} мјесечног " +
-                              $"лимита од {budget.MonthlyLimit} {currency} за {month}.",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                };
+                return $"Потрошња у категорији '{categoryName}' достигла је {label} мјесечног " +
+                       $"лимита од {budget.MonthlyLimit} {currency} за {month}.";
             }
         }
 
