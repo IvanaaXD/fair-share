@@ -13,6 +13,12 @@ public class User : BaseEntity
     public UserRole Role { get; set; } = UserRole.Customer;
     public bool IsBlocked { get; set; }
 
+    // НОВО: приморава промјену лозинке прије приступа остатку система
+    // (поставља се на true при seed-овању администратора, false након промјене).
+    public bool MustChangePassword { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     // Навигационе особине
     public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
     public ICollection<Budget> Budgets { get; set; } = new List<Budget>();
@@ -30,4 +36,7 @@ public class User : BaseEntity
     public void ChangePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
 
     public void Deactivate() => IsBlocked = true;
+
+    // НОВО
+    public void Activate() => IsBlocked = false;
 }
