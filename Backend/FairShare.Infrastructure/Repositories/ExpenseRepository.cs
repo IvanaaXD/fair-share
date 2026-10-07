@@ -1,5 +1,6 @@
 using FairShare.Domain.Entities;
 using FairShare.Domain.Interfaces;
+using FairShare.Domain.Models;
 using FairShare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,8 +12,6 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
     {
     }
 
-    // ИЗМЈЕНА: додат .Include(e => e.Category) - ExpenseService.MapToResponse чита
-    // expense.Category.Name директно, без додатног упита по трошку.
     public async Task<IReadOnlyList<Expense>> GetByUserAsync(
         Guid userId,
         DateTime? from = null,
@@ -46,5 +45,46 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
         CancellationToken cancellationToken = default)
         => await DbSet.AsNoTracking()
             .Where(e => e.IsRecurring && e.Date <= asOf)
+            .ToListAsync(cancellationToken);
+
+    // ---------- НОВО: агрегације за аналитику ----------
+
+    public async Task<IReadOnlyList<DailySpendingTotal>> GetDailyTotalsAsync(
+        Guid userId,
+        DateTime from,
+        DateTime toExclusive,
+        CancellationToken cancellationToken = default)
+        => await DbSet.AsNoTracking()
+            .Where(e => e.UserId == userId && e.Date >= from && e.Date < toExclusive)
+            .GroupBy(e => e.Date.Date)
+            .Select(g => new DailySpendingTotal(g.Key, g.Sum(e => e.Amount), g.Count()))
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<CategorySpendingTotal>> GetTotalsByCategoryAsync(
+        Guid userId,
+        DateTime from,
+        DateTime toExclusive,
+        CancellationToken cancellationToken = default)
+        => await DbSet.AsNoTracking()
+            .Where(e => e.UserId == userId && e.Date >= from && e.Date < toExclusive)
+            .GroupBy(e => new { e.CategoryId, e.Category.Name })
+            .Select(g => new CategorySpendingTotal(g.Key.CategoryId, g.Key.Name, g.Sum(e => e.Amount), g.Count()))
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<ExpenseLocation>> GetLocationsAsync(
+        Guid userId,
+        DateTime from,
+        DateTime toExclusive,
+        int maxResults,
+        CancellationToken cancellationToken = default)
+        => await DbSet.AsNoTracking()
+            .Where(e => e.UserId == userId
+                        && e.Date >= from && e.Date < toExclusive
+                        && e.Latitude != null && e.Longitude != null)
+            .OrderByDescending(e => e.Date)
+            .Take(maxResults)
+            .Select(e => new ExpenseLocation(
+                e.Id, e.Amount, e.Currency, e.Date, e.Description, e.Category.Name,
+                e.Latitude!.Value, e.Longitude!.Value))
             .ToListAsync(cancellationToken);
 }

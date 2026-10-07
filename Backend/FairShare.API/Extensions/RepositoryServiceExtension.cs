@@ -1,5 +1,5 @@
 using FairShare.Domain.Interfaces;
-using FairShare.Infrastructure.Repositories; 
+using FairShare.Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FairShare.WebAPI.Extensions
@@ -23,6 +23,7 @@ namespace FairShare.WebAPI.Extensions
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;
         }

@@ -1,4 +1,5 @@
 using FairShare.Domain.Entities;
+using FairShare.Domain.Models;
 
 namespace FairShare.Domain.Interfaces;
 
@@ -22,4 +23,29 @@ public interface IExpenseRepository : IRepository<Expense>
 
     /// <summary>Понављајући трошкови који доспијевају за аутоматско додавање.</summary>
     Task<IReadOnlyList<Expense>> GetRecurringDueAsync(DateTime asOf, CancellationToken cancellationToken = default);
+
+    // ---------- НОВО: агрегације за аналитику (5.4) ----------
+    // Сви интервали су [from, toExclusive) - почетак укључен, крај искључен.
+
+    /// <summary>Укупна потрошња по данима; група по дану се рачуна у бази, не у меморији.</summary>
+    Task<IReadOnlyList<DailySpendingTotal>> GetDailyTotalsAsync(
+        Guid userId,
+        DateTime from,
+        DateTime toExclusive,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Укупна потрошња по категоријама у периоду.</summary>
+    Task<IReadOnlyList<CategorySpendingTotal>> GetTotalsByCategoryAsync(
+        Guid userId,
+        DateTime from,
+        DateTime toExclusive,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Најновији трошкови са локацијом у периоду, за приказ на мапи.</summary>
+    Task<IReadOnlyList<ExpenseLocation>> GetLocationsAsync(
+        Guid userId,
+        DateTime from,
+        DateTime toExclusive,
+        int maxResults,
+        CancellationToken cancellationToken = default);
 }
