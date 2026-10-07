@@ -10,11 +10,14 @@ public class User : BaseEntity
     public string PasswordHash { get; set; } = string.Empty;
     public string? ProfileImageUrl { get; set; }
     public string DefaultCurrency { get; set; } = "BAM";
+
+    // НОВО: број рачуна (само цифре) за QR уплате по узору на IPS; null док га корисник не унесе.
+    public string? BankAccountNumber { get; set; }
+
     public UserRole Role { get; set; } = UserRole.Customer;
     public bool IsBlocked { get; set; }
 
-    // НОВО: приморава промјену лозинке прије приступа остатку система
-    // (поставља се на true при seed-овању администратора, false након промјене).
+    // Приморава промјену лозинке прије приступа остатку система.
     public bool MustChangePassword { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -37,6 +40,5 @@ public class User : BaseEntity
 
     public void Deactivate() => IsBlocked = true;
 
-    // НОВО
     public void Activate() => IsBlocked = false;
 }

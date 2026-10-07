@@ -15,21 +15,41 @@ public class SettlementTransaction : BaseEntity
 
     public decimal Amount { get; set; }
     public SettlementStatus Status { get; set; } = SettlementStatus.Proposed;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Веза "1" -- "1" : QR подаци се генеришу за сваку трансакцију поравнања
     public QrPaymentData? QrPaymentData { get; set; }
 
+    // Веза "1" -- "0..1" : поравнање не мора увијек бити измирено картицом
     public Payment? Payment { get; set; }
 
+    /// <summary>
+    /// Генерише (или освјежава) QR податке за уплату. Рачун примаоца се узима из
+    /// профила повјериоца; ако га још није унио, остаје празан и QR слика се неће
+    /// моћи генерисати док га не унесе.
+    /// </summary>
     public QrPaymentData GenerateQrCode()
     {
-        QrPaymentData = new QrPaymentData
+        // ИЗМЈЕНА: умјесто CreditorUserId користи се стварни број рачуна повјериоца
+        var account = CreditorUser?.BankAccountNumber ?? string.Empty;
+
+        if (QrPaymentData is null)
         {
-            SettlementTransactionId = Id,
-            RecipientAccount = CreditorUserId.ToString(), // TODO: заменити стварним рачуном примаоца
-            Amount = Amount,
-            Currency = Group.Currency,
-            ReferenceCode = Id.ToString("N")
-        };
+            QrPaymentData = new QrPaymentData
+            {
+                SettlementTransactionId = Id,
+                RecipientAccount = account,
+                Amount = Amount,
+                Currency = Group.Currency,
+                ReferenceCode = Id.ToString("N")
+            };
+        }
+        else
+        {
+            QrPaymentData.RecipientAccount = account;
+            QrPaymentData.Amount = Amount;
+        }
+
         return QrPaymentData;
     }
 }
