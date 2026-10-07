@@ -2,13 +2,11 @@ using FairShare.Domain.Entities;
 using FairShare.Domain.Interfaces;
 using FairShare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using static FairShare.Infrastructure.Repositories.AuditLogRepository;
 
 namespace FairShare.Infrastructure.Repositories;
 
 public class AuditLogRepository : GenericRepository<AuditLog>, IAuditLogRepository
 {
-    private readonly FairShareDbContext _context;
     public AuditLogRepository(FairShareDbContext context) : base(context)
     {
     }
@@ -22,7 +20,8 @@ public class AuditLogRepository : GenericRepository<AuditLog>, IAuditLogReposito
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = DbSet.AsNoTracking().AsQueryable();
+        // ИЗМЈЕНА: Include(User) - администратор у прегледу види име и e-mail корисника.
+        var query = DbSet.AsNoTracking().Include(a => a.User).AsQueryable();
 
         if (userId.HasValue) query = query.Where(a => a.UserId == userId.Value);
         if (!string.IsNullOrWhiteSpace(entityType)) query = query.Where(a => a.EntityType == entityType);
