@@ -18,6 +18,13 @@ namespace FairShare.Infrastructure.Data.Configurations
             builder.Property(s => s.CreatedAt)
                     .IsRequired();
 
+            // NEW: optimistic concurrency. A uint row-version property is mapped by Npgsql to the
+            // PostgreSQL system column "xmin" - no real column is added to the table. EF adds
+            // "WHERE xmin = <value read earlier>" to every UPDATE/DELETE of this entity and throws
+            // DbUpdateConcurrencyException if the row was changed in the meantime.
+            builder.Property(s => s.Version)
+                    .IsRowVersion();
+
             // Balances and suggestions read settlements of one group filtered by status.
             builder.HasIndex(s => new { s.GroupId, s.Status });
 

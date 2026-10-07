@@ -19,6 +19,10 @@ namespace FairShare.Application.Mappings
             CreateMap<CreateGroupRequest, Group>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
                 .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Currency.ToUpperInvariant()));
+
+            // Used as _mapper.Map(request, existingGroup) - only name and description are overwritten.
+            CreateMap<UpdateGroupRequest, Group>()
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()));
         }
     }
 }

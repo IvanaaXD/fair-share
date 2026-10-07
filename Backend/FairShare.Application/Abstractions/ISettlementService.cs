@@ -5,15 +5,16 @@ namespace FairShare.Application.Interfaces;
 
 public interface ISettlementService
 {
-    /// <summary>Нето салдо сваког члана групе (функционалност 5.7).</summary>
+    /// <summary>Net balance of every member of the group. Members only.</summary>
     Task<IReadOnlyList<BalanceResponse>> GetGroupBalancesAsync(
         Guid groupId,
+        Guid currentUserId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Прерачунава салда и генерише нов приједлог поравнања (замјењује претходне
-    /// неизмирене приједлоге). useExactAlgorithm бира егзактни алгоритам умјесто
-    /// greedy-ja - примјењиво само на мање групе.
+    /// Recalculates balances and generates a new settlement suggestion, replacing earlier
+    /// unsettled suggestions. useExactAlgorithm selects the exact algorithm instead of the
+    /// greedy one (small groups only). Members only.
     /// </summary>
     Task<IReadOnlyList<SettlementTransactionResponse>> GenerateSettlementSuggestionsAsync(
         Guid groupId,
@@ -21,14 +22,17 @@ public interface ISettlementService
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Ручно означавање поравнања као измиреног (нпр. готовински, ван система).</summary>
+    /// <summary>Marks a settlement as paid (e.g. in cash). Only its debtor or creditor may do it.</summary>
     Task<SettlementTransactionResponse> MarkAsSettledAsync(
+        Guid groupId,
         Guid settlementTransactionId,
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Settlements of the group, optionally filtered by status. Members only.</summary>
     Task<IReadOnlyList<SettlementTransactionResponse>> GetGroupSettlementsAsync(
         Guid groupId,
         SettlementStatus? status,
+        Guid currentUserId,
         CancellationToken cancellationToken = default);
 }
