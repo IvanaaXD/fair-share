@@ -6,5 +6,9 @@ public enum NotificationType
     GroupInvite,
     PasswordReset,
     PaymentConfirmation,
-    BudgetExceeded
+    BudgetExceeded,
+
+    // НОВО: додато на крај да се не помјере постојеће нумеричке вриједности у бази
+    SettlementSuggested,
+    SettlementCompleted
 }

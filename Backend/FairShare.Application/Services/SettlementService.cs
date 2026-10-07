@@ -11,10 +11,12 @@ namespace FairShare.Application.Services;
 public class SettlementService : ISettlementService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notificationService; // НОВО
 
-    public SettlementService(IUnitOfWork unitOfWork)
+    public SettlementService(IUnitOfWork unitOfWork, INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
+        _notificationService = notificationService;
     }
 
     public async Task<IReadOnlyList<BalanceResponse>> GetGroupBalancesAsync(
@@ -51,6 +53,7 @@ public class SettlementService : ISettlementService
 
         var balances = await CalculateNetBalancesAsync(groupId, cancellationToken);
 
+        // Стари, још неизмирени приједлози се замјењују новим прерачуном
         var oldProposed = await _unitOfWork.SettlementTransactions.GetByGroupAsync(
             groupId, SettlementStatus.Proposed, cancellationToken);
         foreach (var old in oldProposed)
@@ -85,6 +88,18 @@ public class SettlementService : ISettlementService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // НОВО: сваки дужник добија обавјештење о свом дијелу поравнања
+        foreach (var t in transactions)
+        {
+            await _notificationService.NotifyAsync(
+                t.DebtorUserId,
+                NotificationType.SettlementSuggested,
+                "Нови приједлог поравнања",
+                $"У групи '{group.Name}' предложено је поравнање: дугујете кориснику " +
+                $"{t.CreditorUser.FirstName} {t.CreditorUser.LastName} износ од {t.Amount} {group.Currency}.",
+                cancellationToken);
+        }
+
         return transactions.Select(MapToResponse).ToList();
     }
 
@@ -106,6 +121,22 @@ public class SettlementService : ISettlementService
         transaction.Status = SettlementStatus.Settled;
         _unitOfWork.SettlementTransactions.Update(transaction);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // НОВО: обавјештава се друга страна (она која није кликнула "измирено")
+        var group = await _unitOfWork.Groups.GetByIdAsync(transaction.GroupId, cancellationToken);
+        var otherUserId = transaction.DebtorUserId == currentUserId
+            ? transaction.CreditorUserId
+            : transaction.DebtorUserId;
+
+        await _notificationService.NotifyAsync(
+            otherUserId,
+            NotificationType.SettlementCompleted,
+            "Поравнање измирено",
+            $"Поравнање од {transaction.Amount} {group?.Currency} између корисника " +
+            $"{transaction.DebtorUser.FirstName} {transaction.DebtorUser.LastName} и " +
+            $"{transaction.CreditorUser.FirstName} {transaction.CreditorUser.LastName} " +
+            $"у групи '{group?.Name}' означено је као измирено.",
+            cancellationToken);
 
         return MapToResponse(transaction);
     }
