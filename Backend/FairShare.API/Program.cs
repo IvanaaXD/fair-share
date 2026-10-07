@@ -1,7 +1,11 @@
 //using AutoMapper;
+using FairShare.Api.Filters;
 using FairShare.Application.Abstractions;
+using FairShare.Application.Interfaces;
+using FairShare.Application.Services;
 using FairShare.Infrastructure.Data;
 using FairShare.Infrastructure.Identity;
+using FairShare.Infrastructure.Seed;
 using FairShare.WebAPI.Extensions;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,10 +40,20 @@ builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+
+builder.Services.AddScoped<RequirePasswordChangeFilter>();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.AddService<RequirePasswordChangeFilter>();
+});
+
 //builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 //builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
+
+await AdminUserSeeder.SeedAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {
