@@ -1,3 +1,5 @@
+using AutoMapper;
+using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Groups;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -10,12 +12,14 @@ namespace FairShare.Application.Services;
 public class GroupService : IGroupService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly INotificationService _notificationService; // НОВО
+    private readonly INotificationService _notificationService;
+    private readonly IMapper _mapper;
 
-    public GroupService(IUnitOfWork unitOfWork, INotificationService notificationService)
+    public GroupService(IUnitOfWork unitOfWork, INotificationService notificationService, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
+        _mapper = mapper;
     }
 
     public async Task<GroupResponse> CreateGroupAsync(
@@ -26,17 +30,12 @@ public class GroupService : IGroupService
         var creator = await _unitOfWork.Users.GetByIdAsync(currentUserId, cancellationToken)
             ?? throw new NotFoundException("Тренутно улогован корисник није пронађен.");
 
-        var group = new Group
-        {
-            Name = request.Name,
-            Description = request.Description,
-            Currency = request.Currency,
-            CreatedAt = DateTime.UtcNow
-        };
+        var group = _mapper.Map<Group>(request);
+        group.CreatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Groups.AddAsync(group, cancellationToken);
 
-        // Творац групе аутоматски постаје власник (GroupRole.Owner)
+        // The creator automatically becomes the group owner.
         var owner = new GroupMember
         {
             GroupId = group.Id,
@@ -49,8 +48,12 @@ public class GroupService : IGroupService
         await _unitOfWork.GroupMembers.AddAsync(owner, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        group.Members.Add(owner);
-        return MapToGroupResponse(group);
+        // EF relationship fix-up usually adds the owner to group.Members already;
+        // the check prevents the owner from appearing twice in the response.
+        if (!group.Members.Contains(owner))
+            group.Members.Add(owner);
+
+        return _mapper.Map<GroupResponse>(group);
     }
 
     public async Task<GroupMemberResponse> AddMemberAsync(
@@ -59,19 +62,16 @@ public class GroupService : IGroupService
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        // НОВО: учитавамо групу (провјера постојања + назив за обавјештење)
         var group = await _unitOfWork.Groups.GetByIdAsync(groupId, cancellationToken)
             ?? throw new NotFoundException("Група није пронађена.");
 
-        var requesterIsMember = await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken);
-        if (!requesterIsMember)
+        if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken))
             throw new ForbiddenException("Само члан групе може додавати нове чланове.");
 
         var userToAdd = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken)
             ?? throw new NotFoundException($"Корисник са email адресом '{request.Email}' не постоји.");
 
-        var alreadyMember = await _unitOfWork.GroupMembers.IsMemberAsync(groupId, userToAdd.Id, cancellationToken);
-        if (alreadyMember)
+        if (await _unitOfWork.GroupMembers.IsMemberAsync(groupId, userToAdd.Id, cancellationToken))
             throw new ConflictException("Корисник је већ члан ове групе.");
 
         var member = new GroupMember
@@ -86,7 +86,6 @@ public class GroupService : IGroupService
         await _unitOfWork.GroupMembers.AddAsync(member, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // НОВО: обавјештење додатом кориснику
         await _notificationService.NotifyAsync(
             userToAdd.Id,
             NotificationType.GroupInvite,
@@ -94,7 +93,7 @@ public class GroupService : IGroupService
             $"Додати сте у групу '{group.Name}'.",
             cancellationToken);
 
-        return MapToMemberResponse(member);
+        return _mapper.Map<GroupMemberResponse>(member);
     }
 
     public async Task<IReadOnlyList<GroupResponse>> GetMyGroupsAsync(
@@ -102,28 +101,6 @@ public class GroupService : IGroupService
         CancellationToken cancellationToken = default)
     {
         var groups = await _unitOfWork.Groups.GetByUserAsync(currentUserId, cancellationToken);
-        return groups.Select(MapToGroupResponse).ToList();
+        return _mapper.Map<List<GroupResponse>>(groups);
     }
-
-    // ---------- ручно мапирање (AutoMapper долази у каснијем кораку) ----------
-
-    private static GroupResponse MapToGroupResponse(Group group) => new()
-    {
-        Id = group.Id,
-        Name = group.Name,
-        Description = group.Description,
-        Currency = group.Currency,
-        CreatedAt = group.CreatedAt,
-        Members = group.Members.Select(MapToMemberResponse).ToList()
-    };
-
-    private static GroupMemberResponse MapToMemberResponse(GroupMember member) => new()
-    {
-        UserId = member.UserId,
-        FirstName = member.User.FirstName,
-        LastName = member.User.LastName,
-        Email = member.User.Email,
-        Role = member.Role,
-        JoinedAt = member.JoinedAt
-    };
 }

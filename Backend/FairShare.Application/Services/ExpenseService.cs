@@ -1,3 +1,5 @@
+using AutoMapper;
+using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Expenses;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -9,8 +11,8 @@ namespace FairShare.Application.Services;
 
 public class ExpenseService : IExpenseService
 {
-    // Прагови прекорачења буџета; провјеравају се од највишег ка најнижем, да се
-    // пошаље само једно обавјештење (за највиши праг који је управо пређен).
+    // Budget thresholds, checked from highest to lowest so only one notification is sent
+    // (for the highest threshold that was just crossed).
     private static readonly (decimal Fraction, string Label)[] BudgetThresholds =
     {
         (1.0m, "100%"),
@@ -18,12 +20,14 @@ public class ExpenseService : IExpenseService
     };
 
     private readonly IUnitOfWork _unitOfWork;
-    private readonly INotificationService _notificationService; // НОВО
+    private readonly INotificationService _notificationService;
+    private readonly IMapper _mapper;
 
-    public ExpenseService(IUnitOfWork unitOfWork, INotificationService notificationService)
+    public ExpenseService(IUnitOfWork unitOfWork, INotificationService notificationService, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
+        _mapper = mapper;
     }
 
     public async Task<ExpenseResponse> CreateAsync(
@@ -31,42 +35,27 @@ public class ExpenseService : IExpenseService
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        if (request.Amount <= 0)
-            throw new ConflictException("Износ трошка мора бити већи од нуле.");
-
+        // Field formats (amount > 0, currency, date...) are checked by CreateExpenseRequestValidator.
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
             ?? throw new NotFoundException("Категорија није пронађена.");
 
-        // Потрошња ПРИЈЕ додавања овог трошка - потребно да бисмо открили да ли се
-        // овим трошком тек сада "прелази" праг.
-        var monthStart = new DateTime(request.Date.Year, request.Date.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var expense = _mapper.Map<Expense>(request);
+        expense.UserId = currentUserId;
+        expense.Category = category;
+
+        // Spending BEFORE this expense - needed to detect whether this expense is the one
+        // that crosses a budget threshold (and not every expense after it).
+        var monthStart = new DateTime(expense.Date.Year, expense.Date.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
         var previousTotal = await _unitOfWork.Expenses.GetTotalByUserAndCategoryAsync(
-            currentUserId, request.CategoryId, monthStart, monthEnd, cancellationToken);
-
-        var expense = new Expense
-        {
-            UserId = currentUserId,
-            CategoryId = request.CategoryId,
-            Category = category,
-            Amount = request.Amount,
-            Currency = request.Currency,
-            Date = request.Date,
-            Description = request.Description,
-            Latitude = request.Latitude,
-            Longitude = request.Longitude,
-            ReceiptImageUrl = request.ReceiptImageUrl,
-            IsRecurring = request.IsRecurring,
-            RecurrenceInterval = request.RecurrenceInterval
-        };
+            currentUserId, expense.CategoryId, monthStart, monthEnd, cancellationToken);
 
         await _unitOfWork.Expenses.AddAsync(expense, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // ИЗМЈЕНА: обавјештење сада иде преко NotificationService-а (чува се у бази И шаље e-mail)
         var budgetMessage = await GetCrossedBudgetThresholdMessageAsync(
-            currentUserId, request.CategoryId, category.Name, request.Currency,
-            request.Date.ToString("yyyy-MM"), previousTotal, previousTotal + request.Amount, cancellationToken);
+            currentUserId, expense.CategoryId, category.Name, expense.Currency,
+            expense.Date.ToString("yyyy-MM"), previousTotal, previousTotal + expense.Amount, cancellationToken);
 
         if (budgetMessage is not null)
         {
@@ -78,7 +67,7 @@ public class ExpenseService : IExpenseService
                 cancellationToken);
         }
 
-        return MapToResponse(expense);
+        return _mapper.Map<ExpenseResponse>(expense);
     }
 
     public async Task<ExpenseResponse> UpdateAsync(
@@ -96,24 +85,16 @@ public class ExpenseService : IExpenseService
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
             ?? throw new NotFoundException("Категорија није пронађена.");
 
-        expense.CategoryId = request.CategoryId;
+        // Overwrites only the fields present in the request; Id and UserId stay untouched.
+        _mapper.Map(request, expense);
         expense.Category = category;
-        expense.Amount = request.Amount;
-        expense.Currency = request.Currency;
-        expense.Date = request.Date;
-        expense.Description = request.Description;
-        expense.Latitude = request.Latitude;
-        expense.Longitude = request.Longitude;
-        expense.ReceiptImageUrl = request.ReceiptImageUrl;
-        expense.IsRecurring = request.IsRecurring;
-        expense.RecurrenceInterval = request.RecurrenceInterval;
 
         _unitOfWork.Expenses.Update(expense);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // НАПОМЕНА: праг буџета се провјерава само при креирању трошка.
+        // Note: budget thresholds are checked only when an expense is created.
 
-        return MapToResponse(expense);
+        return _mapper.Map<ExpenseResponse>(expense);
     }
 
     public async Task DeleteAsync(Guid expenseId, Guid currentUserId, CancellationToken cancellationToken = default)
@@ -136,12 +117,12 @@ public class ExpenseService : IExpenseService
         CancellationToken cancellationToken = default)
     {
         var expenses = await _unitOfWork.Expenses.GetByUserAsync(currentUserId, from, to, categoryId, cancellationToken);
-        return expenses.Select(MapToResponse).ToList();
+        return _mapper.Map<List<ExpenseResponse>>(expenses);
     }
 
-    // ---------- провјера прага буџета ----------
+    // ---------- budget threshold check ----------
 
-    /// <summary>Враћа текст обавјештења ако је овим трошком управо пређен неки праг, иначе null.</summary>
+    /// <summary>Returns the notification text if this expense just crossed a threshold, otherwise null.</summary>
     private async Task<string?> GetCrossedBudgetThresholdMessageAsync(
         Guid userId,
         Guid categoryId,
@@ -160,7 +141,7 @@ public class ExpenseService : IExpenseService
         {
             var limitAtThreshold = budget.MonthlyLimit * fraction;
 
-            // Обавјештење само у тренутку преласка прага, не за сваки сљедећи трошак изнад њега.
+            // Notify only at the moment a threshold is crossed, not for every expense above it.
             if (previousTotal < limitAtThreshold && newTotal >= limitAtThreshold)
             {
                 return $"Потрошња у категорији '{categoryName}' достигла је {label} мјесечног " +
@@ -170,20 +151,4 @@ public class ExpenseService : IExpenseService
 
         return null;
     }
-
-    private static ExpenseResponse MapToResponse(Expense expense) => new()
-    {
-        Id = expense.Id,
-        CategoryId = expense.CategoryId,
-        CategoryName = expense.Category?.Name ?? string.Empty,
-        Amount = expense.Amount,
-        Currency = expense.Currency,
-        Date = expense.Date,
-        Description = expense.Description,
-        Latitude = expense.Latitude,
-        Longitude = expense.Longitude,
-        ReceiptImageUrl = expense.ReceiptImageUrl,
-        IsRecurring = expense.IsRecurring,
-        RecurrenceInterval = expense.RecurrenceInterval
-    };
 }

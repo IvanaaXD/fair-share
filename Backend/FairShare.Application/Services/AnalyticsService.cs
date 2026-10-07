@@ -1,3 +1,4 @@
+using AutoMapper;
 using FairShare.Application.DTOs.Analytics;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Interfaces;
@@ -7,14 +8,16 @@ namespace FairShare.Application.Services;
 
 public class AnalyticsService : IAnalyticsService
 {
-    /// <summary>Горња граница тачака на мапи, да одговор не порасте неограничено.</summary>
+    /// <summary>Upper limit of map points, so the response cannot grow without bound.</summary>
     private const int MaxMapPoints = 500;
 
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public AnalyticsService(IUnitOfWork unitOfWork)
+    public AnalyticsService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     public async Task<SpendingAnalyticsResponse> GetSpendingAnalyticsAsync(
@@ -28,7 +31,7 @@ public class AnalyticsService : IAnalyticsService
         var previous = AnalyticsPeriodResolver.GetPreviousRange(range);
         var granularity = AnalyticsPeriodResolver.GetGranularity(range);
 
-        // Све агрегације се раде у бази; у меморију долази највише по један ред по дану/категорији.
+        // All aggregation happens in the database; at most one row per day/category comes back.
         var daily = await _unitOfWork.Expenses.GetDailyTotalsAsync(
             currentUserId, range.From, range.ToExclusive, cancellationToken);
         var categories = await _unitOfWork.Expenses.GetTotalsByCategoryAsync(
@@ -40,6 +43,7 @@ public class AnalyticsService : IAnalyticsService
         var previousTotal = previousCategories.Sum(c => c.Total);
         var previousByCategory = previousCategories.ToDictionary(c => c.CategoryId, c => c.Total);
 
+        // The response consists of calculated values, so it is built by hand rather than mapped.
         return new SpendingAnalyticsResponse
         {
             From = range.From,
@@ -81,22 +85,12 @@ public class AnalyticsService : IAnalyticsService
         var locations = await _unitOfWork.Expenses.GetLocationsAsync(
             currentUserId, range.From, range.ToExclusive, MaxMapPoints, cancellationToken);
 
-        return locations.Select(l => new ExpenseLocationResponse
-        {
-            ExpenseId = l.Id,
-            Amount = l.Amount,
-            Currency = l.Currency,
-            Date = l.Date,
-            Description = l.Description,
-            CategoryName = l.CategoryName,
-            Latitude = l.Latitude,
-            Longitude = l.Longitude
-        }).ToList();
+        return _mapper.Map<List<ExpenseLocationResponse>>(locations);
     }
 
     /// <summary>
-    /// Од дневних сума прави низ тачака у изабраној грануларности. Празни дани/седмице/мјесеци
-    /// добијају 0, да график буде непрекидан. Прва и посљедња кантица се сијеку са границама периода.
+    /// Turns daily totals into chart points at the chosen granularity. Empty days/weeks/months
+    /// get 0 so the chart is continuous; the first and last bucket are clipped to the period.
     /// </summary>
     private static List<SpendingTimePoint> BuildTimeline(
         IReadOnlyList<DailySpendingTotal> daily,
