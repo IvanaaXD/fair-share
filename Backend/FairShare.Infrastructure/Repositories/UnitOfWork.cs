@@ -3,7 +3,7 @@ using FairShare.Infrastructure.Data;
 
 namespace FairShare.Infrastructure.Repositories;
 
-public class UnitOfWork : IUnitOfWork, IDisposable
+public class UnitOfWork : IUnitOfWork
 {
     private readonly FairShareDbContext _context;
 
@@ -11,6 +11,8 @@ public class UnitOfWork : IUnitOfWork, IDisposable
     {
         _context = context;
 
+        // Every repository works on the same DbContext, so one SaveChangesAsync call
+        // saves the changes of all of them in a single transaction.
         Users = new UserRepository(context);
         Categories = new CategoryRepository(context);
         Expenses = new ExpenseRepository(context);
@@ -26,6 +28,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable
         Payments = new PaymentRepository(context);
         Notifications = new NotificationRepository(context);
         AuditLogs = new AuditLogRepository(context);
+        UserTokens = new UserTokenRepository(context);
     }
 
     public IUserRepository Users { get; }
@@ -43,9 +46,8 @@ public class UnitOfWork : IUnitOfWork, IDisposable
     public IPaymentRepository Payments { get; }
     public INotificationRepository Notifications { get; }
     public IAuditLogRepository AuditLogs { get; }
+    public IUserTokenRepository UserTokens { get; }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => _context.SaveChangesAsync(cancellationToken);
-
-    public void Dispose() => _context.Dispose();
 }

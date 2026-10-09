@@ -1,9 +1,9 @@
 using AutoMapper;
 using FairShare.Application.Abstractions;
+using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Users;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Interfaces;
-using TimeSheet.Application.Common.Exceptions;
 
 namespace FairShare.Application.Services;
 

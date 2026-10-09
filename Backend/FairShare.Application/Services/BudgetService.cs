@@ -5,7 +5,6 @@ using FairShare.Application.DTOs.Budgets;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
 using FairShare.Domain.Interfaces;
-using TimeSheet.Application.Common.Exceptions;
 
 namespace FairShare.Application.Services;
 

@@ -1,5 +1,5 @@
 using FairShare.Application.DTOs.Analytics;
-using TimeSheet.Application.Common.Exceptions;
+using FairShare.Application.Common.Exceptions;
 
 namespace FairShare.Application.Services;
 

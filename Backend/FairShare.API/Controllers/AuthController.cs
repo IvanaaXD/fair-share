@@ -1,11 +1,19 @@
 using FairShare.Application.Abstractions;
 using FairShare.Application.DTOs.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FairShare.API.Controllers
 {
+    /// <summary>
+    /// Everything a user does before (or without) being signed in. Failures are thrown as
+    /// exceptions by IdentityService and converted to status codes by ExceptionHandlingMiddleware:
+    /// 400 invalid/expired link, 401 wrong credentials or session, 403 blocked or inactive account,
+    /// 409 e-mail already registered.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [AllowAnonymous]
     public class AuthController : ControllerBase
     {
         private readonly IIdentityService _identityService;
@@ -15,23 +23,67 @@ namespace FairShare.API.Controllers
             _identityService = identityService;
         }
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        /// <summary>Creates an inactive account and sends the activation link by e-mail.</summary>
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
         {
-            var result = await _identityService.LoginAsync(request);
+            await _identityService.RegisterAsync(request, cancellationToken);
+            return Ok(new { message = "Налог је креиран. Линк за активацију је послат на вашу e-mail адресу." });
+        }
 
-            if (result.StatusCode == 401)
-            {
-                return Unauthorized(new { message = "Incorrect credentials." });
-            }
-            else if (result.StatusCode == 404)
-            {
-                return NotFound(new { message = "Username does not exist." });
-            }
-            else
-            {
-                return Ok(result);
-            }
+        /// <summary>Activates the account using the token from the activation link.</summary>
+        [HttpPost("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request, CancellationToken cancellationToken)
+        {
+            await _identityService.ConfirmEmailAsync(request, cancellationToken);
+            return Ok(new { message = "Налог је активиран. Сада се можете пријавити." });
+        }
+
+        /// <summary>Sends a new activation link. The answer is the same whether or not the address is registered.</summary>
+        [HttpPost("resend-confirmation")]
+        public async Task<IActionResult> ResendConfirmation([FromBody] EmailRequest request, CancellationToken cancellationToken)
+        {
+            await _identityService.ResendConfirmationAsync(request, cancellationToken);
+            return Ok(new { message = "Ако налог са овом адресом чека активацију, послат је нови линк." });
+        }
+
+        [HttpPost("login")]
+        public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _identityService.LoginAsync(request, cancellationToken);
+            return Ok(result);
+        }
+
+        /// <summary>Exchanges a refresh token for a new access token and a new refresh token.</summary>
+        [HttpPost("refresh")]
+        public async Task<ActionResult<AuthResponse>> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _identityService.RefreshAsync(request, cancellationToken);
+            return Ok(result);
+        }
+
+        /// <summary>Revokes the refresh token. The access token simply expires on its own.</summary>
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        {
+            await _identityService.LogoutAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        /// <summary>Sends a password reset link. The answer is the same whether or not the address is registered.</summary>
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] EmailRequest request, CancellationToken cancellationToken)
+        {
+            await _identityService.ForgotPasswordAsync(request, cancellationToken);
+            return Ok(new { message = "Ако налог са овом адресом постоји, послат је линк за промјену лозинке." });
+        }
+
+        /// <summary>Sets a new password using the token from the reset link.</summary>
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+        {
+            await _identityService.ResetPasswordAsync(request, cancellationToken);
+            return Ok(new { message = "Лозинка је промијењена. Пријавите се новом лозинком." });
         }
     }
 }
