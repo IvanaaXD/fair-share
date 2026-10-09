@@ -1,9 +1,8 @@
 namespace FairShare.Domain.Interfaces;
 
 /// <summary>
-/// Обједињује све репозиторијуме и обезбјеђује атомарно чување измјена у оквиру
-/// једне трансакције (нпр. истовремена измјена трошка, подјеле и салда групе -
-/// функционалност 5.6).
+/// Groups all repositories and saves their changes atomically in one transaction
+/// (e.g. a group expense, its splits and the removal of outdated settlement suggestions).
 /// </summary>
 public interface IUnitOfWork
 {
@@ -23,6 +22,9 @@ public interface IUnitOfWork
     INotificationRepository Notifications { get; }
     IAuditLogRepository AuditLogs { get; }
 
-    /// <summary>Чува све измјене унутар текуће трансакције и враћа број измијењених записа.</summary>
+    // NEW: activation, password reset and refresh tokens
+    IUserTokenRepository UserTokens { get; }
+
+    /// <summary>Saves all pending changes in one transaction and returns the number of affected rows.</summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

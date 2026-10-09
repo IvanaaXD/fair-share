@@ -15,6 +15,9 @@ namespace FairShare.WebAPI.Extensions
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<IIdentityService, IdentityService>();
 
+            // NEW: token lifetimes and the web application address used in e-mail links.
+            services.Configure<AuthSettings>(config.GetSection("AuthSettings"));
+
             var jwtSettings = config.GetSection("JwtSettings");
             var secretKey = jwtSettings["Secret"];
 

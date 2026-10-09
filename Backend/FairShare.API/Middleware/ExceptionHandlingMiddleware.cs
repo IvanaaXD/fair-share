@@ -3,7 +3,6 @@ using FairShare.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TimeSheet.Application.Common.Exceptions;
 using ValidationException = FluentValidation.ValidationException;
 
 namespace FairShare.API.Middleware

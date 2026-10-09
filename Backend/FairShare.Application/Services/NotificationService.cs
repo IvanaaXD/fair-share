@@ -6,7 +6,6 @@ using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
 using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
-using TimeSheet.Application.Common.Exceptions;
 
 namespace FairShare.Application.Services;
 

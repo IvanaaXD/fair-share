@@ -1,11 +1,11 @@
 using FairShare.Application.Abstractions;
+using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Qr;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
 using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
 using FairShare.Domain.Services;
-using TimeSheet.Application.Common.Exceptions;
 
 namespace FairShare.Application.Services;
 
