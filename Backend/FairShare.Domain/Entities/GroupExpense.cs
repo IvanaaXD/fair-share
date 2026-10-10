@@ -15,6 +15,8 @@ public class GroupExpense : BaseEntity
 
     public decimal Amount { get; set; }
     public string? Description { get; set; }
+    // Address of the receipt photo; set only by ReceiptService after an upload.
+    public string? ReceiptImageUrl { get; set; }
     public DateTime Date { get; set; }
     public SplitType SplitType { get; set; }
 
