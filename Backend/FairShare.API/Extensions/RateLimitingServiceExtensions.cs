@@ -66,8 +66,8 @@ namespace FairShare.WebAPI.Extensions
                     var problem = new ProblemDetails
                     {
                         Status = StatusCodes.Status429TooManyRequests,
-                        Title = "Превише захтјева.",
-                        Detail = "Послали сте превише захтјева у кратком времену. Покушајте поново за минут.",
+                        Title = "Too many requests.",
+                        Detail = "You have sent too many requests in a short time. Please try again in a minute.",
                         Instance = context.HttpContext.Request.Path
                     };
 

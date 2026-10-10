@@ -20,7 +20,7 @@ public class AdminController : ControllerBase
         _auditLogService = auditLogService;
     }
 
-    /// <summary>Статистика система: укупно стање и нови записи кроз вријеме. Примјер: ?period=Last3Months</summary>
+    /// <summary>System statistics: overall status and new records over time. Example: ?period=Last3Months</summary>
     [HttpGet("statistics")]
     public async Task<ActionResult<AdminStatisticsResponse>> GetStatistics(
         [FromQuery] AnalyticsPeriod period = AnalyticsPeriod.LastMonth,
@@ -32,7 +32,7 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Претрага ревизионог дневника, најновији записи први.</summary>
+    /// <summary>Audit log search, newest records first.</summary>
     [HttpGet("audit-logs")]
     public async Task<ActionResult<IReadOnlyList<AuditLogResponse>>> GetAuditLogs(
         [FromQuery] Guid? userId,

@@ -46,7 +46,7 @@ namespace FairShare.Api.Filters
                 var problem = new ValidationProblemDetails(errors.ToDictionary(e => e.Key, e => e.Value.ToArray()))
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    Title = "Подаци у захтјеву нису исправни."
+                    Title = "The request data is invalid."
                 };
 
                 context.Result = new BadRequestObjectResult(problem);

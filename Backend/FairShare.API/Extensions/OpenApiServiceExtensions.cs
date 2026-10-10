@@ -17,7 +17,7 @@ namespace FairShare.WebAPI.Extensions
                     document.Info.Title = "FairShare API";
                     document.Info.Version = "v1";
                     document.Info.Description =
-                        "REST API за праћење личних трошкова, дијељење групних трошкова и поравнање дугова.";
+                        "REST API for tracking personal expenses, sharing group expenses, and settling debts.";
                     return Task.CompletedTask;
                 });
 

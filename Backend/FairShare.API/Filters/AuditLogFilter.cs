@@ -5,14 +5,13 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.Logging;
 
 namespace FairShare.Api.Filters;
 
 /// <summary>
-/// Глобални филтер који аутоматски биљежи сваку УСПЈЕШНУ (2xx) POST/PUT/PATCH/DELETE акцију
-/// улогованог корисника у ревизиони дневник (функционалност 5.11). Сервисе није потребно
-/// мијењати - нова акција у било ком контролеру се аутоматски прати.
+/// A global filter that automatically logs every SUCCESSFUL (2xx) POST/PUT/PATCH/DELETE action
+/// of the logged-in user into the audit log (feature 5.11). Services do not need to be
+/// changed - a new action in any controller is automatically tracked.
 /// </summary>
 public class AuditLogFilter : IAsyncActionFilter
 {
@@ -43,7 +42,7 @@ public class AuditLogFilter : IAsyncActionFilter
             return;
 
         if (!Guid.TryParse(http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
-            return; // анонимни захтјеви (нпр. пријава) се биљеже на другом мјесту
+            return; // anonymous requests (e.g., login) are logged elsewhere
 
         var statusCode = executed.Result is IStatusCodeActionResult { StatusCode: { } code }
             ? code
@@ -61,14 +60,14 @@ public class AuditLogFilter : IAsyncActionFilter
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // Неуспјешан упис у дневник не смије оборити захтјев који је већ успио.
-            _logger.LogError(ex, "Упис у ревизиони дневник није успио за акцију {Action}.", action);
+            // A failed write to the log must not crash a request that has already succeeded.
+            _logger.LogError(ex, "Writing to the audit log failed for action {Action}.", action);
         }
     }
 
     /// <summary>
-    /// ID ентитета: прво из одговора (нпр. новокреирани трошак има Id), иначе посљедњи
-    /// Guid параметар из руте (нпр. userId код блокирања).
+    /// Entity ID: first from the response (e.g., a newly created expense has an Id), otherwise the last
+    /// Guid parameter from the route (e.g., userId when blocking).
     /// </summary>
     private static Guid? ResolveEntityId(ActionExecutingContext context, ActionExecutedContext executed)
     {

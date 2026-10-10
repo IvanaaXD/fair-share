@@ -12,7 +12,7 @@ namespace FairShare.Api.Controllers;
 /// expenses, so the list is simply GET /api/expenses (no "mine" needed).
 /// </summary>
 [ApiController]
-[Route("api/expenses")] // CHANGED from api/[controller] (= api/Expense), matching api/expenses/{id}/receipt
+[Route("api/expenses")]
 [Authorize]
 public class ExpenseController : ControllerBase
 {
