@@ -1,0 +1,16 @@
+# Keeps build output, IDE files and local secrets out of the image build context.
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/TestResults/
+**/uploads/
+**/appsettings.Development.json
+**/admin-initial-password.txt
+.git/
+.gitignore
+Dockerfile
+.dockerignore
