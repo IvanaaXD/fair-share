@@ -1,4 +1,6 @@
 using AutoMapper;
+using FairShare.Application.Abstractions;
+using FairShare.Application.Common.Caching;
 using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Categories;
 using FairShare.Application.Interfaces;
@@ -12,14 +14,27 @@ public class CategoryService : ICategoryService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ICacheService _cache; // NEW
 
-    public CategoryService(IUnitOfWork unitOfWork, IMapper mapper)
+    public CategoryService(IUnitOfWork unitOfWork, IMapper mapper, ICacheService cache)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _cache = cache;
     }
 
+    // CHANGED: cached. The list is the same for every user, is loaded on almost every screen
+    // (expense forms, filters, budgets) and changes rarely. When a category is created, renamed
+    // or deleted, CacheInvalidationInterceptor drops the cached list automatically.
     public async Task<IReadOnlyList<CategoryResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+        => await _cache.GetOrCreateAsync(
+            CacheKeys.AllCategories,
+            LoadAllAsync,
+            CacheDurations.Categories,
+            new[] { CacheTags.Categories },
+            cancellationToken);
+
+    private async Task<List<CategoryResponse>> LoadAllAsync(CancellationToken cancellationToken)
     {
         var categories = await _unitOfWork.Categories.GetAllAsync(cancellationToken);
 

@@ -1,11 +1,13 @@
 ﻿using FairShare.Api.Filters;
 using FairShare.API.Middleware;
+using FairShare.Infrastructure.Caching;
 using FairShare.Infrastructure.Data;
 using FairShare.Infrastructure.Seed;
 using FairShare.Infrastructure.Storage;
 using FairShare.WebAPI.Extensions;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,7 +49,11 @@ builder.Services.AddFileStorage(builder.Configuration, builder.Environment);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<FairShareDbContext>((serviceProvider, options) =>
     options.UseNpgsql(connectionString)
-        .AddInterceptors(serviceProvider.GetRequiredService<FileCleanupInterceptor>()));
+        .AddInterceptors(
+            // Deletes the stored files of deleted expenses, groups and users after SaveChanges.
+            serviceProvider.GetRequiredService<FileCleanupInterceptor>(),
+            // NEW: drops cache entries built from data that SaveChanges has just changed.
+            serviceProvider.GetRequiredService<CacheInvalidationInterceptor>()));
 
 // ---------- JWT, authorization, current user, password hashing ----------
 builder.Services.AddIdentityServices(builder.Configuration);
