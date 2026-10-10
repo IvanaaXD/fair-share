@@ -2,6 +2,7 @@ using System.Text;
 using FairShare.Application.Abstractions;
 using FairShare.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 
 namespace FairShare.WebAPI.Extensions
@@ -15,7 +16,7 @@ namespace FairShare.WebAPI.Extensions
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<IIdentityService, IdentityService>();
 
-            // NEW: token lifetimes and the web application address used in e-mail links.
+            // Token lifetimes and the web application address used in e-mail links.
             services.Configure<AuthSettings>(config.GetSection("AuthSettings"));
 
             var jwtSettings = config.GetSection("JwtSettings");
@@ -39,6 +40,16 @@ namespace FairShare.WebAPI.Extensions
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };
+            });
+
+            // NEW: "secure by default". Every endpoint requires a signed-in user unless it is
+            // explicitly marked [AllowAnonymous]. The [Authorize] attributes on the controllers stay
+            // as documentation, but a controller where it is forgotten is still protected.
+            services.AddAuthorization(options =>
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
             });
 
             return services;
