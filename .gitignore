@@ -16,6 +16,7 @@ android/
 .vs/
 *.db
 *.sqlite
+**/uploads/
 
 # Node / React
 node_modules/

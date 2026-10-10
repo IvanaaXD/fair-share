@@ -15,6 +15,10 @@ namespace FairShare.Infrastructure.Data.Configurations
             builder.Property(ge => ge.Description)
                     .HasMaxLength(500);
 
+            // NEW: address of the receipt photo (set by ReceiptService after an upload).
+            builder.Property(ge => ge.ReceiptImageUrl)
+                    .HasMaxLength(500);
+
             builder.Property(ge => ge.Date)
                     .IsRequired();
 

@@ -20,9 +20,8 @@ namespace FairShare.Application.Validators
                 .MaximumLength(ValidationRules.MaxDescriptionLength)
                 .WithMessage($"Опис може имати највише {ValidationRules.MaxDescriptionLength} карактера.");
 
-            RuleFor(x => x.ReceiptImageUrl)
-                .MaximumLength(ValidationRules.MaxUrlLength)
-                .WithMessage("Адреса слике рачуна је предугачка.");
+            // ReceiptImageUrl is no longer part of the request: the receipt is uploaded separately
+            // (PUT /api/expenses/{id}/receipt) and the address is set by the server.
 
             RuleFor(x => x.Latitude)
                 .InclusiveBetween(-90.0, 90.0).WithMessage("Географска ширина мора бити између -90 и 90.")

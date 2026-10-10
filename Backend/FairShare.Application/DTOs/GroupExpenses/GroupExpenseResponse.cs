@@ -12,6 +12,7 @@ public class GroupExpenseResponse
     public string PaidByName { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public string? Description { get; set; }
+    public string? ReceiptImageUrl { get; set; }
     public DateTime Date { get; set; }
     public SplitType SplitType { get; set; }
     public List<ExpenseSplitResponse> Splits { get; set; } = new();
