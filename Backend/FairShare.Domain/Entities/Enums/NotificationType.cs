@@ -10,7 +10,10 @@ public enum NotificationType
     SettlementSuggested,
     SettlementCompleted,
 
-    // NEW: removed from a group, or became the group owner. Added at the end so the numeric
+    // Removed from a group, or became the group owner. Added at the end so the numeric
     // values already stored in the database do not shift.
-    GroupMembershipChanged
+    GroupMembershipChanged,
+
+    // NEW: a copy of a recurring expense was added automatically. Also at the end.
+    RecurringExpenseCreated
 }

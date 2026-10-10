@@ -2,6 +2,7 @@
 using FairShare.API.Middleware;
 using FairShare.Infrastructure.Data;
 using FairShare.Infrastructure.Seed;
+using FairShare.Infrastructure.Storage;
 using FairShare.WebAPI.Extensions;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -39,10 +40,14 @@ if (behindReverseProxy)
     });
 }
 
+// ---------- uploaded files (profile images, receipts) ----------
+builder.Services.AddFileStorage(builder.Configuration, builder.Environment);
+
 // ---------- database ----------
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<FairShareDbContext>(options =>
-    options.UseNpgsql(connectionString));
+builder.Services.AddDbContext<FairShareDbContext>((serviceProvider, options) =>
+    options.UseNpgsql(connectionString)
+        .AddInterceptors(serviceProvider.GetRequiredService<FileCleanupInterceptor>()));
 
 // ---------- JWT, authorization, current user, password hashing ----------
 builder.Services.AddIdentityServices(builder.Configuration);
@@ -52,6 +57,8 @@ builder.Services.AddRepositoryServices();
 
 // ---------- services, AutoMapper, FluentValidation, e-mail ----------
 builder.Services.AddApplicationServices(builder.Configuration);
+
+builder.Services.AddRecurringExpenses();
 
 var app = builder.Build();
 if (behindReverseProxy)

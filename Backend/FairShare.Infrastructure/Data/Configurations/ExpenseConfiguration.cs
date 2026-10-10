@@ -29,6 +29,9 @@ namespace FairShare.Infrastructure.Data.Configurations
             // Expense list, budgets and analytics all filter by user and date range.
             builder.HasIndex(e => new { e.UserId, e.Date });
 
+            // NEW: the background job looks up recurring expenses whose next copy is due.
+            builder.HasIndex(e => new { e.IsRecurring, e.NextOccurrenceDate });
+
             // An expense belongs to its user - deleting the user deletes their expenses.
             builder.HasOne(e => e.User)
                     .WithMany(u => u.Expenses)
