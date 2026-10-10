@@ -1,3 +1,4 @@
+using FairShare.Application.DTOs.Common;
 using FairShare.Application.DTOs.Expenses;
 
 namespace FairShare.Application.Interfaces;
@@ -17,11 +18,12 @@ public interface IExpenseService
 
     Task DeleteAsync(Guid expenseId, Guid currentUserId, CancellationToken cancellationToken = default);
 
-    /// <summary>Претрага и филтрирање личних трошкова тренутног корисника (функционалност 5.3).</summary>
-    Task<IReadOnlyList<ExpenseResponse>> GetMyExpensesAsync(
+    /// <summary>NEW: one expense of the current user.</summary>
+    Task<ExpenseResponse> GetByIdAsync(Guid expenseId, Guid currentUserId, CancellationToken cancellationToken = default);
+
+    /// <summary>CHANGED: search, filtering, sorting and paging of the current user's expenses (5.3).</summary>
+    Task<PagedResponse<ExpenseResponse>> GetMyExpensesAsync(
         Guid currentUserId,
-        DateTime? from = null,
-        DateTime? to = null,
-        Guid? categoryId = null,
+        ExpenseQueryParameters query,
         CancellationToken cancellationToken = default);
 }

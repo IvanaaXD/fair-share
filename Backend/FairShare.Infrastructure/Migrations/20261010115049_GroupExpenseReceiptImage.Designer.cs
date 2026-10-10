@@ -3,6 +3,7 @@ using System;
 using FairShare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FairShare.Infrastructure.Migrations
 {
     [DbContext(typeof(FairShareDbContext))]
-    partial class FairShareDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261010115049_GroupExpenseReceiptImage")]
+    partial class GroupExpenseReceiptImage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -171,9 +174,6 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<double?>("Longitude")
                         .HasColumnType("double precision");
-
-                    b.Property<DateTime?>("NextOccurrenceDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ReceiptImageUrl")
                         .HasColumnType("text");
