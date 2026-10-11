@@ -13,10 +13,10 @@ public interface IExpenseRepository : IRepository<Expense>
         Guid? categoryId = null,
         CancellationToken cancellationToken = default);
 
-    /// <summary>NEW: search, filtering, sorting and paging of a user's expenses (with category).</summary>
+    /// <summary>Search, filtering, sorting and paging of a user's expenses (with category).</summary>
     Task<PagedResult<Expense>> GetPagedByUserAsync(ExpenseFilter filter, CancellationToken cancellationToken = default);
 
-    /// <summary>NEW: one expense with its category, not tracked (for reading only).</summary>
+    /// <summary>One expense with its category, not tracked (for reading only).</summary>
     Task<Expense?> GetWithCategoryAsync(Guid expenseId, CancellationToken cancellationToken = default);
 
     /// <summary>Spending of a user in a category within a period (budget thresholds).</summary>
@@ -28,7 +28,7 @@ public interface IExpenseRepository : IRepository<Expense>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// CHANGED: ids of recurring expenses whose next copy is due (or not scheduled yet).
+    /// Ids of recurring expenses whose next copy is due (or not scheduled yet).
     /// Only ids - each expense is then processed in its own scope by the background job.
     /// </summary>
     Task<IReadOnlyList<Guid>> GetRecurringDueIdsAsync(DateTime asOf, CancellationToken cancellationToken = default);

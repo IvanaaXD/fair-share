@@ -8,6 +8,6 @@ public interface ICategoryRepository : IRepository<Category>
 
     Task<Category?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
 
-    // НОВО: провјерава да ли се категорија користи у трошковима или буџетима, прије брисања.
+    // Checks if the category is used in expenses or budgets before deletion.
     Task<bool> IsInUseAsync(Guid categoryId, CancellationToken cancellationToken = default);
 }

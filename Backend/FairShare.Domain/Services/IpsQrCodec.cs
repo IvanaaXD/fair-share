@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace FairShare.Domain.Services;
 
-/// <summary>Подаци садржани у QR коду за уплату.</summary>
+/// <summary>Data contained in the payment QR code.</summary>
 public record IpsQrPayload(
     string RecipientAccount,
     string RecipientName,
@@ -17,12 +17,12 @@ public record IpsQrPayload(
 public record IpsQrParseResult(bool IsValid, IpsQrPayload? Payload, IReadOnlyList<string> Errors);
 
 /// <summary>
-/// Генерисање и парсирање текста QR кода за уплату (функционалност 5.8), по узору на
-/// IPS QR стандард Народне банке Србије: поља облика ОЗНАКА:вриједност раздвојена знаком "|".
+/// Generation and parsing of the payment QR code text (feature 5.8), modeled after the
+/// IPS QR standard of the National Bank of Serbia: fields in the format TAG:value separated by the "|" character.
 ///
-/// Поједностављења у односу на прави стандард (наводе се у раду):
-/// - рачун се прихвата са 16 цифара (BiH) или 18 цифара (Србија), без контроле контролног броја;
-/// - позив на број (RO) је интерни идентификатор поравнања, без модела и контролних цифара.
+/// Simplifications compared to the real standard (mentioned in the thesis):
+/// - account is accepted with 16 digits (BiH) or 18 digits (Serbia), without checksum validation;
+/// - reference number (RO) is an internal settlement identifier, without model and control digits.
 /// </summary>
 public static class IpsQrCodec
 {
@@ -34,7 +34,7 @@ public static class IpsQrCodec
     private static readonly Regex AmountRegex = new(@"^([A-Z]{3})(\d{1,15})(,\d{1,2})?$", RegexOptions.Compiled);
     private static readonly Regex PaymentCodeRegex = new(@"^\d{3}$", RegexOptions.Compiled);
 
-    /// <summary>Уклања размаке и цртице из броја рачуна ("161-0000012345678-90" -> "161000001234567890").</summary>
+    /// <summary>Removes spaces and dashes from the account number ("161-0000012345678-90" -> "161000001234567890").</summary>
     public static string NormalizeAccount(string account)
         => new(account.Where(char.IsDigit).ToArray());
 
@@ -68,7 +68,7 @@ public static class IpsQrCodec
         var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(text))
-            return Fail("QR код је празан.");
+            return Fail("QR code is empty.");
 
         var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var part in text.Trim().Split('|'))
@@ -76,7 +76,7 @@ public static class IpsQrCodec
             var separator = part.IndexOf(':');
             if (separator <= 0)
             {
-                errors.Add($"Неисправно поље '{part}' (очекиван облик ОЗНАКА:вриједност).");
+                errors.Add($"Invalid field '{part}' (expected format TAG:value).");
                 continue;
             }
 
@@ -84,7 +84,7 @@ public static class IpsQrCodec
             var value = part[(separator + 1)..].Trim();
 
             if (!fields.TryAdd(tag, value))
-                errors.Add($"Поље '{tag}' се појављује више пута.");
+                errors.Add($"Field '{tag}' appears multiple times.");
         }
 
         RequireEquals(fields, "K", "PR", errors);
@@ -93,13 +93,13 @@ public static class IpsQrCodec
 
         var account = fields.GetValueOrDefault("R");
         if (!IsValidAccount(account))
-            errors.Add("Рачун примаоца (R) мора имати 16 или 18 цифара.");
+            errors.Add("Recipient account (R) must have 16 or 18 digits.");
 
         var name = fields.GetValueOrDefault("N");
         if (string.IsNullOrWhiteSpace(name))
-            errors.Add("Назив примаоца (N) је обавезан.");
+            errors.Add("Recipient name (N) is required.");
         else if (name.Length > MaxNameLength)
-            errors.Add($"Назив примаоца (N) може имати највише {MaxNameLength} карактера.");
+            errors.Add($"Recipient name (N) can have at most {MaxNameLength} characters.");
 
         string currency = string.Empty;
         decimal amount = 0;
@@ -107,7 +107,7 @@ public static class IpsQrCodec
         var amountMatch = amountField is null ? null : AmountRegex.Match(amountField);
         if (amountMatch is null || !amountMatch.Success)
         {
-            errors.Add("Износ (I) мора бити у облику ВАЛУТАизнос, нпр. BAM12,50.");
+            errors.Add("Amount (I) must be in the format CURRENCYamount, e.g., BAM12,50.");
         }
         else
         {
@@ -115,20 +115,20 @@ public static class IpsQrCodec
             var number = amountMatch.Groups[2].Value + amountMatch.Groups[3].Value.Replace(',', '.');
             amount = decimal.Parse(number, CultureInfo.InvariantCulture);
             if (amount <= 0)
-                errors.Add("Износ (I) мора бити већи од нуле.");
+                errors.Add("Amount (I) must be greater than zero.");
         }
 
         var paymentCode = fields.GetValueOrDefault("SF");
         if (paymentCode is not null && !PaymentCodeRegex.IsMatch(paymentCode))
-            errors.Add("Шифра плаћања (SF) мора имати тачно 3 цифре.");
+            errors.Add("Payment code (SF) must have exactly 3 digits.");
 
         var purpose = fields.GetValueOrDefault("S");
         if (purpose is not null && purpose.Length > MaxPurposeLength)
-            errors.Add($"Сврха плаћања (S) може имати највише {MaxPurposeLength} карактера.");
+            errors.Add($"Payment purpose (S) can have at most {MaxPurposeLength} characters.");
 
         var reference = fields.GetValueOrDefault("RO");
         if (reference is not null && reference.Length > MaxReferenceLength)
-            errors.Add($"Позив на број (RO) може имати највише {MaxReferenceLength} карактера.");
+            errors.Add($"Reference number (RO) can have at most {MaxReferenceLength} characters.");
 
         if (errors.Count > 0)
             return new IpsQrParseResult(false, null, errors);
@@ -144,14 +144,14 @@ public static class IpsQrCodec
     private static void RequireEquals(Dictionary<string, string> fields, string tag, string expected, List<string> errors)
     {
         if (!fields.TryGetValue(tag, out var value) || value != expected)
-            errors.Add($"Поље {tag} мора имати вриједност '{expected}'.");
+            errors.Add($"Field {tag} must have the value '{expected}'.");
     }
 
-    /// <summary>Износ са два децимала и запетом: 12.5 -> "12,50".</summary>
+    /// <summary>Amount with two decimal places and a comma: 12.5 -> "12,50".</summary>
     private static string FormatAmount(decimal amount)
         => amount.ToString("0.00", CultureInfo.InvariantCulture).Replace('.', ',');
 
-    /// <summary>Уклања знак "|" (резервисан као раздвајач) и скраћује на дозвољену дужину.</summary>
+    /// <summary>Removes the "|" character (reserved as a separator) and truncates to the allowed length.</summary>
     private static string Clean(string value, int maxLength)
     {
         var cleaned = new StringBuilder(value.Trim()).Replace("|", " ").ToString();

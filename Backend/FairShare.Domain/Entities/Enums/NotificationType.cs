@@ -14,6 +14,6 @@ public enum NotificationType
     // values already stored in the database do not shift.
     GroupMembershipChanged,
 
-    // NEW: a copy of a recurring expense was added automatically. Also at the end.
+    // a copy of a recurring expense was added automatically. Also at the end.
     RecurringExpenseCreated
 }

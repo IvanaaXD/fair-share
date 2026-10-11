@@ -11,7 +11,7 @@ public interface ISettlementTransactionRepository : IRepository<SettlementTransa
         SettlementStatus? status = null,
         CancellationToken cancellationToken = default);
 
-    // NEW: tracked transactions WITHOUT related entities - for deleting them. Entities from the
+    // Tracked transactions WITHOUT related entities - for deleting them. Entities from the
     // read-only list above must not be passed to Remove(): they carry their own copies of the
     // users, which clash with users the DbContext already tracks.
     Task<IReadOnlyList<SettlementTransaction>> GetForUpdateByGroupAsync(

@@ -3,12 +3,12 @@ using FairShare.Domain.Entities.Enums;
 
 namespace FairShare.Domain.Services;
 
-/// <summary>Улазни податак за једног учесника подјеле - amount/percentage су попуњени само за одговарајући SplitType.</summary>
+/// <summary>Input data for a single split participant - amount/percentage are populated only for the corresponding SplitType.</summary>
 public record SplitParticipantInput(Guid UserId, decimal? Amount = null, double? Percentage = null);
 
 /// <summary>
-/// Чиста доменска логика за подјелу групног трошка (функционалност 5.6). Не зависи
-/// ни од базе ни од апликационог слоја - само рачуна и враћа ExpenseSplit ентитете.
+/// Pure domain logic for splitting a group expense (feature 5.6). Does not depend
+/// on the database or application layer - only calculates and returns ExpenseSplit entities.
 /// </summary>
 public static class ExpenseSplitCalculator
 {
@@ -21,17 +21,17 @@ public static class ExpenseSplitCalculator
         IReadOnlyList<SplitParticipantInput> participants)
     {
         if (participants.Count < 2)
-            throw new InvalidOperationException("Групни трошак мора имати најмање два учесника.");
+            throw new InvalidOperationException("A group expense must have at least two participants.");
 
         if (totalAmount <= 0)
-            throw new InvalidOperationException("Износ трошка мора бити већи од нуле.");
+            throw new InvalidOperationException("The expense amount must be greater than zero.");
 
         return splitType switch
         {
             SplitType.Equal => CalculateEqual(totalAmount, participants),
             SplitType.Percentage => CalculatePercentage(totalAmount, participants),
             SplitType.ExactAmount => CalculateExact(totalAmount, participants),
-            _ => throw new ArgumentOutOfRangeException(nameof(splitType), "Непозната врста подјеле трошка.")
+            _ => throw new ArgumentOutOfRangeException(nameof(splitType), "Unknown expense split type.")
         };
     }
 
@@ -46,7 +46,7 @@ public static class ExpenseSplitCalculator
             .Select(p => new ExpenseSplit { UserId = p.UserId, Amount = baseShare })
             .ToList();
 
-        // Остатак настао заокруживањем (нпр. 10 / 3 = 3.33...) додјељује се посљедњем учеснику
+        // The remainder caused by rounding (e.g., 10 / 3 = 3.33...) is assigned to the last participant
         var remainder = totalAmount - baseShare * count;
         if (remainder != 0)
             splits[^1].Amount += remainder;
@@ -59,11 +59,11 @@ public static class ExpenseSplitCalculator
         IReadOnlyList<SplitParticipantInput> participants)
     {
         if (participants.Any(p => p.Percentage is null or <= 0))
-            throw new InvalidOperationException("Сваки учесник мора имати проценат већи од нуле.");
+            throw new InvalidOperationException("Each participant must have a percentage greater than zero.");
 
         var totalPercentage = participants.Sum(p => p.Percentage!.Value);
         if (Math.Abs(totalPercentage - 100) > PercentageTolerance)
-            throw new InvalidOperationException($"Збир процената мора бити 100% (тренутно: {totalPercentage}%).");
+            throw new InvalidOperationException($"The sum of percentages must be 100% (currently: {totalPercentage}%).");
 
         var splits = participants
             .Select(p => new ExpenseSplit
@@ -86,12 +86,12 @@ public static class ExpenseSplitCalculator
         IReadOnlyList<SplitParticipantInput> participants)
     {
         if (participants.Any(p => p.Amount is null or <= 0))
-            throw new InvalidOperationException("Сваки учесник мора имати тачан износ већи од нуле.");
+            throw new InvalidOperationException("Each participant must have an exact amount greater than zero.");
 
         var sum = participants.Sum(p => p.Amount!.Value);
         if (Math.Abs(sum - totalAmount) > ExactAmountTolerance)
             throw new InvalidOperationException(
-                $"Збир тачних износа ({sum}) мора бити једнак укупном износу трошка ({totalAmount}).");
+                $"The sum of exact amounts ({sum}) must be equal to the total expense amount ({totalAmount}).");
 
         return participants
             .Select(p => new ExpenseSplit { UserId = p.UserId, Amount = p.Amount!.Value })

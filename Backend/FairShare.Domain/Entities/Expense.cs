@@ -22,7 +22,7 @@ public class Expense : BaseEntity
     public bool IsRecurring { get; set; }
     public RecurrenceInterval RecurrenceInterval { get; set; } = RecurrenceInterval.None;
 
-    // NEW: when the next automatic copy of this expense is due; null if it does not repeat.
+    // When the next automatic copy of this expense is due; null if it does not repeat.
     // A recurring expense works as a template: the background job creates ordinary
     // (non-recurring) copies of it, and this date moves forward after every copy.
     public DateTime? NextOccurrenceDate { get; set; }
