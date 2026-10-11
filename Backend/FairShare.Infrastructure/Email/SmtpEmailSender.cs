@@ -44,7 +44,7 @@ public class SmtpEmailSender : IEmailSender
             cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(_settings.Username))
-            await client.AuthenticateAsync(_settings.Username, _settings.Password, cancellationToken);
+            await client.AuthenticateAsync(_settings.Username, _settings.Password!, cancellationToken);
 
         await client.SendAsync(mime, cancellationToken);
         await client.DisconnectAsync(true, cancellationToken);

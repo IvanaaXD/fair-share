@@ -29,8 +29,6 @@ public class User : BaseEntity
     // before this feature (e.g. the seeded administrator) stay usable without a data migration.
     public bool MustConfirmEmail { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
     // Navigation properties
     public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
     public ICollection<Budget> Budgets { get; set; } = new List<Budget>();

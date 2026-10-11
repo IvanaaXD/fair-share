@@ -15,7 +15,6 @@ public class SettlementTransaction : BaseEntity
 
     public decimal Amount { get; set; }
     public SettlementStatus Status { get; set; } = SettlementStatus.Proposed;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Optimistic concurrency token. Npgsql maps it to PostgreSQL's built-in "xmin" system
     // column, which changes on every update of the row. If two requests try to settle (or

@@ -17,7 +17,6 @@ public class UserToken : BaseEntity
     /// <summary>SHA-256 hash (64 hex characters) of the secret that was sent to the user.</summary>
     public string TokenHash { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ExpiresAt { get; set; }
 
     /// <summary>Set when the token is used, replaced by a newer one, or revoked. A token is never reused.</summary>
