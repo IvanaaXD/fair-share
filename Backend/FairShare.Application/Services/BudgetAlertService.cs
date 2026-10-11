@@ -62,9 +62,9 @@ public class BudgetAlertService : IBudgetAlertService
                 await _notificationService.NotifyAsync(
                     userId,
                     NotificationType.BudgetExceeded,
-                    "Прекорачење буџета",
-                    $"Потрошња у категорији '{categoryName}' достигла је {label} мјесечног " +
-                    $"лимита од {budget.MonthlyLimit} {currency} за {month}.",
+                    "Budget exceeded",
+                    $"Spending in the '{categoryName}' category has reached {label} of the monthly " +
+                    $"limit of {budget.MonthlyLimit} {currency} for {month}.",
                     cancellationToken);
                 return;
             }

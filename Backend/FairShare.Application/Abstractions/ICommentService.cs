@@ -17,6 +17,6 @@ public interface ICommentService
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Само аутор коментара може да га обрише.</summary>
+    /// <summary>Only the author of the comment can delete it.</summary>
     Task DeleteAsync(Guid commentId, Guid currentUserId, CancellationToken cancellationToken = default);
 }

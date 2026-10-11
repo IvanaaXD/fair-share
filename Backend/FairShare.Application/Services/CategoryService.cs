@@ -23,7 +23,7 @@ public class CategoryService : ICategoryService
         _cache = cache;
     }
 
-    // CHANGED: cached. The list is the same for every user, is loaded on almost every screen
+    // The list is the same for every user, is loaded on almost every screen
     // (expense forms, filters, budgets) and changes rarely. When a category is created, renamed
     // or deleted, CacheInvalidationInterceptor drops the cached list automatically.
     public async Task<IReadOnlyList<CategoryResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -47,14 +47,14 @@ public class CategoryService : ICategoryService
     }
 
     public async Task<CategoryResponse> CreateAsync(
-        CreateCategoryRequest request,
-        Guid currentUserId,
-        CancellationToken cancellationToken = default)
+            CreateCategoryRequest request,
+            Guid currentUserId,
+            CancellationToken cancellationToken = default)
     {
         var name = request.Name.Trim();
 
         if (await _unitOfWork.Categories.GetByNameAsync(name, cancellationToken) is not null)
-            throw new ConflictException($"Категорија са називом '{name}' већ постоји.");
+            throw new ConflictException($"A category with the name '{name}' already exists.");
 
         var category = _mapper.Map<Category>(request);
         category.IsSystemDefined = false; // users can never create system categories
@@ -72,15 +72,15 @@ public class CategoryService : ICategoryService
         CancellationToken cancellationToken = default)
     {
         var category = await _unitOfWork.Categories.GetByIdAsync(categoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.");
+            ?? throw new NotFoundException("Category not found.");
 
         if (category.IsSystemDefined && !await IsAdminAsync(currentUserId, cancellationToken))
-            throw new ForbiddenException("Само администратор може мијењати системске категорије.");
+            throw new ForbiddenException("Only an administrator can modify system categories.");
 
         var name = request.Name.Trim();
         var existing = await _unitOfWork.Categories.GetByNameAsync(name, cancellationToken);
         if (existing is not null && existing.Id != categoryId)
-            throw new ConflictException($"Категорија са називом '{name}' већ постоји.");
+            throw new ConflictException($"A category with the name '{name}' already exists.");
 
         _mapper.Map(request, category);
 
@@ -93,13 +93,13 @@ public class CategoryService : ICategoryService
     public async Task DeleteAsync(Guid categoryId, Guid currentUserId, CancellationToken cancellationToken = default)
     {
         var category = await _unitOfWork.Categories.GetByIdAsync(categoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.");
+            ?? throw new NotFoundException("Category not found.");
 
         if (category.IsSystemDefined && !await IsAdminAsync(currentUserId, cancellationToken))
-            throw new ForbiddenException("Само администратор може брисати системске категорије.");
+            throw new ForbiddenException("Only an administrator can delete system categories.");
 
         if (await _unitOfWork.Categories.IsInUseAsync(categoryId, cancellationToken))
-            throw new ConflictException("Категорија се не може обрисати јер се користи у постојећим трошковима или буџетима.");
+            throw new ConflictException("The category cannot be deleted because it is used in existing expenses or budgets.");
 
         _unitOfWork.Categories.Remove(category);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

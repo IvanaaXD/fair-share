@@ -1,6 +1,6 @@
 namespace FairShare.Application.DTOs.GroupExpenses;
 
-/// <summary>Учесник подјеле - Amount/Percentage се попуњавају у зависности од SplitType-а захтјева.</summary>
+/// <summary>Split participant - Amount/Percentage are populated depending on the request's SplitType.</summary>
 public class SplitParticipantRequest
 {
     public Guid UserId { get; set; }

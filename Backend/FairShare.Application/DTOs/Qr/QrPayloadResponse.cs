@@ -1,6 +1,6 @@
 namespace FairShare.Application.DTOs.Qr;
 
-/// <summary>Текст QR кода и поља од којих је састављен (за приказ на frontend-у).</summary>
+/// <summary>QR code text and the fields it is composed of (for display on the frontend).</summary>
 public class QrPayloadResponse
 {
     public Guid SettlementTransactionId { get; set; }

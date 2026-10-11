@@ -14,39 +14,39 @@ namespace FairShare.Application.Validators
             RuleFor(x => x.Date).ValidExpenseDate();
 
             RuleFor(x => x.CategoryId)
-                .NotEmpty().WithMessage("Категорија мора бити изабрана.");
+                .NotEmpty().WithMessage("Category must be selected.");
 
             RuleFor(x => x.Description)
                 .MaximumLength(ValidationRules.MaxDescriptionLength)
-                .WithMessage($"Опис може имати највише {ValidationRules.MaxDescriptionLength} карактера.");
+                .WithMessage($"Description can have at most {ValidationRules.MaxDescriptionLength} characters.");
 
             // ReceiptImageUrl is no longer part of the request: the receipt is uploaded separately
             // (PUT /api/expenses/{id}/receipt) and the address is set by the server.
 
             RuleFor(x => x.Latitude)
-                .InclusiveBetween(-90.0, 90.0).WithMessage("Географска ширина мора бити између -90 и 90.")
+                .InclusiveBetween(-90.0, 90.0).WithMessage("Latitude must be between -90 and 90.")
                 .When(x => x.Latitude.HasValue);
 
             RuleFor(x => x.Longitude)
-                .InclusiveBetween(-180.0, 180.0).WithMessage("Географска дужина мора бити између -180 и 180.")
+                .InclusiveBetween(-180.0, 180.0).WithMessage("Longitude must be between -180 and 180.")
                 .When(x => x.Longitude.HasValue);
 
             RuleFor(x => x)
                 .Must(x => x.Latitude.HasValue == x.Longitude.HasValue)
-                .WithMessage("Локација мора имати и географску ширину и дужину.")
+                .WithMessage("Location must have both latitude and longitude.")
                 .OverridePropertyName("Location");
 
             RuleFor(x => x.RecurrenceInterval)
-                .IsInEnum().WithMessage("Непознат интервал понављања.");
+                .IsInEnum().WithMessage("Unknown recurrence interval.");
 
             RuleFor(x => x.RecurrenceInterval)
                 .NotEqual(RecurrenceInterval.None)
-                .WithMessage("За трошак који се понавља мора бити изабран интервал.")
+                .WithMessage("An interval must be selected for a recurring expense.")
                 .When(x => x.IsRecurring);
 
             RuleFor(x => x.RecurrenceInterval)
                 .Equal(RecurrenceInterval.None)
-                .WithMessage("Интервал понављања се задаје само за трошак који се понавља.")
+                .WithMessage("The recurrence interval is only specified for a recurring expense.")
                 .When(x => !x.IsRecurring);
         }
     }

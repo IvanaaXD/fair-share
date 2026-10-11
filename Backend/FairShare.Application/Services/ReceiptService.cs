@@ -48,7 +48,7 @@ public class ReceiptService : IReceiptService
         var expense = await GetOwnExpenseAsync(expenseId, currentUserId, cancellationToken);
 
         return await _images.ReadAsync(StorageKeys.ExpenseReceipt(expense.UserId, expense.Id), cancellationToken)
-            ?? throw new NotFoundException("Трошак нема слику рачуна.");
+            ?? throw new NotFoundException("The expense does not have a receipt image.");
     }
 
     public async Task DeleteExpenseReceiptAsync(
@@ -90,14 +90,14 @@ public class ReceiptService : IReceiptService
     {
         // Every member may see the receipt - it is the proof behind a shared expense.
         if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken))
-            throw new ForbiddenException("Само члан групе може видјети рачуне групе.");
+            throw new ForbiddenException("Only a group member can view group receipts.");
 
         var expense = await _unitOfWork.GroupExpenses.GetByIdAsync(groupExpenseId, cancellationToken);
         if (expense is null || expense.GroupId != groupId)
-            throw new NotFoundException("Групни трошак није пронађен.");
+            throw new NotFoundException("Group expense not found.");
 
         return await _images.ReadAsync(StorageKeys.GroupExpenseReceipt(groupId, expense.Id), cancellationToken)
-            ?? throw new NotFoundException("Трошак нема слику рачуна.");
+            ?? throw new NotFoundException("The expense does not have a receipt image.");
     }
 
     public async Task DeleteGroupExpenseReceiptAsync(
@@ -121,11 +121,11 @@ public class ReceiptService : IReceiptService
     private async Task<Expense> GetOwnExpenseAsync(Guid expenseId, Guid currentUserId, CancellationToken cancellationToken)
     {
         var expense = await _unitOfWork.Expenses.GetByIdAsync(expenseId, cancellationToken)
-            ?? throw new NotFoundException("Трошак није пронађен.");
+            ?? throw new NotFoundException("Expense not found.");
 
         // A personal expense - and its receipt - is visible to its owner only.
         if (expense.UserId != currentUserId)
-            throw new ForbiddenException("Немате приступ овом трошку.");
+            throw new ForbiddenException("You do not have access to this expense.");
 
         return expense;
     }
@@ -134,13 +134,13 @@ public class ReceiptService : IReceiptService
         Guid groupId, Guid groupExpenseId, CancellationToken cancellationToken)
     {
         var group = await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.");
+            ?? throw new NotFoundException("Group not found.");
 
         var expense = await _unitOfWork.GroupExpenses.GetByIdAsync(groupExpenseId, cancellationToken);
 
         // An expense of another group is reported like a missing one.
         if (expense is null || expense.GroupId != groupId)
-            throw new NotFoundException("Групни трошак није пронађен.");
+            throw new NotFoundException("Group expense not found.");
 
         return (group, expense);
     }
@@ -149,11 +149,11 @@ public class ReceiptService : IReceiptService
     private static void EnsureCanChangeReceipt(Group group, GroupExpense expense, Guid currentUserId)
     {
         var membership = group.Members.FirstOrDefault(m => m.UserId == currentUserId)
-            ?? throw new ForbiddenException("Нисте члан ове групе.");
+            ?? throw new ForbiddenException("You are not a member of this group.");
 
         var isPayer = expense.PaidByUserId == currentUserId;
         var isOwner = membership.Role == GroupRole.Owner;
         if (!isPayer && !isOwner)
-            throw new ForbiddenException("Слику рачуна може додати или уклонити само члан који је платио трошак или власник групе.");
+            throw new ForbiddenException("Only the member who paid the expense or the group owner can add or remove a receipt image.");
     }
 }

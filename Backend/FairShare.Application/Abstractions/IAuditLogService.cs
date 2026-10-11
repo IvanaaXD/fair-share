@@ -4,7 +4,7 @@ namespace FairShare.Application.Interfaces;
 
 public interface IAuditLogService
 {
-    /// <summary>Биљежи једну акцију корисника. Позива га AuditLogFilter аутоматски, а пријаву IdentityService.</summary>
+    /// <summary>Logs a single user action. It is called automatically by AuditLogFilter, and for logins by IdentityService.</summary>
     Task LogAsync(
         Guid userId,
         string action,
@@ -12,7 +12,7 @@ public interface IAuditLogService
         Guid? entityId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Претрага ревизионог дневника за администратора (функционалност 5.11).</summary>
+    /// <summary>Audit log search for administrators (feature 5.11).</summary>
     Task<IReadOnlyList<AuditLogResponse>> SearchAsync(
         Guid? userId,
         string? entityType,

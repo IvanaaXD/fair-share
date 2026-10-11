@@ -1,6 +1,6 @@
 namespace FairShare.Application.DTOs.Analytics;
 
-/// <summary>Фиксни избор периода или произвољан период (Custom, највише годину дана).</summary>
+/// <summary>Fixed period selection or custom period (Custom, maximum one year).</summary>
 public enum AnalyticsPeriod
 {
     LastWeek,
@@ -11,7 +11,7 @@ public enum AnalyticsPeriod
     Custom
 }
 
-/// <summary>Ниво агрегације тачака на графику, бира се аутоматски према дужини периода.</summary>
+/// <summary>Aggregation level of points on the chart, chosen automatically based on the period length.</summary>
 public enum TimeGranularity
 {
     Day,

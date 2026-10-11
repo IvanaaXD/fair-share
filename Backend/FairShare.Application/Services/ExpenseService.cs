@@ -30,13 +30,13 @@ public class ExpenseService : IExpenseService
     {
         // Field formats (amount > 0, currency, date...) are checked by CreateExpenseRequestValidator.
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.");
+            ?? throw new NotFoundException("Category not found.");
 
         var expense = _mapper.Map<Expense>(request);
         expense.UserId = currentUserId;
         expense.Category = category;
 
-        // NEW: for a recurring expense, the date of its first automatic copy.
+        // For a recurring expense, the date of its first automatic copy.
         expense.ScheduleNextOccurrence(DateTime.UtcNow);
 
         // Spending BEFORE this expense - needed to detect whether this expense is the one
@@ -61,13 +61,13 @@ public class ExpenseService : IExpenseService
         CancellationToken cancellationToken = default)
     {
         var expense = await _unitOfWork.Expenses.GetByIdAsync(expenseId, cancellationToken)
-            ?? throw new NotFoundException("Трошак није пронађен.");
+            ?? throw new NotFoundException("Expense not found.");
 
         if (expense.UserId != currentUserId)
-            throw new ForbiddenException("Не можете уређивати туђи трошак.");
+            throw new ForbiddenException("You cannot edit someone else's expense.");
 
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.");
+            ?? throw new NotFoundException("Category not found.");
 
         var previousSchedule = (expense.Date, expense.IsRecurring, expense.RecurrenceInterval);
 
@@ -91,10 +91,10 @@ public class ExpenseService : IExpenseService
     public async Task DeleteAsync(Guid expenseId, Guid currentUserId, CancellationToken cancellationToken = default)
     {
         var expense = await _unitOfWork.Expenses.GetByIdAsync(expenseId, cancellationToken)
-            ?? throw new NotFoundException("Трошак није пронађен.");
+            ?? throw new NotFoundException("Expense not found.");
 
         if (expense.UserId != currentUserId)
-            throw new ForbiddenException("Не можете обрисати туђи трошак.");
+            throw new ForbiddenException("You cannot delete someone else's expense.");
 
         // Deleting a recurring expense also stops its copies; copies already created stay.
         _unitOfWork.Expenses.Remove(expense);
@@ -109,10 +109,10 @@ public class ExpenseService : IExpenseService
         CancellationToken cancellationToken = default)
     {
         var expense = await _unitOfWork.Expenses.GetWithCategoryAsync(expenseId, cancellationToken)
-            ?? throw new NotFoundException("Трошак није пронађен.");
+            ?? throw new NotFoundException("Expense not found.");
 
         if (expense.UserId != currentUserId)
-            throw new ForbiddenException("Немате приступ овом трошку.");
+            throw new ForbiddenException("You do not have access to this expense.");
 
         return _mapper.Map<ExpenseResponse>(expense);
     }

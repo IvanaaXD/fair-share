@@ -5,6 +5,6 @@ public class CreateBudgetRequest
     public Guid CategoryId { get; set; }
     public decimal MonthlyLimit { get; set; }
 
-    /// <summary>Формат "ГГГГ-ММ", нпр. "2026-09".</summary>
+    /// <summary>Format "YYYY-MM", e.g., "2026-09".</summary>
     public string Month { get; set; } = string.Empty;
 }

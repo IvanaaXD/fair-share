@@ -34,10 +34,10 @@ public class UserManagementService : IUserManagementService
     public async Task BlockAsync(Guid userId, Guid currentAdminId, CancellationToken cancellationToken = default)
     {
         if (userId == currentAdminId)
-            throw new ConflictException("Не можете блокирати сопствени налог.");
+            throw new ConflictException("You cannot block your own account.");
 
         var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken)
-            ?? throw new NotFoundException("Корисник није пронађен.");
+            ?? throw new NotFoundException("User not found.");
 
         user.Deactivate();
         _unitOfWork.Users.Update(user);
@@ -47,7 +47,7 @@ public class UserManagementService : IUserManagementService
     public async Task UnblockAsync(Guid userId, Guid currentAdminId, CancellationToken cancellationToken = default)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken)
-            ?? throw new NotFoundException("Корисник није пронађен.");
+            ?? throw new NotFoundException("User not found.");
 
         user.Activate();
         _unitOfWork.Users.Update(user);
@@ -62,10 +62,10 @@ public class UserManagementService : IUserManagementService
         // Password strength is checked by ChangePasswordRequestValidator; here we check
         // what needs the stored hash.
         var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken)
-            ?? throw new NotFoundException("Корисник није пронађен.");
+            ?? throw new NotFoundException("User not found.");
 
         if (!_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
-            throw new ForbiddenException("Тренутна лозинка није тачна.");
+            throw new ForbiddenException("The current password is incorrect.");
 
         user.ChangePassword(_passwordHasher.HashPassword(request.NewPassword));
         user.MustChangePassword = false;

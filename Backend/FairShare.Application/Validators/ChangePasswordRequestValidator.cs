@@ -10,7 +10,7 @@ namespace FairShare.Application.Validators
             RuleFor(x => x.CurrentPassword)
                 .NotEmpty().WithMessage("Тренутна лозинка је обавезна.");
 
-            // CHANGED: uses the shared password policy, so registration, reset and change agree.
+            // Uses the shared password policy, so registration, reset and change agree.
             RuleFor(x => x.NewPassword)
                 .ValidNewPassword()
                 .NotEqual(x => x.CurrentPassword).WithMessage("Нова лозинка мора бити различита од тренутне.");

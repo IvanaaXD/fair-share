@@ -6,8 +6,8 @@ namespace FairShare.Application.Interfaces;
 public interface INotificationService
 {
     /// <summary>
-    /// Чува обавјештење у бази и ставља e-mail у ред за слање. Позвати НАКОН
-    /// SaveChangesAsync у сервису који је изазвао догађај.
+    /// Saves the notification in the database and enqueues the e-mail for sending. Call AFTER
+    /// SaveChangesAsync in the service that triggered the event.
     /// </summary>
     Task NotifyAsync(
         Guid userId,

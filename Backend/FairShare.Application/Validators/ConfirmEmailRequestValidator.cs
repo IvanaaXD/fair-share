@@ -8,8 +8,8 @@ namespace FairShare.Application.Validators
         public ConfirmEmailRequestValidator()
         {
             RuleFor(x => x.Token)
-                .NotEmpty().WithMessage("Токен за активацију је обавезан.")
-                .MaximumLength(200).WithMessage("Токен за активацију није исправан.");
+                .NotEmpty().WithMessage("Activation token is required.")
+                .MaximumLength(200).WithMessage("Activation token is not valid.");
         }
     }
 }

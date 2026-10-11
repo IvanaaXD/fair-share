@@ -15,10 +15,10 @@ namespace FairShare.Application.Validators
 
         public static IRuleBuilderOptions<T, string> ValidNewPassword<T>(this IRuleBuilder<T, string> rule)
             => rule
-                .NotEmpty().WithMessage("Лозинка је обавезна.")
-                .MinimumLength(MinLength).WithMessage($"Лозинка мора имати најмање {MinLength} карактера.")
-                .MaximumLength(MaxLength).WithMessage($"Лозинка може имати највише {MaxLength} карактера.")
-                .Matches(@"\p{L}").WithMessage("Лозинка мора садржати бар једно слово.")
-                .Matches(@"\d").WithMessage("Лозинка мора садржати бар једну цифру.");
+                .NotEmpty().WithMessage("Password is required.")
+                .MinimumLength(MinLength).WithMessage($"Password must have at least {MinLength} characters.")
+                .MaximumLength(MaxLength).WithMessage($"Password can have at most {MaxLength} characters.")
+                .Matches(@"\p{L}").WithMessage("Password must contain at least one letter.")
+                .Matches(@"\d").WithMessage("Password must contain at least one digit.");
     }
 }

@@ -22,18 +22,18 @@ public class BudgetService : IBudgetService
     }
 
     public async Task<BudgetResponse> CreateAsync(
-        CreateBudgetRequest request,
-        Guid currentUserId,
-        CancellationToken cancellationToken = default)
+            CreateBudgetRequest request,
+            Guid currentUserId,
+            CancellationToken cancellationToken = default)
     {
         // Limit and month format are checked by CreateBudgetRequestValidator.
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.");
+            ?? throw new NotFoundException("Category not found.");
 
         var existing = await _unitOfWork.Budgets.GetByUserCategoryAndMonthAsync(
             currentUserId, request.CategoryId, request.Month, cancellationToken);
         if (existing is not null)
-            throw new ConflictException("Буџет за ову категорију и мјесец већ постоји.");
+            throw new ConflictException("A budget for this category and month already exists.");
 
         var budget = _mapper.Map<Budget>(request);
         budget.UserId = currentUserId;
@@ -52,10 +52,10 @@ public class BudgetService : IBudgetService
         CancellationToken cancellationToken = default)
     {
         var budget = await _unitOfWork.Budgets.GetByIdAsync(budgetId, cancellationToken)
-            ?? throw new NotFoundException("Буџет није пронађен.");
+            ?? throw new NotFoundException("Budget not found.");
 
         if (budget.UserId != currentUserId)
-            throw new ForbiddenException("Не можете уређивати туђи буџет.");
+            throw new ForbiddenException("You cannot edit someone else's budget.");
 
         // Only the limit can change; category and month are fixed for an existing budget.
         _mapper.Map(request, budget);
@@ -69,10 +69,10 @@ public class BudgetService : IBudgetService
     public async Task DeleteAsync(Guid budgetId, Guid currentUserId, CancellationToken cancellationToken = default)
     {
         var budget = await _unitOfWork.Budgets.GetByIdAsync(budgetId, cancellationToken)
-            ?? throw new NotFoundException("Буџет није пронађен.");
+            ?? throw new NotFoundException("Budget not found.");
 
         if (budget.UserId != currentUserId)
-            throw new ForbiddenException("Не можете обрисати туђи буџет.");
+            throw new ForbiddenException("You cannot delete someone else's budget.");
 
         _unitOfWork.Budgets.Remove(budget);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -85,7 +85,7 @@ public class BudgetService : IBudgetService
     {
         // "month" comes from the query string, not from a DTO, so it is validated here.
         if (string.IsNullOrWhiteSpace(month) || !MonthFormat.IsMatch(month))
-            throw new BadRequestException("Формат мјесеца мора бити ГГГГ-ММ (нпр. 2026-09).");
+            throw new BadRequestException("Month format must be YYYY-MM (e.g., 2026-09).");
 
         var budgets = await _unitOfWork.Budgets.GetByUserAndMonthAsync(currentUserId, month, cancellationToken);
 

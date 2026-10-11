@@ -12,8 +12,8 @@ namespace FairShare.Application.Validators
         public ParseQrRequestValidator()
         {
             RuleFor(x => x.Payload)
-                .NotEmpty().WithMessage("Садржај QR кода је празан.")
-                .MaximumLength(1000).WithMessage("Садржај QR кода је предугачак.");
+                .NotEmpty().WithMessage("The QR code content is empty.")
+                .MaximumLength(1000).WithMessage("The QR code content is too long.");
         }
     }
 }

@@ -8,10 +8,10 @@ public class AdminStatisticsResponse
     public DateTime To { get; set; }
     public TimeGranularity Granularity { get; set; }
 
-    /// <summary>Укупно стање система (свих времена, не само изабраног периода).</summary>
+    /// <summary>Overall system status (all-time, not just the selected period).</summary>
     public AdminTotalsResponse Totals { get; set; } = new();
 
-    /// <summary>Број нових записа по кантици (дан/седмица/мјесец) у изабраном периоду.</summary>
+    /// <summary>Number of new records per bucket (day/week/month) in the selected period.</summary>
     public List<AdminTimePoint> Timeline { get; set; } = new();
 }
 
@@ -26,7 +26,7 @@ public class AdminTotalsResponse
     public int ProposedSettlements { get; set; }
     public int SettledSettlements { get; set; }
 
-    /// <summary>Кључ је назив статуса (Pending, Succeeded, Declined, Failed).</summary>
+    /// <summary>The key is the status name (Pending, Succeeded, Declined, Failed).</summary>
     public Dictionary<string, int> PaymentsByStatus { get; set; } = new();
 }
 

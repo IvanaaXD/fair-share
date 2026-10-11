@@ -7,7 +7,7 @@ public class AuditLogResponse
     public string UserFullName { get; set; } = string.Empty;
     public string UserEmail { get; set; } = string.Empty;
 
-    /// <summary>Облик "Контролер.Акција", нпр. "AdminUser.Block" или "Auth.Login".</summary>
+    /// <summary>Format "Controller.Action", e.g., "AdminUser.Block" or "Auth.Login".</summary>
     public string Action { get; set; } = string.Empty;
 
     public string EntityType { get; set; } = string.Empty;

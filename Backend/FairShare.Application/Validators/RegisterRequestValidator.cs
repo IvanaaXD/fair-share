@@ -8,19 +8,19 @@ namespace FairShare.Application.Validators
         public RegisterRequestValidator()
         {
             RuleFor(x => x.FirstName)
-                .NotEmpty().WithMessage("Име је обавезно.")
+                .NotEmpty().WithMessage("First name is required.")
                 .MaximumLength(ValidationRules.MaxNameLength)
-                .WithMessage($"Име може имати највише {ValidationRules.MaxNameLength} карактера.");
+                .WithMessage($"First name can have at most {ValidationRules.MaxNameLength} characters.");
 
             RuleFor(x => x.LastName)
-                .NotEmpty().WithMessage("Презиме је обавезно.")
+                .NotEmpty().WithMessage("Last name is required.")
                 .MaximumLength(ValidationRules.MaxNameLength)
-                .WithMessage($"Презиме може имати највише {ValidationRules.MaxNameLength} карактера.");
+                .WithMessage($"Last name can have at most {ValidationRules.MaxNameLength} characters.");
 
             RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("E-mail адреса је обавезна.")
-                .EmailAddress().WithMessage("E-mail адреса није исправна.")
-                .MaximumLength(256).WithMessage("E-mail адреса може имати највише 256 карактера.");
+                .NotEmpty().WithMessage("E-mail address is required.")
+                .EmailAddress().WithMessage("E-mail address is not valid.")
+                .MaximumLength(256).WithMessage("E-mail address can have at most 256 characters.");
 
             RuleFor(x => x.Password).ValidNewPassword();
 

@@ -8,11 +8,11 @@ namespace FairShare.Application.Validators
         public UpdateCategoryRequestValidator()
         {
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Назив категорије је обавезан.")
-                .MaximumLength(50).WithMessage("Назив категорије може имати највише 50 карактера.");
+                .NotEmpty().WithMessage("Category name is required.")
+                .MaximumLength(50).WithMessage("Category name can have at most 50 characters.");
 
             RuleFor(x => x.Icon)
-                .MaximumLength(50).WithMessage("Назив иконице може имати највише 50 карактера.");
+                .MaximumLength(50).WithMessage("Icon name can have at most 50 characters.");
         }
     }
 }

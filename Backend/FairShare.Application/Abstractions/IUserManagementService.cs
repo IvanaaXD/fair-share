@@ -4,7 +4,7 @@ namespace FairShare.Application.Interfaces;
 
 public interface IUserManagementService
 {
-    /// <summary>Претрага и филтрирање корисника за администраторски преглед (функционалност 5.2).</summary>
+    /// <summary>Search and filter users for administrative review (feature 5.2).</summary>
     Task<IReadOnlyList<UserResponse>> SearchAsync(
         string? searchTerm,
         bool? isBlocked,
@@ -16,7 +16,7 @@ public interface IUserManagementService
 
     Task UnblockAsync(Guid userId, Guid currentAdminId, CancellationToken cancellationToken = default);
 
-    /// <summary>Промјена сопствене лозинке; скида MustChangePassword заставицу након успјеха.</summary>
+    /// <summary>Change own password; removes the MustChangePassword flag upon success.</summary>
     Task ChangeMyPasswordAsync(
         Guid userId,
         ChangePasswordRequest request,

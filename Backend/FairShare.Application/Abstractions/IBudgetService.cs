@@ -17,9 +17,9 @@ public interface IBudgetService
 
     Task DeleteAsync(Guid budgetId, Guid currentUserId, CancellationToken cancellationToken = default);
 
-    /// <summary>Буџети тренутног корисника за дати мјесец, са израчунатом тренутном потрошњом.</summary>
+    /// <summary>Current user's budgets for the given month, with calculated current spending.</summary>
     Task<IReadOnlyList<BudgetResponse>> GetMyBudgetsAsync(
-        Guid currentUserId,
+    Guid currentUserId,
         string month,
         CancellationToken cancellationToken = default);
 }

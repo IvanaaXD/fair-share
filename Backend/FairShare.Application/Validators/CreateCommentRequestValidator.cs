@@ -8,8 +8,8 @@ namespace FairShare.Application.Validators
         public CreateCommentRequestValidator()
         {
             RuleFor(x => x.Text)
-                .NotEmpty().WithMessage("Текст коментара не смије бити празан.")
-                .MaximumLength(1000).WithMessage("Коментар може имати највише 1000 карактера.");
+                .NotEmpty().WithMessage("Comment text cannot be empty.")
+                .MaximumLength(1000).WithMessage("Comment can have at most 1000 characters.");
         }
     }
 }

@@ -8,8 +8,8 @@ namespace FairShare.Application.Validators
         public RefreshTokenRequestValidator()
         {
             RuleFor(x => x.RefreshToken)
-                .NotEmpty().WithMessage("Refresh токен је обавезан.")
-                .MaximumLength(200).WithMessage("Refresh токен није исправан.");
+                .NotEmpty().WithMessage("Refresh token is required.")
+                .MaximumLength(200).WithMessage("Refresh token is not valid.");
         }
     }
 }
