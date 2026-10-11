@@ -16,7 +16,6 @@ public class GroupExpenseRepository : GenericRepository<GroupExpense>, IGroupExp
             .Include(ge => ge.Splits).ThenInclude(s => s.User)
             .FirstOrDefaultAsync(ge => ge.Id == groupExpenseId, cancellationToken);
 
-    // NEW: tracked (no AsNoTracking), because the caller edits or deletes the expense.
     public async Task<GroupExpense?> GetWithDetailsAsync(Guid groupExpenseId, CancellationToken cancellationToken = default)
         => await DbSet
             .Include(ge => ge.Category)

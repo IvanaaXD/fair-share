@@ -20,7 +20,6 @@ public class AuditLogRepository : GenericRepository<AuditLog>, IAuditLogReposito
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        // ИЗМЈЕНА: Include(User) - администратор у прегледу види име и e-mail корисника.
         var query = DbSet.AsNoTracking().Include(a => a.User).AsQueryable();
 
         if (userId.HasValue) query = query.Where(a => a.UserId == userId.Value);

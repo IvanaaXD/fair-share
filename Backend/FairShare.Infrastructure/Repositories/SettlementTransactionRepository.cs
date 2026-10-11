@@ -29,8 +29,6 @@ public class SettlementTransactionRepository : GenericRepository<SettlementTrans
         return await query.ToListAsync(cancellationToken);
     }
 
-    // NEW: tracked, no Includes. Related QR data and payments are removed by the database
-    // (ON DELETE CASCADE) when the transaction is deleted.
     public async Task<IReadOnlyList<SettlementTransaction>> GetForUpdateByGroupAsync(
         Guid groupId,
         SettlementStatus? status = null,

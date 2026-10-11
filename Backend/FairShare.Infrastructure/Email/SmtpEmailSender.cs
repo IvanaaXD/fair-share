@@ -22,7 +22,7 @@ public class SmtpEmailSender : IEmailSender
     {
         if (string.IsNullOrWhiteSpace(_settings.Host))
         {
-            _logger.LogWarning("EmailSettings:Host није подешен - e-mail за {To} није послат.", message.To);
+            _logger.LogWarning("EmailSettings:Host is not configured - e-mail for {To} was not sent.", message.To);
             return;
         }
 

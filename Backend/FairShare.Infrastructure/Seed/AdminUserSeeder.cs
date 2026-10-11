@@ -9,8 +9,8 @@ using Microsoft.Extensions.Hosting;
 namespace FairShare.Infrastructure.Seed;
 
 /// <summary>
-/// При првом покретању апликације генерише администраторски налог (функционалност
-/// 5.2). Идемпотентно - ако налог са AdminEmail већ постоји, не ради ништа.
+/// Generates an administrator account upon the first application startup (feature
+/// 5.2). Idempotent - if an account with AdminEmail already exists, it does nothing.
 /// </summary>
 public static class AdminUserSeeder
 {
@@ -32,8 +32,8 @@ public static class AdminUserSeeder
 
         var admin = new User
         {
-            FirstName = "Систем",
-            LastName = "Администратор",
+            FirstName = "System",
+            LastName = "Administrator",
             Email = AdminEmail,
             PasswordHash = passwordHasher.HashPassword(generatedPassword),
             Role = UserRole.Admin,
@@ -49,10 +49,10 @@ public static class AdminUserSeeder
         await File.WriteAllTextAsync(
             filePath,
             $"Email: {AdminEmail}{Environment.NewLine}" +
-            $"Лозинка: {generatedPassword}{Environment.NewLine}" +
-            $"Генерисано: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC{Environment.NewLine}" +
-            "ОБАВЕЗНО промијените ову лозинку при првој пријави - сви остали endpointi " +
-            "су блокирани (HTTP 403) док се то не уради.");
+            $"Password: {generatedPassword}{Environment.NewLine}" +
+            $"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC{Environment.NewLine}" +
+            "You MUST change this password upon first login - all other endpoints " +
+            "are blocked (HTTP 403) until this is done.");
     }
 
     private static string GenerateRandomPassword(int length = 20)

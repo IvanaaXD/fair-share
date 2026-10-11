@@ -18,8 +18,8 @@ namespace FairShare.Infrastructure.Identity
 {
     public class IdentityService : IIdentityService
     {
-        private const string InvalidLoginMessage = "Погрешан e-mail или лозинка.";
-        private const string InvalidSessionMessage = "Сесија је истекла. Пријавите се поново.";
+        private const string InvalidLoginMessage = "Invalid e-mail or password.";
+        private const string InvalidSessionMessage = "The session has expired. Please log in again.";
 
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPasswordHasher _passwordHasher;
@@ -57,7 +57,7 @@ namespace FairShare.Infrastructure.Identity
             var email = User.NormalizeEmail(request.Email);
 
             if (await _unitOfWork.Users.EmailExistsAsync(email, cancellationToken))
-                throw new ConflictException("Налог са овом e-mail адресом већ постоји.");
+                throw new ConflictException("An account with this e-mail address already exists.");
 
             var user = new User
             {
@@ -92,7 +92,7 @@ namespace FairShare.Infrastructure.Identity
             var now = DateTime.UtcNow;
 
             var token = await FindUsableTokenAsync(request.Token, UserTokenType.EmailConfirmation, now, cancellationToken)
-                ?? throw new BadRequestException("Линк за активацију није исправан или је истекао. Затражите нови.");
+                ?? throw new BadRequestException("The activation link is invalid or has expired. Please request a new one.");
 
             token.MarkUsed(now);
             token.User.MustConfirmEmail = false;
@@ -220,13 +220,13 @@ namespace FairShare.Infrastructure.Identity
 
             var url = BuildFrontendUrl("reset-password", token);
             var body =
-                "Примили смо захтјев за промјену лозинке вашег FairShare налога.\n\n" +
-                "Нову лозинку можете поставити на сљедећем линку:\n" +
+                "We received a request to change the password for your FairShare account.\n\n" +
+                "You can set a new password at the following link:\n" +
                 url + "\n\n" +
-                $"Линк важи {_settings.PasswordResetMinutes} min. Ако нисте ви тражили промјену, " +
-                "занемарите ову поруку - ваша лозинка остаје иста.";
+                $"The link is valid for {_settings.PasswordResetMinutes} min. If you did not request this change, " +
+                "ignore this message - your password will remain the same.";
 
-            await SendEmailAsync(user, "Промјена лозинке", body, url, cancellationToken);
+            await SendEmailAsync(user, "Password Reset", body, url, cancellationToken);
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
@@ -234,11 +234,11 @@ namespace FairShare.Infrastructure.Identity
             var now = DateTime.UtcNow;
 
             var token = await FindUsableTokenAsync(request.Token, UserTokenType.PasswordReset, now, cancellationToken)
-                ?? throw new BadRequestException("Линк за промјену лозинке није исправан или је истекао. Затражите нови.");
+                ?? throw new BadRequestException("The password reset link is invalid or has expired. Please request a new one.");
 
             var user = token.User;
             if (user.IsBlocked)
-                throw new ForbiddenException("Ваш налог је блокиран. Обратите се администратору.");
+                throw new ForbiddenException("Your account is blocked. Please contact the administrator.");
 
             user.ChangePassword(_passwordHasher.HashPassword(request.NewPassword));
             user.MustChangePassword = false;
@@ -262,10 +262,10 @@ namespace FairShare.Infrastructure.Identity
         private static void EnsureCanSignIn(User user)
         {
             if (user.IsBlocked)
-                throw new ForbiddenException("Ваш налог је блокиран. Обратите се администратору.");
+                throw new ForbiddenException("Your account is blocked. Please contact the administrator.");
 
             if (user.MustConfirmEmail)
-                throw new ForbiddenException("Налог још није активиран. Отворите линк из e-mail поруке или затражите нови.");
+                throw new ForbiddenException("The account is not activated yet. Open the link from the e-mail message or request a new one.");
         }
 
         // ---------- helpers: one-time tokens ----------
@@ -369,13 +369,13 @@ namespace FairShare.Infrastructure.Identity
         {
             var url = BuildFrontendUrl("confirm-email", token);
             var body =
-                "Добро дошли у FairShare!\n\n" +
-                "Да бисте активирали налог, отворите сљедећи линк:\n" +
+                "Welcome to FairShare!\n\n" +
+                "To activate your account, open the following link:\n" +
                 url + "\n\n" +
-                $"Линк важи {_settings.EmailConfirmationHours} h. Ако нисте ви креирали налог, " +
-                "занемарите ову поруку.";
+                $"The link is valid for {_settings.EmailConfirmationHours} h. If you did not create this account, " +
+                "ignore this message.";
 
-            return SendEmailAsync(user, "Активација налога", body, url, cancellationToken);
+            return SendEmailAsync(user, "Account Activation", body, url, cancellationToken);
         }
 
         /// <summary>Link to a page of the web application; that page then calls the API with the token.</summary>

@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 namespace FairShare.Infrastructure.Repositories;
 
 /// <summary>
-/// Основна EF Core имплементација заједничких CRUD операција. Специфични
-/// репозиторијуми наслеђују ову класу и додају упите специфичне за ентитет.
+/// Base EF Core implementation of common CRUD operations. Specific
+/// repositories inherit this class and add queries specific to the entity.
 /// </summary>
 public class GenericRepository<T> : IRepository<T> where T : BaseEntity
 {

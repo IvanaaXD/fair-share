@@ -18,7 +18,6 @@ public class StatisticsRepository : IStatisticsRepository
 
     public async Task<SystemTotals> GetTotalsAsync(CancellationToken cancellationToken = default)
     {
-        // Сваки број је један COUNT упит у бази - редови се не учитавају у меморију.
         var users = _context.Set<User>().AsNoTracking();
         var settlements = _context.Set<SettlementTransaction>().AsNoTracking();
 

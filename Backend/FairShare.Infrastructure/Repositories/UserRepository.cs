@@ -11,7 +11,7 @@ public class UserRepository : GenericRepository<User>, IUserRepository
     {
     }
 
-    // CHANGED: the e-mail is normalized before the lookup, so "Ana@X.com" finds "ana@x.com".
+    // the e-mail is normalized before the lookup, so "Ana@X.com" finds "ana@x.com".
     // The comparison stays a plain equality, which lets PostgreSQL use the unique index on Email.
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {

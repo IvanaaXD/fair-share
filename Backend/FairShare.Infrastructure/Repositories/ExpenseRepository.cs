@@ -8,7 +8,6 @@ namespace FairShare.Infrastructure.Repositories;
 
 public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
 {
-    // Escape character for LIKE patterns, so "%" and "_" typed by the user are searched literally.
     private const string LikeEscape = "\\";
 
     public ExpenseRepository(FairShareDbContext context) : base(context)
@@ -32,8 +31,6 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
 
         return await query.OrderByDescending(e => e.Date).ToListAsync(cancellationToken);
     }
-
-    // ---------- NEW: search with paging ----------
 
     public async Task<PagedResult<Expense>> GetPagedByUserAsync(
         ExpenseFilter filter,
