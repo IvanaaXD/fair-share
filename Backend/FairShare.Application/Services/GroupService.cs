@@ -1,5 +1,6 @@
 using AutoMapper;
 using FairShare.Application.Common.Exceptions;
+using FairShare.Application.Common.Extensions;
 using FairShare.Application.DTOs.Groups;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
