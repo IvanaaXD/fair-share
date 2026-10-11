@@ -71,10 +71,10 @@ public class RecurringExpenseService : IRecurringExpenseService
             await _notificationService.NotifyAsync(
                 template.UserId,
                 NotificationType.RecurringExpenseCreated,
-                "Додат понављајући трошак",
-                $"Аутоматски је додат трошак '{template.Description ?? categoryName}' " +
-                $"од {occurrence.Amount} {occurrence.Currency} " +
-                $"за {occurrence.Date.ToString("dd.MM.yyyy.", CultureInfo.InvariantCulture)}",
+                "Recurring expense added",
+                $"Automatically added expense '{template.Description ?? categoryName}' " +
+                $"of {occurrence.Amount} {occurrence.Currency} " +
+                $"for {occurrence.Date.ToString("dd.MM.yyyy.", CultureInfo.InvariantCulture)}",
                 cancellationToken);
 
             await _budgetAlerts.NotifyIfThresholdCrossedAsync(

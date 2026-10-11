@@ -3,9 +3,9 @@ using FairShare.Domain.Entities;
 namespace FairShare.Domain.Interfaces;
 
 /// <summary>
-/// Заједничке CRUD операције за све репозиторијуме. Специфични репозиторијуми
-/// (нпр. <see cref="IUserRepository"/>) наслеђују овај интерфејс и додају
-/// упите специфичне за домен ентитета.
+/// Common CRUD operations for all repositories. Specific repositories
+/// (e.g., <see cref="IUserRepository"/>) inherit this interface and add
+/// queries specific to the entity domain.
 /// </summary>
 public interface IRepository<T> where T : BaseEntity
 {

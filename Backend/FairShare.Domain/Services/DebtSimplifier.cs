@@ -1,24 +1,24 @@
 namespace FairShare.Domain.Services;
 
-/// <summary>Приједлог једне трансакције поравнања: дужник плаћа повјериоцу Amount.</summary>
+/// <summary>Proposal for a single settlement transaction: the debtor pays the creditor the Amount.</summary>
 public record SettlementSuggestion(Guid DebtorUserId, Guid CreditorUserId, decimal Amount);
 
 /// <summary>
-/// Чиста доменска логика за поједностављивање дугова (функционалност 5.7). Улаз су
-/// нето салда чланова групе (позитивно = потражује, негативно = дугује), а излаз је
-/// минималан скуп трансакција које своде сва салда на нулу.
+/// Pure domain logic for debt simplification (feature 5.7). The input is the
+/// net balances of group members (positive = claims, negative = owes), and the output is the
+/// minimal set of transactions that reduces all balances to zero.
 /// </summary>
 public static class DebtSimplifier
 {
     private const decimal Tolerance = 0.01m;
 
-    /// <summary>Највећи број учесника (са ненултим салдом) за који се покреће егзактни алгоритам.</summary>
+    /// <summary>The maximum number of participants (with a non-zero balance) for which the exact algorithm is run.</summary>
     private const int MaxExactParticipants = 12;
 
     /// <summary>
-    /// Хеуристички (greedy) приступ: у сваком кораку спаја тренутно највећег дужника
-    /// са тренутно највећим повјериоцем. Гарантује највише n-1 трансакција за n
-    /// учесника са ненултим салдом. Сложеност: O(n log n).
+    /// Heuristic (greedy) approach: at each step, it pairs the current largest debtor
+    /// with the current largest creditor. Guarantees at most n-1 transactions for n
+    /// participants with a non-zero balance. Complexity: O(n log n).
     /// </summary>
     public static List<SettlementSuggestion> SimplifyGreedy(IReadOnlyDictionary<Guid, decimal> netBalances)
     {
@@ -58,12 +58,11 @@ public static class DebtSimplifier
     }
 
     /// <summary>
-    /// Егзактно рјешење проблема оптималног поравнања дугова (Optimal Account
-    /// Balancing) - NP-тежак проблем. Бектрекинг са одсијецањем грана (branch and
-    /// bound): редом покушава да "спари" текућег учесника са сваким сљедећим
-    /// супротног знака, преноси преостали износ, и памти најкраћи пронађени низ
-    /// трансакција. Примјењиво само на мање групе (<see cref="MaxExactParticipants"/>),
-    /// јер је сложеност у најгорем случају експоненцијална.
+    /// Exact solution to the Optimal Account Balancing problem - an NP-hard problem. 
+    /// Backtracking with branch and bound: sequentially tries to "pair" the current participant 
+    /// with every subsequent one of the opposite sign, carries over the remaining amount, 
+    /// and keeps track of the shortest found sequence of transactions. Applicable only to smaller groups (<see cref="MaxExactParticipants"/>), 
+    /// because the worst-case complexity is exponential.
     /// </summary>
     public static List<SettlementSuggestion> SimplifyExact(IReadOnlyDictionary<Guid, decimal> netBalances)
     {
@@ -73,12 +72,12 @@ public static class DebtSimplifier
 
         if (participants.Count > MaxExactParticipants)
             throw new InvalidOperationException(
-                $"Егзактни алгоритам је примјењив само на мање групе (до {MaxExactParticipants} " +
-                $"учесника са ненултим салдом, тренутно: {participants.Count}).");
+                $"The exact algorithm is applicable only to smaller groups (up to {MaxExactParticipants} " +
+                $"participants with a non-zero balance, currently: {participants.Count}).");
 
         var ids = participants.Select(p => p.Key).ToArray();
 
-        // Износи се своде на цијели број (центи) ради прецизности током рекурзије
+        // Amounts are converted to integers (cents) for precision during recursion
         var amounts = participants.Select(p => (long)Math.Round(p.Value * 100)).ToArray();
 
         var best = new List<SettlementSuggestion>();
@@ -109,15 +108,15 @@ public static class DebtSimplifier
             return;
         }
 
-        // Одсијецање грана: ако смо већ на дужини најбољег пронађеног рјешења,
-        // наставак ове гране не може дати боље рјешење.
+        // Branch pruning: if we are already at the length of the best found solution,
+        // continuing this branch cannot yield a better solution.
         if (best.Count > 0 && current.Count >= best.Count)
             return;
 
         for (var i = start + 1; i < amounts.Length; i++)
         {
             if (amounts[i] == 0) continue;
-            if ((amounts[start] > 0) == (amounts[i] > 0)) continue; // исти знак - не могу поравнати једно друго
+            if ((amounts[start] > 0) == (amounts[i] > 0)) continue; // same sign - they cannot settle each other
 
             var amount = Math.Abs(amounts[start]);
             var debtorIndex = amounts[start] < 0 ? start : i;

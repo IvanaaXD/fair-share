@@ -2,10 +2,10 @@ using FairShare.Domain.Entities.Enums;
 
 namespace FairShare.Domain.Models;
 
-/// <summary>Број записа за један дан (резултат агрегације у бази).</summary>
+/// <summary>Number of records for a single day (result of database aggregation).</summary>
 public record DailyCount(DateTime Day, int Count);
 
-/// <summary>Укупно стање система (свих времена) за администраторску контролну таблу.</summary>
+/// <summary>Total system state (all time) for the administrator dashboard.</summary>
 public record SystemTotals(
     int Users,
     int BlockedUsers,
@@ -17,7 +17,7 @@ public record SystemTotals(
     int SettledSettlements,
     IReadOnlyDictionary<PaymentStatus, int> PaymentsByStatus);
 
-/// <summary>Серије које се приказују кроз вријеме на администраторској контролној табли.</summary>
+/// <summary>Series displayed over time on the administrator dashboard.</summary>
 public enum StatisticSeries
 {
     NewUsers,

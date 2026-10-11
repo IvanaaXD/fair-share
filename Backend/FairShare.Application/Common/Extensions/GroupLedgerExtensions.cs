@@ -2,7 +2,7 @@ using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
 using FairShare.Domain.Services;
 
-namespace FairShare.Application.Services;
+namespace FairShare.Application.Common.Extensions;
 
 /// <summary>
 /// Balance and settlement helpers shared by GroupService, GroupExpenseService and

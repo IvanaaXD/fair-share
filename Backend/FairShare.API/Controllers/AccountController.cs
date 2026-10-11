@@ -22,8 +22,8 @@ public class AccountController : ControllerBase
     }
 
     /// <summary>
-    /// Промјена сопствене лозинке. Означено са [AllowWhilePasswordChangeRequired] -
-    /// доступно и кориснику коме RequirePasswordChangeFilter иначе блокира приступ.
+    /// Changes the user's own password. Marked with [AllowWhilePasswordChangeRequired] -
+    /// accessible even to a user whose access is otherwise blocked by RequirePasswordChangeFilter.
     /// </summary>
     [HttpPost("change-password")]
     [AllowWhilePasswordChangeRequired]

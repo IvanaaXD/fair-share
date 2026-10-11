@@ -7,7 +7,6 @@ using FairShare.Infrastructure.Storage;
 using FairShare.WebAPI.Extensions;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,7 +51,7 @@ builder.Services.AddDbContext<FairShareDbContext>((serviceProvider, options) =>
         .AddInterceptors(
             // Deletes the stored files of deleted expenses, groups and users after SaveChanges.
             serviceProvider.GetRequiredService<FileCleanupInterceptor>(),
-            // NEW: drops cache entries built from data that SaveChanges has just changed.
+            // Drops cache entries built from data that SaveChanges has just changed.
             serviceProvider.GetRequiredService<CacheInvalidationInterceptor>()));
 
 // ---------- JWT, authorization, current user, password hashing ----------

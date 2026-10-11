@@ -15,7 +15,7 @@ namespace FairShare.WebAPI.Extensions
         {
             // ---------- AutoMapper + FluentValidation ----------
             // Scans the Application assembly for every Profile and every AbstractValidator<T>.
-            services.AddAutoMapper(typeof(GroupMappingProfile).Assembly);
+            services.AddAutoMapper(cfg => cfg.AddMaps(typeof(GroupMappingProfile).Assembly));
             services.AddValidatorsFromAssemblyContaining<CreateGroupRequestValidator>();
 
             // ---------- business logic ----------

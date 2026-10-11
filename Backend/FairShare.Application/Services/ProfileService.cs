@@ -90,10 +90,10 @@ public class ProfileService : IProfileService
     /// groups, member lists and comments.
     /// </summary>
     public async Task<ImageFile> GetProfileImageAsync(Guid userId, CancellationToken cancellationToken = default)
-        => await _images.ReadAsync(StorageKeys.ProfileImage(userId), cancellationToken)
-           ?? throw new NotFoundException("Корисник нема профилну слику.");
+            => await _images.ReadAsync(StorageKeys.ProfileImage(userId), cancellationToken)
+               ?? throw new NotFoundException("User does not have a profile image.");
 
     private async Task<User> GetUserAsync(Guid userId, CancellationToken cancellationToken)
         => await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken)
-           ?? throw new NotFoundException("Корисник није пронађен.");
+           ?? throw new NotFoundException("User not found.");
 }

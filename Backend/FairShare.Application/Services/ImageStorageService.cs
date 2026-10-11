@@ -20,7 +20,7 @@ public class ImageStorageService : IImageStorageService
     public async Task SaveAsync(string key, ImageUpload upload, CancellationToken cancellationToken = default)
     {
         if (upload.Length <= 0)
-            throw new BadRequestException("Изабрани фајл је празан.");
+            throw new BadRequestException("The selected file is empty.");
 
         if (upload.Length > ImageFileRules.MaxBytes)
             throw TooLarge();
@@ -31,10 +31,10 @@ public class ImageStorageService : IImageStorageService
         await CopyWithLimitAsync(upload.Content, buffer, cancellationToken);
 
         if (buffer.Length == 0)
-            throw new BadRequestException("Изабрани фајл је празан.");
+            throw new BadRequestException("The selected file is empty.");
 
         if (!IsSupportedImage(buffer))
-            throw new BadRequestException("Дозвољене су само слике у формату JPEG, PNG или WebP.");
+            throw new BadRequestException("Only JPEG, PNG, or WebP images are allowed.");
 
         buffer.Position = 0;
         await _storage.SaveAsync(key, buffer, cancellationToken);
@@ -105,5 +105,5 @@ public class ImageStorageService : IImageStorageService
     }
 
     private static BadRequestException TooLarge()
-        => new($"Слика може имати највише {ImageFileRules.MaxMegabytes} MB.");
+        => new($"The image can be at most {ImageFileRules.MaxMegabytes} MB.");
 }

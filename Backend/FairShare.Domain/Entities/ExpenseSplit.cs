@@ -10,6 +10,6 @@ public class ExpenseSplit : BaseEntity
 
     public decimal Amount { get; set; }
 
-    // Попуњава се само када је GroupExpense.SplitType == Percentage
+    // Populated only when GroupExpense.SplitType == Percentage
     public double? Percentage { get; set; }
 }

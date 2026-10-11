@@ -3,7 +3,7 @@ using FairShare.Application.Abstractions;
 
 namespace FairShare.Infrastructure.Email;
 
-/// <summary>Ред порука у меморији; региструје се као Singleton.</summary>
+/// <summary>In-memory message queue; registered as a Singleton.</summary>
 public class EmailQueue : IEmailQueue
 {
     private readonly Channel<EmailMessage> _channel = Channel.CreateUnbounded<EmailMessage>();

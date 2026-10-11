@@ -8,8 +8,8 @@ namespace FairShare.Application.Validators
         public ResetPasswordRequestValidator()
         {
             RuleFor(x => x.Token)
-                .NotEmpty().WithMessage("Токен за промјену лозинке је обавезан.")
-                .MaximumLength(200).WithMessage("Токен за промјену лозинке није исправан.");
+                .NotEmpty().WithMessage("Password reset token is required.")
+                .MaximumLength(200).WithMessage("Password reset token is not valid.");
 
             RuleFor(x => x.NewPassword).ValidNewPassword();
         }

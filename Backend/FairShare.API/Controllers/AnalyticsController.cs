@@ -21,7 +21,7 @@ public class AnalyticsController : ControllerBase
     }
 
     /// <summary>
-    /// Аналитика личне потрошње. Примјер: ?period=Last3Months или
+    /// Personal expense analytics. Example: ?period=Last3Months or
     /// ?period=Custom&amp;from=2026-01-01&amp;to=2026-03-31
     /// </summary>
     [HttpGet("spending")]
@@ -36,7 +36,7 @@ public class AnalyticsController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Трошкови са локацијом за приказ на мапи (највише 500 најновијих).</summary>
+    /// <summary>Expenses with location for map display (up to 500 most recent).</summary>
     [HttpGet("map")]
     public async Task<ActionResult<IReadOnlyList<ExpenseLocationResponse>>> GetMap(
         [FromQuery] AnalyticsPeriod period = AnalyticsPeriod.LastMonth,

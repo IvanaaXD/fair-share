@@ -17,7 +17,7 @@ namespace FairShare.Api.Filters;
 ///    marked with [AllowWhilePasswordChangeRequired].
 /// Anonymous endpoints (e.g. /api/auth/login) are not checked.
 ///
-/// CHANGED: the account state is cached. This filter runs on every request, so before it
+/// The account state is cached. This filter runs on every request, so before it
 /// meant one extra database query per request. Blocking a user or changing the password
 /// saves the User row, which invalidates the cached state immediately (CacheInvalidationInterceptor),
 /// so a block still takes effect on the very next request.
@@ -51,7 +51,7 @@ public class RequirePasswordChangeFilter : IAsyncActionFilter
             // A blocked account - applies to endpoints allowed during a password change as well.
             if (status is { IsBlocked: true })
             {
-                context.Result = Forbidden("Ваш налог је блокиран. Обратите се администратору.");
+                context.Result = Forbidden("Your account is blocked. Contact the administrator.");
                 return;
             }
 
@@ -60,7 +60,7 @@ public class RequirePasswordChangeFilter : IAsyncActionFilter
 
             if (status is { MustChangePassword: true } && !allowedDuringPasswordChange)
             {
-                context.Result = Forbidden("Морате промијенити предефинисану лозинку прије наставка рада.");
+                context.Result = Forbidden("You must change your predefined password before continuing.");
                 return;
             }
         }

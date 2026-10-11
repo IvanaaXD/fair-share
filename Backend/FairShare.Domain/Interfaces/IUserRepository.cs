@@ -8,9 +8,9 @@ public interface IUserRepository : IRepository<User>
 
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
 
-    /// <summary>Претрага и пагинација за администраторски преглед корисника (функционалност 5.2).</summary>
+    /// <summary>Search and pagination for administrator review of users (feature 5.2).</summary>
     Task<IReadOnlyList<User>> SearchAsync(
-        string? searchTerm,
+    string? searchTerm,
         bool? isBlocked,
         int page,
         int pageSize,

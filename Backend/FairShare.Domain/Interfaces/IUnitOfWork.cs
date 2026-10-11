@@ -21,8 +21,6 @@ public interface IUnitOfWork
     IPaymentRepository Payments { get; }
     INotificationRepository Notifications { get; }
     IAuditLogRepository AuditLogs { get; }
-
-    // NEW: activation, password reset and refresh tokens
     IUserTokenRepository UserTokens { get; }
 
     /// <summary>Saves all pending changes in one transaction and returns the number of affected rows.</summary>

@@ -1,5 +1,6 @@
 using AutoMapper;
 using FairShare.Application.Common.Exceptions;
+using FairShare.Application.Common.Extensions;
 using FairShare.Application.DTOs.Settlements;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -28,7 +29,7 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken = default)
     {
         var group = await LoadGroupForMemberAsync(
-            groupId, currentUserId, "Само члан групе може видјети салда групе.", cancellationToken);
+            groupId, currentUserId, "Only a group member can view group balances.", cancellationToken);
 
         var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
 
@@ -51,7 +52,7 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken = default)
     {
         var group = await LoadGroupForMemberAsync(
-            groupId, currentUserId, "Само члан групе може генерисати приједлог поравнања.", cancellationToken);
+            groupId, currentUserId, "Only a group member can generate a settlement proposal.", cancellationToken);
 
         var usersById = group.Members.ToDictionary(m => m.UserId, m => m.User);
         var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
@@ -59,7 +60,7 @@ public class SettlementService : ISettlementService
         // Members can leave only with a settled balance, so this should never happen. The check
         // protects the algorithm: it relies on the balances of the listed users adding up to zero.
         if (balances.Any(b => !usersById.ContainsKey(b.Key) && !GroupBalanceCalculator.IsSettled(b.Value)))
-            throw new ConflictException("У групи постоји неизмирен салдо корисника који више није члан, па приједлог није могуће генерисати.");
+            throw new ConflictException("There is an unsettled balance in the group for a user who is no longer a member, so the proposal cannot be generated.");
 
         var memberBalances = balances
             .Where(b => usersById.ContainsKey(b.Key))
@@ -105,9 +106,9 @@ public class SettlementService : ISettlementService
             await _notificationService.NotifyAsync(
                 t.DebtorUserId,
                 NotificationType.SettlementSuggested,
-                "Нови приједлог поравнања",
-                $"У групи '{group.Name}' предложено је поравнање: дугујете кориснику " +
-                $"{t.CreditorUser.FirstName} {t.CreditorUser.LastName} износ од {t.Amount} {group.Currency}.",
+                "New settlement proposal",
+                $"A settlement has been proposed in the group '{group.Name}': you owe user " +
+                $"{t.CreditorUser.FirstName} {t.CreditorUser.LastName} the amount of {t.Amount} {group.Currency}.",
                 cancellationToken);
         }
 
@@ -125,13 +126,13 @@ public class SettlementService : ISettlementService
 
         // A settlement of another group is reported exactly like a missing one.
         if (transaction is null || transaction.GroupId != groupId)
-            throw new NotFoundException("Трансакција поравнања није пронађена.");
+            throw new NotFoundException("Settlement transaction not found.");
 
         if (transaction.DebtorUserId != currentUserId && transaction.CreditorUserId != currentUserId)
-            throw new ForbiddenException("Само дужник или повјерилац могу означити поравнање као измирено.");
+            throw new ForbiddenException("Only the debtor or creditor can mark the settlement as settled.");
 
         if (transaction.Status == SettlementStatus.Settled)
-            throw new ConflictException("Трансакција је већ измирена.");
+            throw new ConflictException("The transaction is already settled.");
 
         transaction.Status = SettlementStatus.Settled;
 
@@ -149,11 +150,11 @@ public class SettlementService : ISettlementService
         await _notificationService.NotifyAsync(
             otherUserId,
             NotificationType.SettlementCompleted,
-            "Поравнање измирено",
-            $"Поравнање од {transaction.Amount} {group?.Currency} између корисника " +
-            $"{transaction.DebtorUser.FirstName} {transaction.DebtorUser.LastName} и " +
+            "Settlement completed",
+            $"The settlement of {transaction.Amount} {group?.Currency} between user " +
+            $"{transaction.DebtorUser.FirstName} {transaction.DebtorUser.LastName} and " +
             $"{transaction.CreditorUser.FirstName} {transaction.CreditorUser.LastName} " +
-            $"у групи '{group?.Name}' означено је као измирено.",
+            $"in the group '{group?.Name}' has been marked as settled.",
             cancellationToken);
 
         return _mapper.Map<SettlementTransactionResponse>(transaction);
@@ -166,7 +167,7 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken = default)
     {
         if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken))
-            throw new ForbiddenException("Само члан групе може видјети поравнања групе.");
+            throw new ForbiddenException("Only a group member can view group settlements.");
 
         var transactions = await _unitOfWork.SettlementTransactions.GetByGroupAsync(groupId, status, cancellationToken);
         return _mapper.Map<List<SettlementTransactionResponse>>(transactions);
@@ -182,7 +183,7 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken)
     {
         var group = await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.");
+            ?? throw new NotFoundException("Group not found.");
 
         if (group.Members.All(m => m.UserId != currentUserId))
             throw new ForbiddenException(forbiddenMessage);

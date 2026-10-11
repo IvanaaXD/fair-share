@@ -8,13 +8,13 @@ namespace FairShare.Application.Validators
         public UpdateGroupRequestValidator()
         {
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Назив групе је обавезан.")
+                .NotEmpty().WithMessage("Group name is required.")
                 .MaximumLength(ValidationRules.MaxNameLength)
-                .WithMessage($"Назив групе може имати највише {ValidationRules.MaxNameLength} карактера.");
+                .WithMessage($"Group name can have at most {ValidationRules.MaxNameLength} characters.");
 
             RuleFor(x => x.Description)
                 .MaximumLength(ValidationRules.MaxDescriptionLength)
-                .WithMessage($"Опис може имати највише {ValidationRules.MaxDescriptionLength} карактера.");
+                .WithMessage($"Description can have at most {ValidationRules.MaxDescriptionLength} characters.");
         }
     }
 }

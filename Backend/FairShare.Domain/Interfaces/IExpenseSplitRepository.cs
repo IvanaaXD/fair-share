@@ -8,9 +8,9 @@ public interface IExpenseSplitRepository : IRepository<ExpenseSplit>
         Guid groupExpenseId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Све подјеле корисника унутар групе - основа за рачунање нето салда.</summary>
+    /// <summary>All user splits within the group - the basis for calculating the net balance.</summary>
     Task<IReadOnlyList<ExpenseSplit>> GetByGroupAndUserAsync(
-        Guid groupId,
+    Guid groupId,
         Guid userId,
         CancellationToken cancellationToken = default);
 }

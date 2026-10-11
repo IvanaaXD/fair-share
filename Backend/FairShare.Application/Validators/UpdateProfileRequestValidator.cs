@@ -9,14 +9,14 @@ namespace FairShare.Application.Validators
         public UpdateProfileRequestValidator()
         {
             RuleFor(x => x.FirstName)
-                .NotEmpty().WithMessage("Име је обавезно.")
+                .NotEmpty().WithMessage("First name is required.")
                 .MaximumLength(ValidationRules.MaxNameLength)
-                .WithMessage($"Име може имати највише {ValidationRules.MaxNameLength} карактера.");
+                .WithMessage($"First name can have at most {ValidationRules.MaxNameLength} characters.");
 
             RuleFor(x => x.LastName)
-                .NotEmpty().WithMessage("Презиме је обавезно.")
+                .NotEmpty().WithMessage("Last name is required.")
                 .MaximumLength(ValidationRules.MaxNameLength)
-                .WithMessage($"Презиме може имати највише {ValidationRules.MaxNameLength} карактера.");
+                .WithMessage($"Last name can have at most {ValidationRules.MaxNameLength} characters.");
 
             RuleFor(x => x.DefaultCurrency).ValidCurrency();
 
@@ -25,9 +25,9 @@ namespace FairShare.Application.Validators
             When(x => !string.IsNullOrWhiteSpace(x.BankAccountNumber), () =>
             {
                 RuleFor(x => x.BankAccountNumber!)
-                    .Matches(@"^[\d\s-]+$").WithMessage("Број рачуна може садржати само цифре, размаке и цртице.")
+                    .Matches(@"^[\d\s-]+$").WithMessage("Account number can only contain digits, spaces, and dashes.")
                     .Must(account => IpsQrCodec.IsValidAccount(IpsQrCodec.NormalizeAccount(account)))
-                    .WithMessage("Број рачуна мора имати 16 или 18 цифара.");
+                    .WithMessage("Account number must have 16 or 18 digits.");
             });
         }
     }

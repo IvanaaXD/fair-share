@@ -20,7 +20,7 @@ public class AdminUserController : ControllerBase
         _currentUser = currentUser;
     }
 
-    /// <summary>Претрага корисника по имену/email-у, уз опционо филтрирање по статусу блокираности.</summary>
+    /// <summary>User search by name/email, with optional filtering by blocked status.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<UserResponse>>> Search(
         [FromQuery] string? search,

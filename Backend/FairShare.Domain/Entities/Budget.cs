@@ -10,7 +10,6 @@ public class Budget : BaseEntity
 
     public decimal MonthlyLimit { get; set; }
 
-    // Формат "ГГГГ-ММ", нпр. "2026-09"
     public string Month { get; set; } = string.Empty;
 
     public bool CheckThreshold(decimal currentSpending, double thresholdPercentage = 0.8)

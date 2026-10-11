@@ -66,10 +66,10 @@ public class NotificationService : INotificationService
     public async Task MarkAsReadAsync(Guid notificationId, Guid currentUserId, CancellationToken cancellationToken = default)
     {
         var notification = await _unitOfWork.Notifications.GetByIdAsync(notificationId, cancellationToken)
-            ?? throw new NotFoundException("Обавјештење није пронађено.");
+            ?? throw new NotFoundException("Notification not found.");
 
         if (notification.UserId != currentUserId)
-            throw new ForbiddenException("Не можете мијењати туђа обавјештења.");
+            throw new ForbiddenException("You cannot modify someone else's notifications.");
 
         if (notification.IsRead)
             return;

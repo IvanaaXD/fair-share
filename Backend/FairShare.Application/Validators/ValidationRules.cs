@@ -20,22 +20,22 @@ namespace FairShare.Application.Validators
         /// <summary>ISO 4217 currency code: exactly three upper-case letters.</summary>
         public static IRuleBuilderOptions<T, string> ValidCurrency<T>(this IRuleBuilder<T, string> rule)
             => rule
-                .NotEmpty().WithMessage("Валута је обавезна.")
-                .Matches("^[A-Z]{3}$").WithMessage("Валута мора бити ознака од 3 велика слова (нпр. BAM, EUR, RSD).");
+                .NotEmpty().WithMessage("Currency is required.")
+                .Matches("^[A-Z]{3}$").WithMessage("Currency must be a 3-letter uppercase code (e.g., BAM, EUR, RSD).");
 
         /// <summary>Positive money amount with at most two decimal places.</summary>
         public static IRuleBuilderOptions<T, decimal> ValidMoneyAmount<T>(this IRuleBuilder<T, decimal> rule)
             => rule
-                .GreaterThan(0).WithMessage("Износ мора бити већи од нуле.")
-                .LessThanOrEqualTo(MaxMoneyAmount).WithMessage($"Износ не може бити већи од {MaxMoneyAmount:N0}.")
-                .Must(HaveAtMostTwoDecimals).WithMessage("Износ може имати највише двије децимале.");
+                .GreaterThan(0).WithMessage("Amount must be greater than zero.")
+                .LessThanOrEqualTo(MaxMoneyAmount).WithMessage($"Amount cannot be greater than {MaxMoneyAmount:N0}.")
+                .Must(HaveAtMostTwoDecimals).WithMessage("Amount can have at most two decimal places.");
 
         /// <summary>Expense date: not before 2000 and not in the future (one day of slack for time zones).</summary>
         public static IRuleBuilderOptions<T, DateTime> ValidExpenseDate<T>(this IRuleBuilder<T, DateTime> rule)
             => rule
-                .NotEmpty().WithMessage("Датум је обавезан.")
-                .Must(date => date >= MinExpenseDate).WithMessage("Датум не може бити прије 2000. године.")
-                .Must(date => date <= DateTime.UtcNow.AddDays(1)).WithMessage("Датум не може бити у будућности.");
+                .NotEmpty().WithMessage("Date is required.")
+                .Must(date => date >= MinExpenseDate).WithMessage("Date cannot be before the year 2000.")
+                .Must(date => date <= DateTime.UtcNow.AddDays(1)).WithMessage("Date cannot be in the future.");
 
         public static bool HaveAtMostTwoDecimals(decimal value) => decimal.Round(value, 2) == value;
     }

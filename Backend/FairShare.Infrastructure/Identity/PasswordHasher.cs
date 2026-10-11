@@ -1,5 +1,4 @@
-﻿using BCrypt.Net;
-using FairShare.Application.Abstractions;
+﻿using FairShare.Application.Abstractions;
 
 namespace FairShare.Infrastructure.Identity
 {

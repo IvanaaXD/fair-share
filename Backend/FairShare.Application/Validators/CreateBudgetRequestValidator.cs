@@ -8,13 +8,13 @@ namespace FairShare.Application.Validators
         public CreateBudgetRequestValidator()
         {
             RuleFor(x => x.CategoryId)
-                .NotEmpty().WithMessage("Категорија мора бити изабрана.");
+                .NotEmpty().WithMessage("Category must be selected.");
 
             RuleFor(x => x.MonthlyLimit).ValidMoneyAmount();
 
             RuleFor(x => x.Month)
-                .NotEmpty().WithMessage("Мјесец је обавезан.")
-                .Matches(@"^\d{4}-(0[1-9]|1[0-2])$").WithMessage("Формат мјесеца мора бити ГГГГ-ММ (нпр. 2026-09).");
+                .NotEmpty().WithMessage("Month is required.")
+                .Matches(@"^\d{4}-(0[1-9]|1[0-2])$").WithMessage("Month format must be YYYY-MM (e.g., 2026-09).");
         }
     }
 }

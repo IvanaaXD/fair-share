@@ -46,7 +46,7 @@ public class BudgetController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Буџети тренутног корисника за дати мјесец (подразумијевано: текући мјесец).</summary>
+    /// <summary>Current user's budgets for the given month (default: current month).</summary>
     [HttpGet("mine")]
     public async Task<ActionResult<IReadOnlyList<BudgetResponse>>> GetMine(
         [FromQuery] string? month,

@@ -11,7 +11,7 @@ namespace FairShare.Application.Services;
 
 public class QrPaymentService : IQrPaymentService
 {
-    /// <summary>Шифра плаћања 289 - трансакције по налогу грађана.</summary>
+    /// <summary>Payment code 289 - transactions ordered by citizens.</summary>
     private const string PaymentCode = "289";
 
     private readonly IUnitOfWork _unitOfWork;
@@ -33,7 +33,7 @@ public class QrPaymentService : IQrPaymentService
 
         var qrData = settlement.QrPaymentData!;
         var recipientName = $"{settlement.CreditorUser.FirstName} {settlement.CreditorUser.LastName}";
-        var purpose = $"Поравнање FairShare - {group.Name}";
+        var purpose = $"FairShare settlement - {group.Name}";
 
         var payload = IpsQrCodec.Build(new IpsQrPayload(
             qrData.RecipientAccount,
@@ -89,12 +89,12 @@ public class QrPaymentService : IQrPaymentService
             Reference = p.Reference
         };
 
-        // Позив на број садржи ID поравнања - ако га препознамо, повезујемо QR са системом.
+        // The reference number contains the settlement ID - if recognized, we link the QR to the system.
         if (p.Reference is not null && Guid.TryParseExact(p.Reference, "N", out var settlementId))
         {
             var settlement = await _unitOfWork.SettlementTransactions.GetByIdWithDetailsAsync(settlementId, cancellationToken);
 
-            // Туђа поравнања се не откривају - корисник види само она у којима учествује.
+            // Other people's settlements are not revealed - the user only sees those they participate in.
             if (settlement is not null &&
                 (settlement.DebtorUserId == currentUserId || settlement.CreditorUserId == currentUserId))
             {
@@ -109,7 +109,7 @@ public class QrPaymentService : IQrPaymentService
         return response;
     }
 
-    // ---------- помоћне методе ----------
+    // ---------- helpers ----------
 
     private async Task<(SettlementTransaction Settlement, Group Group)> LoadForQrAsync(
         Guid groupId,
@@ -119,25 +119,25 @@ public class QrPaymentService : IQrPaymentService
     {
         var settlement = await _unitOfWork.SettlementTransactions.GetByIdWithDetailsAsync(
             settlementTransactionId, cancellationToken)
-            ?? throw new NotFoundException("Трансакција поравнања није пронађена.");
+            ?? throw new NotFoundException("Settlement transaction not found.");
 
         if (settlement.GroupId != groupId)
-            throw new NotFoundException("Трансакција поравнања не припада наведеној групи.");
+            throw new NotFoundException("The settlement transaction does not belong to the specified group.");
 
         if (settlement.DebtorUserId != currentUserId && settlement.CreditorUserId != currentUserId)
-            throw new ForbiddenException("QR код могу видјети само дужник и повјерилац.");
+            throw new ForbiddenException("The QR code can only be viewed by the debtor and the creditor.");
 
         if (settlement.Status == SettlementStatus.Settled)
-            throw new ConflictException("Поравнање је већ измирено - QR код више није потребан.");
+            throw new ConflictException("The settlement is already settled - the QR code is no longer needed.");
 
         if (!IpsQrCodec.IsValidAccount(settlement.CreditorUser.BankAccountNumber))
             throw new ConflictException(
-                "Повјерилац још није унио број рачуна у профил, па QR код за уплату није могуће направити.");
+                "The creditor has not yet entered a bank account number in their profile, so the payment QR code cannot be generated.");
 
         var group = await _unitOfWork.Groups.GetByIdAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.");
+            ?? throw new NotFoundException("Group not found.");
 
-        // Рачун је можда унесен тек након генерисања приједлога - освјежавамо сачуване QR податке.
+        // The account might have been entered only after the proposal was generated - we refresh the saved QR data.
         var hadQrData = settlement.QrPaymentData is not null;
         var accountBefore = settlement.QrPaymentData?.RecipientAccount;
 
@@ -146,14 +146,14 @@ public class QrPaymentService : IQrPaymentService
 
         if (!hadQrData)
         {
-            // Нови запис се додаје експлицитно: Id је већ постављен (BaseEntity), па би га
-            // EF иначе третирао као постојећи ред и покушао UPDATE умјесто INSERT.
+            // A new record is added explicitly: the Id is already set (BaseEntity), so
+            // EF would otherwise treat it as an existing row and attempt an UPDATE instead of INSERT.
             await _unitOfWork.QrPaymentData.AddAsync(qrData, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
         else if (accountBefore != qrData.RecipientAccount)
         {
-            // Постојећи запис је праћен (tracked), па EF сам открива промјену.
+            // The existing record is tracked, so EF detects the change itself.
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

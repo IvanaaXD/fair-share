@@ -42,7 +42,7 @@ namespace FairShare.WebAPI.Extensions
                 };
             });
 
-            // NEW: "secure by default". Every endpoint requires a signed-in user unless it is
+            // Every endpoint requires a signed-in user unless it is
             // explicitly marked [AllowAnonymous]. The [Authorize] attributes on the controllers stay
             // as documentation, but a controller where it is forgotten is still protected.
             services.AddAuthorization(options =>

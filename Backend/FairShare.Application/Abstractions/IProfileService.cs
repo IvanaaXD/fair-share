@@ -12,8 +12,6 @@ public interface IProfileService
         UpdateProfileRequest request,
         CancellationToken cancellationToken = default);
 
-    // NEW: profile image
-
     Task<ProfileResponse> UploadProfileImageAsync(
         Guid currentUserId,
         ImageUpload upload,

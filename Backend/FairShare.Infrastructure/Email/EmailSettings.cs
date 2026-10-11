@@ -1,6 +1,6 @@
 namespace FairShare.Infrastructure.Email;
 
-/// <summary>Попуњава се из секције "EmailSettings" у appsettings.json.</summary>
+/// <summary>Populated from the "EmailSettings" section in appsettings.json.</summary>
 public class EmailSettings
 {
     public string Host { get; set; } = string.Empty;

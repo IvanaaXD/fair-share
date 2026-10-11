@@ -6,9 +6,9 @@ namespace FairShare.Domain.Common.Models
     public class RefreshToken
     {
         public Guid id { get; set; }
-        public string Token { get; set; }
+        public required string Token { get; set; }
         public DateTime ExpiresAt { get; set; }
-        public bool IsRevoced { get; set; }
+        public bool IsRevoked { get; set; }
 
         public RefreshToken() { }
 
@@ -16,7 +16,7 @@ namespace FairShare.Domain.Common.Models
         {
             Token = refreshToken;
             ExpiresAt = expiresAt;
-            IsRevoced = isRevoced;
+            IsRevoked = isRevoced;
         }
     }  
 }

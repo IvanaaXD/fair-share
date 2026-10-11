@@ -22,14 +22,4 @@ public class GroupExpense : BaseEntity
 
     public ICollection<ExpenseSplit> Splits { get; set; } = new List<ExpenseSplit>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
-
-    /// <summary>
-    /// Рачуна појединачне износе у <see cref="Splits"/> на основу <see cref="SplitType"/>-а.
-    /// Конкретна логика (једнако / процентуално / тачни износи) имплементира се
-    /// у апликационом слоју (domain service), ова метода служи као улазна тачка домена.
-    /// </summary>
-    public void CalculateSplits()
-    {
-        // TODO: имплементирати у апликационом/доменском сервису
-    }
 }

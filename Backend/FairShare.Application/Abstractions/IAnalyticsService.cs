@@ -4,17 +4,17 @@ namespace FairShare.Application.Interfaces;
 
 public interface IAnalyticsService
 {
-    /// <summary>Укупна потрошња кроз вријеме, по категоријама и поређење са претходним периодом.</summary>
+    /// <summary>Total expenses over time, by category, and comparison with the previous period.</summary>
     Task<SpendingAnalyticsResponse> GetSpendingAnalyticsAsync(
-        Guid currentUserId,
+    Guid currentUserId,
         AnalyticsPeriod period,
         DateTime? from,
         DateTime? to,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Трошкови са локацијом у периоду, за приказ на мапи.</summary>
+    /// <summary>Expenses with location in the period, for map display.</summary>
     Task<IReadOnlyList<ExpenseLocationResponse>> GetExpenseLocationsAsync(
-        Guid currentUserId,
+    Guid currentUserId,
         AnalyticsPeriod period,
         DateTime? from,
         DateTime? to,

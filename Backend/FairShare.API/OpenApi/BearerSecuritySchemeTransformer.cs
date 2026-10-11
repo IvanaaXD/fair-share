@@ -38,7 +38,7 @@ namespace FairShare.API.OpenApi
 
             // Required on every operation. The anonymous endpoints in AuthController also show the
             // padlock, but they work the same with or without a token.
-            foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations))
+            foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations!))
             {
                 operation.Value.Security ??= [];
                 operation.Value.Security.Add(new OpenApiSecurityRequirement

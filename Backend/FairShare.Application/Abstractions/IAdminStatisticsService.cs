@@ -5,9 +5,9 @@ namespace FairShare.Application.Interfaces;
 
 public interface IAdminStatisticsService
 {
-    /// <summary>Укупно стање система и број нових записа кроз вријеме (функционалност 5.11).</summary>
+    /// <summary>Overall system status and the number of new records over time </summary>
     Task<AdminStatisticsResponse> GetStatisticsAsync(
-        AnalyticsPeriod period,
+    AnalyticsPeriod period,
         DateTime? from,
         DateTime? to,
         CancellationToken cancellationToken = default);

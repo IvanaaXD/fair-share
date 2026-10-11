@@ -1,12 +1,12 @@
 namespace FairShare.Domain.Models;
 
-/// <summary>Укупна потрошња за један дан (резултат агрегације у бази).</summary>
+/// <summary>Total spending for a single day (result of database aggregation).</summary>
 public record DailySpendingTotal(DateTime Day, decimal Total, int Count);
 
-/// <summary>Укупна потрошња по категорији за дати период.</summary>
+/// <summary>Total spending per category for a given period.</summary>
 public record CategorySpendingTotal(Guid CategoryId, string CategoryName, decimal Total, int Count);
 
-/// <summary>Трошак са локацијом, за приказ на мапи (само поља потребна мапи).</summary>
+/// <summary>Expense with location, for display on a map (only fields needed for the map).</summary>
 public record ExpenseLocation(
     Guid Id,
     decimal Amount,

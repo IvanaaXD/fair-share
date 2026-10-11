@@ -29,7 +29,7 @@ public class CommentService : ICommentService
             groupId, groupExpenseId, currentUserId, cancellationToken);
 
         var author = await _unitOfWork.Users.GetByIdAsync(currentUserId, cancellationToken)
-            ?? throw new NotFoundException("Корисник није пронађен.");
+            ?? throw new NotFoundException("User not found.");
 
         var comment = _mapper.Map<Comment>(request);
         comment.CreatedAt = DateTime.UtcNow;
@@ -58,10 +58,10 @@ public class CommentService : ICommentService
     public async Task DeleteAsync(Guid commentId, Guid currentUserId, CancellationToken cancellationToken = default)
     {
         var comment = await _unitOfWork.Comments.GetByIdAsync(commentId, cancellationToken)
-            ?? throw new NotFoundException("Коментар није пронађен.");
+            ?? throw new NotFoundException("Comment not found.");
 
         if (comment.UserId != currentUserId)
-            throw new ForbiddenException("Можете обрисати само сопствени коментар.");
+            throw new ForbiddenException("You can only delete your own comment.");
 
         _unitOfWork.Comments.Remove(comment);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -77,13 +77,13 @@ public class CommentService : ICommentService
         CancellationToken cancellationToken)
     {
         var groupExpense = await _unitOfWork.GroupExpenses.GetByIdAsync(groupExpenseId, cancellationToken)
-            ?? throw new NotFoundException("Групни трошак није пронађен.");
+            ?? throw new NotFoundException("Group expense not found.");
 
         if (groupExpense.GroupId != groupId)
-            throw new NotFoundException("Групни трошак не припада наведеној групи.");
+            throw new NotFoundException("The group expense does not belong to the specified group.");
 
         if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken))
-            throw new ForbiddenException("Само члан групе може видјети или остављати коментаре на групне трошкове.");
+            throw new ForbiddenException("Only a group member can view or leave comments on group expenses.");
 
         return groupExpense;
     }

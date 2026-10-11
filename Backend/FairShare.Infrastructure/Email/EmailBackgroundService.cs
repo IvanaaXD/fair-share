@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 namespace FairShare.Infrastructure.Email;
 
 /// <summary>
-/// Позадински сервис који чита поруке из EmailQueue и шаље их једну по једну.
-/// Грешка при слању једне поруке се логује и не зауставља слање осталих.
+/// A background service that reads messages from the EmailQueue and sends them one by one.
+/// An error when sending one message is logged and does not stop the sending of others.
 /// </summary>
 public class EmailBackgroundService : BackgroundService
 {
@@ -30,7 +30,7 @@ public class EmailBackgroundService : BackgroundService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "Слање e-mail поруке за {To} није успјело.", message.To);
+                _logger.LogError(ex, "Sending e-mail message to {To} failed.", message.To);
             }
         }
     }

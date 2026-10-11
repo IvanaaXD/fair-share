@@ -1,6 +1,5 @@
 using FairShare.Application.Common.Exceptions;
 using FairShare.Domain.Exceptions;
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ValidationException = FluentValidation.ValidationException;

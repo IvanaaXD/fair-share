@@ -8,9 +8,9 @@ namespace FairShare.Application.Validators
         public EmailRequestValidator()
         {
             RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("E-mail адреса је обавезна.")
-                .EmailAddress().WithMessage("E-mail адреса није исправна.")
-                .MaximumLength(256).WithMessage("E-mail адреса може имати највише 256 карактера.");
+                .NotEmpty().WithMessage("E-mail address is required.")
+                .EmailAddress().WithMessage("E-mail address is not valid.")
+                .MaximumLength(256).WithMessage("E-mail address can have at most 256 characters.");
         }
     }
 }

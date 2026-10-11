@@ -22,7 +22,7 @@ public class SmtpEmailSender : IEmailSender
     {
         if (string.IsNullOrWhiteSpace(_settings.Host))
         {
-            _logger.LogWarning("EmailSettings:Host није подешен - e-mail за {To} није послат.", message.To);
+            _logger.LogWarning("EmailSettings:Host is not configured - e-mail for {To} was not sent.", message.To);
             return;
         }
 
@@ -44,7 +44,7 @@ public class SmtpEmailSender : IEmailSender
             cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(_settings.Username))
-            await client.AuthenticateAsync(_settings.Username, _settings.Password, cancellationToken);
+            await client.AuthenticateAsync(_settings.Username, _settings.Password!, cancellationToken);
 
         await client.SendAsync(mime, cancellationToken);
         await client.DisconnectAsync(true, cancellationToken);

@@ -39,8 +39,6 @@ public class ProfileController : ControllerBase
         return Ok(result);
     }
 
-    // ---------- NEW: profile image ----------
-
     /// <summary>
     /// Sets or replaces the profile image (multipart/form-data, field "file"; JPEG, PNG or WebP,
     /// at most 5 MB). Returns the profile with the new ProfileImageUrl.

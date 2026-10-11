@@ -24,12 +24,10 @@ public class User : BaseEntity
     // (true for the seeded administrator, false after the change).
     public bool MustChangePassword { get; set; }
 
-    // NEW: true from registration until the user opens the activation link from the e-mail.
+    // True from registration until the user opens the activation link from the e-mail.
     // While it is true the user cannot sign in. The default is false, so accounts that existed
     // before this feature (e.g. the seeded administrator) stay usable without a data migration.
     public bool MustConfirmEmail { get; set; }
-
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
     public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
@@ -51,7 +49,7 @@ public class User : BaseEntity
 
     public void Activate() => IsBlocked = false;
 
-    // NEW: single place that defines how e-mail addresses are compared. PostgreSQL compares text
+    // Single place that defines how e-mail addresses are compared. PostgreSQL compares text
     // case-sensitively, so without this "Ana@x.com" and "ana@x.com" would be two accounts.
     public static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 }

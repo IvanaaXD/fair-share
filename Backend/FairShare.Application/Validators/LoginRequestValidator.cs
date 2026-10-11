@@ -9,11 +9,11 @@ namespace FairShare.Application.Validators
         {
             // Username is the user's e-mail (IdentityService looks the user up by e-mail).
             RuleFor(x => x.Username)
-                .NotEmpty().WithMessage("E-mail адреса је обавезна.")
-                .EmailAddress().WithMessage("E-mail адреса није исправна.");
+                .NotEmpty().WithMessage("E-mail address is required.")
+                .EmailAddress().WithMessage("E-mail address is not valid.");
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Лозинка је обавезна.");
+                .NotEmpty().WithMessage("Password is required.");
         }
     }
 }

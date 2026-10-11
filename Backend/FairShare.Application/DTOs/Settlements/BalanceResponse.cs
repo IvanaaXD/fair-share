@@ -6,6 +6,6 @@ public class BalanceResponse
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
 
-    /// <summary>Позитивно = потражује од групе, негативно = дугује групи.</summary>
+    /// <summary>Positive = claims from the group, negative = owes the group.</summary>
     public decimal NetBalance { get; set; }
 }

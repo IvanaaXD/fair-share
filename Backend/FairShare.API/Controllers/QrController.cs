@@ -19,7 +19,7 @@ public class QrController : ControllerBase
         _currentUser = currentUser;
     }
 
-    /// <summary>PNG слика QR кода за уплату по поравнању.</summary>
+    /// <summary>PNG image of a QR code for settlement payment.</summary>
     [HttpGet("api/groups/{groupId:guid}/settlements/{settlementId:guid}/qr")]
     [Produces("image/png")]
     public async Task<IActionResult> GetImage(
@@ -31,7 +31,7 @@ public class QrController : ControllerBase
         return File(png, "image/png");
     }
 
-    /// <summary>Текст QR кода и поља (ако frontend сам исцртава QR или приказује детаље уплате).</summary>
+    /// <summary>QR code text and fields (if the frontend renders the QR itself or displays payment details).</summary>
     [HttpGet("api/groups/{groupId:guid}/settlements/{settlementId:guid}/qr/payload")]
     public async Task<ActionResult<QrPayloadResponse>> GetPayload(
         [FromRoute] Guid groupId,
@@ -43,8 +43,8 @@ public class QrController : ControllerBase
     }
 
     /// <summary>
-    /// Парсира текст прочитан из QR кода. Невалидан QR враћа 200 са IsValid=false и
-    /// листом грешака, да frontend може кориснику показати шта није у реду.
+    /// Parses the text read from a QR code. An invalid QR returns 200 with IsValid=false and
+    /// a list of errors, so the frontend can show the user what went wrong.
     /// </summary>
     [HttpPost("api/qr/parse")]
     public async Task<ActionResult<ParsedQrResponse>> Parse(

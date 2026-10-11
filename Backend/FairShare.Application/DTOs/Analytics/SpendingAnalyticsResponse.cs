@@ -9,14 +9,13 @@ public class SpendingAnalyticsResponse
     public decimal TotalSpent { get; set; }
     public int ExpenseCount { get; set; }
 
-    /// <summary>Претходни период исте дужине, непосредно прије изабраног.</summary>
+    /// <summary>Previous period of the same length, immediately before the selected one.</summary>
     public DateTime PreviousFrom { get; set; }
     public DateTime PreviousTo { get; set; }
     public decimal PreviousPeriodTotal { get; set; }
 
-    /// <summary>Промјена у односу на претходни период у процентима; null ако у претходном периоду није било потрошње.</summary>
+    /// <summary>Percentage change compared to the previous period; null if there was no spending in the previous period.</summary>
     public decimal? ChangePercentage { get; set; }
-
     public List<SpendingTimePoint> Timeline { get; set; } = new();
     public List<CategorySpendingResponse> ByCategory { get; set; } = new();
 }
@@ -35,7 +34,7 @@ public class CategorySpendingResponse
     public decimal Total { get; set; }
     public int Count { get; set; }
 
-    /// <summary>Удио категорије у укупној потрошњи периода (0-100).</summary>
+    /// <summary>Category's share in the total spending for the period (0-100).</summary>
     public decimal Percentage { get; set; }
 
     public decimal PreviousPeriodTotal { get; set; }

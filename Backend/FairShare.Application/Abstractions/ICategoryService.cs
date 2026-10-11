@@ -6,19 +6,19 @@ public interface ICategoryService
 {
     Task<IReadOnlyList<CategoryResponse>> GetAllAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Креира нову корисничку категорију (увијек IsSystemDefined = false).</summary>
+    /// <summary>Creates a new user category (always IsSystemDefined = false).</summary>
     Task<CategoryResponse> CreateAsync(
         CreateCategoryRequest request,
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Системске категорије може мијењати само администратор.</summary>
+    /// <summary>System categories can only be modified by an administrator.</summary>
     Task<CategoryResponse> UpdateAsync(
         Guid categoryId,
         UpdateCategoryRequest request,
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Системске категорије може брисати само администратор; категорија у употреби се не може обрисати.</summary>
+    /// <summary>System categories can only be deleted by an administrator; a category in use cannot be deleted.</summary>
     Task DeleteAsync(Guid categoryId, Guid currentUserId, CancellationToken cancellationToken = default);
 }

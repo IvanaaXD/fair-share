@@ -20,7 +20,7 @@ public class NotificationController : ControllerBase
         _currentUser = currentUser;
     }
 
-    /// <summary>Обавјештења тренутног корисника; isRead=false враћа само непрочитана.</summary>
+    /// <summary>Current user's notifications; isRead=false returns only unread ones.</summary>
     [HttpGet("mine")]
     public async Task<ActionResult<IReadOnlyList<NotificationResponse>>> GetMine(
         [FromQuery] bool? isRead,

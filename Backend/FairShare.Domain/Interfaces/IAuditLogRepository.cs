@@ -4,9 +4,9 @@ namespace FairShare.Domain.Interfaces;
 
 public interface IAuditLogRepository : IRepository<AuditLog>
 {
-    /// <summary>Претрага и пагинација ревизионог дневника за администраторски преглед (функционалност 5.11).</summary>
+    /// <summary>Search and pagination of the audit log for administrator review (feature 5.11).</summary>
     Task<IReadOnlyList<AuditLog>> SearchAsync(
-        Guid? userId,
+    Guid? userId,
         string? entityType,
         DateTime? from,
         DateTime? to,

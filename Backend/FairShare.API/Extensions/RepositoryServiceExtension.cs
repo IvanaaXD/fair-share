@@ -1,6 +1,5 @@
 using FairShare.Domain.Interfaces;
 using FairShare.Infrastructure.Repositories;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FairShare.WebAPI.Extensions
 {
@@ -24,10 +23,7 @@ namespace FairShare.WebAPI.Extensions
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
-            // НОВО: упити за администраторску статистику (само читање)
             services.AddScoped<IStatisticsRepository, StatisticsRepository>();
-
-            // сви апликациони сервиси раде преко IUnitOfWork
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;

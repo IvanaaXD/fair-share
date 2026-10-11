@@ -4,21 +4,21 @@ namespace FairShare.Application.Interfaces;
 
 public interface IQrPaymentService
 {
-    /// <summary>Текст QR кода за неизмирено поравнање (само дужник или повјерилац).</summary>
+    /// <summary>QR code text for an outstanding settlement (debtor or creditor only).</summary>
     Task<QrPayloadResponse> GetPayloadAsync(
         Guid groupId,
         Guid settlementTransactionId,
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>PNG слика истог QR кода.</summary>
+    /// <summary>PNG image of the same QR code.</summary>
     Task<byte[]> GetImageAsync(
         Guid groupId,
         Guid settlementTransactionId,
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Валидира скенирани текст и проналази поравнање на које се односи.</summary>
+    /// <summary>Validates the scanned text and finds the settlement it refers to.</summary>
     Task<ParsedQrResponse> ParseAsync(
         ParseQrRequest request,
         Guid currentUserId,

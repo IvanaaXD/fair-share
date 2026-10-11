@@ -1,6 +1,6 @@
 namespace FairShare.Application.DTOs.Groups;
 
-/// <summary>Позивница по email адреси - корисник мора већ бити регистрован на систему.</summary>
+/// <summary>Invitation by email address - the user must already be registered in the system.</summary>
 public class AddGroupMemberRequest
 {
     public string Email { get; set; } = string.Empty;

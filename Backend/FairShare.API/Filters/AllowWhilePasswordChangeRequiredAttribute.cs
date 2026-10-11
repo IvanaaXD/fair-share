@@ -1,8 +1,8 @@
 namespace FairShare.Api.Filters;
 
 /// <summary>
-/// Означава endpoint који остаје доступан и када корисник има MustChangePassword = true
-/// (нпр. сам endpoint за промјену лозинке).
+/// Marks an endpoint that remains accessible even when the user has MustChangePassword = true
+/// (e.g., the password change endpoint itself).
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class AllowWhilePasswordChangeRequiredAttribute : Attribute

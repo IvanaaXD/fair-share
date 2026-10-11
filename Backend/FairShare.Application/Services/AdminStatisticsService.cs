@@ -21,13 +21,13 @@ public class AdminStatisticsService : IAdminStatisticsService
         DateTime? to,
         CancellationToken cancellationToken = default)
     {
-        // Исти избор периода и грануларности као у личној аналитици (5.4).
+        // Same period and granularity selection as in personal analytics (5.4).
         var range = AnalyticsPeriodResolver.Resolve(period, from, to, DateTime.UtcNow);
         var granularity = AnalyticsPeriodResolver.GetGranularity(range);
 
         var totals = await _statistics.GetTotalsAsync(cancellationToken);
 
-        // За сваку серију: број по данима из базе, затим груписање у кантице изабране грануларности.
+        // For each series: count by day from the database, then grouping into buckets of the selected granularity.
         var bucketsBySeries = new Dictionary<StatisticSeries, Dictionary<DateTime, int>>();
         foreach (var series in Enum.GetValues<StatisticSeries>())
         {
