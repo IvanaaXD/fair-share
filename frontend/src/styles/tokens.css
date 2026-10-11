@@ -1,0 +1,117 @@
+/*
+ * Design tokens - every color, font and radius used by the app lives here.
+ * Components only ever use these variables, so switching the theme is a single
+ * attribute on <html> (data-theme="dark"), handled by ThemeProvider.
+ */
+
+:root {
+  /* ---------- surfaces and text ---------- */
+  --color-bg: #f3f5f4;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f9f8;
+  --color-border: #dce3e1;
+  --color-divider: #e5ebe9;
+  --color-track: #e9edec;
+  --color-input-border: #b9c6c3;
+  --color-text: #17242a;
+  --color-text-muted: #4a5a60;
+
+  /* ---------- brand and meaning ---------- */
+  /* Petrol: primary actions and "you are owed". */
+  --color-primary: #0b6375;
+  --color-primary-hover: #084b59;
+  --color-on-primary: #ffffff;
+  --color-positive: #0b6375;
+  --color-positive-bg: #e1eff1;
+  --color-positive-text: #084b59;
+
+  /* Amber: "you owe" and budgets close to the limit. */
+  --color-negative: #b45309;
+  --color-negative-bg: #fbeedd;
+  --color-negative-text: #8a3f07;
+
+  --color-neutral-bg: #e9edec;
+  --color-neutral-text: #3b4a50;
+
+  /* ---------- sidebar (dark in both themes) ---------- */
+  --color-nav-bg: #10323c;
+  --color-nav-text: #c9d8db;
+  --color-nav-muted: #a9c3c8;
+  --color-nav-active: #1c4855;
+  --color-nav-track: #0a2329;
+  --color-nav-line: #22505c;
+  --color-nav-owe: #f0a25a;
+  --color-nav-owed: #6cc9d8;
+
+  --color-focus: #7fd0dd;
+  --color-backdrop: rgba(16, 50, 60, 0.6);
+
+  /* ---------- group member colors (avatars, split bars, balances) ---------- */
+  --member-1: #2f6a9e;
+  --member-2: #94600f;
+  --member-3: #5b4ba6;
+  --member-4: #2d7a66;
+  --member-5: #a8456b;
+  --member-6: #61711f;
+
+  /* ---------- typography ---------- */
+  /* Onest for the whole interface; Unbounded only for amounts of money. */
+  --font-ui: 'Onest Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-money: 'Unbounded Variable', 'Onest Variable', system-ui, sans-serif;
+
+  --text-xs: 0.8125rem;   /* 13px - helper text, dates */
+  --text-sm: 0.875rem;    /* 14px - labels */
+  --text-md: 0.9375rem;   /* 15px - body */
+  --text-lg: 1.125rem;    /* 18px - card titles */
+  --text-xl: 1.375rem;    /* 22px */
+  --text-2xl: 1.875rem;   /* 30px - page titles */
+
+  /* ---------- shape ---------- */
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  --sidebar-width: 268px;
+  --control-height: 44px;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #0c1a1f;
+  --color-surface: #132a31;
+  --color-surface-muted: #10242a;
+  --color-border: #21414a;
+  --color-divider: #1d3840;
+  --color-track: #0f242a;
+  --color-input-border: #2c515b;
+  --color-text: #e6eef0;
+  --color-text-muted: #9db2b8;
+
+  /* Lighter petrol and amber, so they stay readable on a dark background. */
+  --color-primary: #3fb0c3;
+  --color-primary-hover: #5fc3d3;
+  --color-on-primary: #052026;
+  --color-positive: #6cc9d8;
+  --color-positive-bg: #123e47;
+  --color-positive-text: #a6e3ec;
+
+  --color-negative: #f0a25a;
+  --color-negative-bg: #3d2810;
+  --color-negative-text: #f6c38f;
+
+  --color-neutral-bg: #1d3840;
+  --color-neutral-text: #b5c9ce;
+
+  --color-nav-bg: #07151a;
+  --color-nav-text: #b5c9ce;
+  --color-nav-muted: #8ba4aa;
+  --color-nav-active: #17343c;
+  --color-nav-track: #0f252b;
+  --color-nav-line: #17343c;
+
+  --color-backdrop: rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}

@@ -1,0 +1,47 @@
+.segmented {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--color-nav-track);
+}
+
+.segment {
+  flex: 1;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-nav-text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segment:hover {
+  color: #ffffff;
+}
+
+.segmentActive {
+  background: var(--color-nav-active);
+  color: #ffffff;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-nav-track);
+  color: var(--color-nav-text);
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  color: #ffffff;
+}
