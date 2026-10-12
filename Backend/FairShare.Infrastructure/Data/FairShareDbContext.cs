@@ -6,7 +6,7 @@ namespace FairShare.Infrastructure.Data;
 public class FairShareDbContext : DbContext
 {
     public FairShareDbContext(DbContextOptions<FairShareDbContext> options) : base(options) { }
-
+    public DbSet<UserToken> UserTokens { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Group> Groups { get; set; }
     public DbSet<Expense> Expenses { get; set; }

@@ -1,0 +1,101 @@
+/* Shared by every page before sign-in (login, registration, password reset...). */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.text {
+  color: var(--color-text-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 18px;
+}
+
+.submit {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 4px;
+  font-size: 1rem;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
+}
+
+.link {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.smallLink {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.smallLink:hover {
+  text-decoration: underline;
+}
+
+/* ---------- result screens (email sent, account activated, link invalid) ---------- */
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.resultIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+}
+
+.resultIconSuccess {
+  background: var(--color-positive-bg);
+  color: var(--color-positive);
+}
+
+.resultIconError {
+  background: var(--color-negative-bg);
+  color: var(--color-negative);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

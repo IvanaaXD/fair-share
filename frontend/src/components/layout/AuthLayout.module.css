@@ -1,0 +1,183 @@
+.shell {
+  display: flex;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+/* ---------- left: the form ---------- */
+.formSide {
+  flex: 1 1 520px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+}
+
+.logoLink {
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px 48px;
+}
+
+.content {
+  width: 100%;
+  max-width: 420px;
+}
+
+@media (min-width: 640px) {
+  .top {
+    padding: 24px 32px;
+  }
+
+  /* With enough height the form sits in the middle; on a phone it starts at the top. */
+  .main {
+    align-items: center;
+    padding: 16px 32px 64px;
+  }
+}
+
+/* ---------- right: what the app does (only on wide screens) ---------- */
+.panel {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .panel {
+    flex: 1 1 560px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 48px;
+    background: var(--color-nav-bg);
+    color: #f3f5f4;
+  }
+}
+
+.panelInner {
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panelTitle {
+  font-size: 2.125rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.panelText {
+  max-width: 46ch;
+  color: #c9d8db;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.example {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 24px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-nav-active) 70%, var(--color-nav-bg));
+}
+
+.exampleHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.exampleGroup {
+  font-weight: 600;
+}
+
+.exampleMeta {
+  font-size: var(--text-xs);
+  color: var(--color-nav-muted);
+}
+
+.transfers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transfer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--color-nav-bg);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.arrow {
+  width: 26px;
+  height: 14px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: var(--color-nav-muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.transferLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: #e4ecee;
+}
+
+.transferAmount {
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+
+.exampleNote {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-nav-muted);
+}

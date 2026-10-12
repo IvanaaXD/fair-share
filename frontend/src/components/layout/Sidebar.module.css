@@ -221,9 +221,29 @@
 }
 
 .userText {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.logoutButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-nav-text);
+  cursor: pointer;
+}
+
+.logoutButton:hover {
+  background: var(--color-nav-active);
+  color: #ffffff;
 }
 
 .userName {
