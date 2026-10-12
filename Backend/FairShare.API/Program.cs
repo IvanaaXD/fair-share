@@ -1,4 +1,5 @@
-﻿using FairShare.Api.Filters;
+﻿using System.Text.Json.Serialization;
+using FairShare.Api.Filters;
 using FairShare.API.Middleware;
 using FairShare.Infrastructure.Caching;
 using FairShare.Infrastructure.Data;
@@ -10,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ---------- controllers + global filters ----------
+// Order matters: account state (blocked / must change password) is checked first,
+// the audit filter wraps the action, and validation runs right before the action.
 builder.Services.AddScoped<RequirePasswordChangeFilter>();
 builder.Services.AddScoped<AuditLogFilter>();
 builder.Services.AddControllers(options =>
@@ -17,10 +21,16 @@ builder.Services.AddControllers(options =>
     options.Filters.AddService<RequirePasswordChangeFilter>();
     options.Filters.AddService<AuditLogFilter>();
     options.Filters.Add<ValidationFilter>();
-});
-builder.Services.AddOpenApi();
+})
+// Enums travel as text ("Admin", "Monthly", "Equal") instead of numbers, so the API and
+// Swagger are readable and the frontend does not depend on the numeric values.
+// Requests that send numbers are still accepted.
+.AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // ---------- API documentation, CORS, rate limiting ----------
+// AddApiDocumentation already calls AddOpenApi (with the title and the Bearer button),
+// so AddOpenApi must not be called a second time here.
 builder.Services.AddApiDocumentation();
 builder.Services.AddFrontendCors(builder.Configuration);
 builder.Services.AddApiRateLimiting();
@@ -57,15 +67,23 @@ builder.Services.AddDbContext<FairShareDbContext>((serviceProvider, options) =>
 // ---------- JWT, authorization, current user, password hashing ----------
 builder.Services.AddIdentityServices(builder.Configuration);
 
-// ---------- repositories + UnitOfWork 
+// ---------- repositories + UnitOfWork ----------
 builder.Services.AddRepositoryServices();
 
 // ---------- services, AutoMapper, FluentValidation, e-mail ----------
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// ---------- budget notifications + automatic copies of recurring expenses ----------
 builder.Services.AddRecurringExpenses();
 
+// ---------- caching ----------
+// Must stay AFTER AddApplicationServices: it replaces some of those services with cached
+// versions. It also registers ICacheService and CacheInvalidationInterceptor, which the
+// filters, CategoryService and the DbContext above need.
+builder.Services.AddCaching();
+
 var app = builder.Build();
+
 if (behindReverseProxy)
     app.UseForwardedHeaders();
 
@@ -81,6 +99,7 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 }
 
 await AdminUserSeeder.SeedAsync(app.Services);
+
 if (app.Environment.IsDevelopment())
 {
     // /openapi/v1.json - the document itself; must stay reachable without a token.
@@ -96,10 +115,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Before authentication, so browser preflight (OPTIONS) requests are answered without a token.
 app.UseCors(CorsServiceExtensions.FrontendPolicy);
 
 app.UseAuthentication();
+
+// After authentication (limits are per user when signed in) and before authorization
+// (so even floods of unauthenticated requests are limited).
 app.UseRateLimiter();
+
 app.UseAuthorization();
 
 app.MapControllers();

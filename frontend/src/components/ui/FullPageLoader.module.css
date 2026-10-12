@@ -1,0 +1,24 @@
+.screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+/* The logo slowly "breathes" while the session is being restored. */
+.mark {
+  display: inline-flex;
+  transform: scale(1.6);
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}

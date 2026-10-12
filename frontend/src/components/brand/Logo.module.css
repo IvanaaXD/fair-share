@@ -15,5 +15,21 @@
   font-weight: 600;
   font-size: 1.125rem;
   letter-spacing: -0.02em;
+}
+
+/* The thin line between the two shares takes the color of whatever is behind the logo. */
+.nav .split {
+  fill: var(--color-nav-bg);
+}
+
+.nav .name {
   color: #ffffff;
+}
+
+.surface .split {
+  fill: var(--color-bg);
+}
+
+.surface .name {
+  color: var(--color-text);
 }

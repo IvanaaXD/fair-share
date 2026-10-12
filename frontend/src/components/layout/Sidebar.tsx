@@ -1,9 +1,10 @@
 import type { RefObject } from 'react';
-import { Bell, ChartColumn, ChartPie, House, ReceiptText, UserRound, Users, X, type LucideIcon } from 'lucide-react';
+import { Bell, ChartColumn, ChartPie, House, LogOut, ReceiptText, UserRound, Users, X, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
+import { useAuth } from '../../auth/useAuth';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
-import { sampleGroups, sampleUnreadNotifications, sampleUser } from '../../mocks/sidebarData';
+import { sampleGroups, sampleUnreadNotifications } from '../../mocks/sidebarData';
 import { Logo } from '../brand/Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
@@ -49,12 +50,14 @@ function groupLinkClass({ isActive }: { isActive: boolean }) {
 export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButtonRef }: SidebarProps) {
   const { t } = useTranslation();
   const localize = useLocalizedText();
+  const { user, logout } = useAuth();
 
   const className = [styles.sidebar, isDrawer && styles.drawer, isDrawer && isOpen && styles.open]
     .filter(Boolean)
     .join(' ');
 
-  const initials = localize(sampleUser.firstName[0] + sampleUser.lastName[0]);
+  const fullName = user ? localize(`${user.firstName} ${user.lastName}`) : '';
+  const initials = user ? localize(`${user.firstName.charAt(0)}${user.lastName.charAt(0)}`) : '';
 
   return (
     // A closed drawer is "inert": hidden from the keyboard and screen readers, not only from the eye.
@@ -134,11 +137,18 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
           {initials}
         </span>
         <span className={styles.userText}>
-          <span className={styles.userName}>
-            {localize(`${sampleUser.firstName} ${sampleUser.lastName}`)}
-          </span>
-          <span className={styles.userEmail}>{sampleUser.email}</span>
+          <span className={styles.userName}>{fullName}</span>
+          <span className={styles.userEmail}>{user?.email}</span>
         </span>
+        <button
+          type="button"
+          className={styles.logoutButton}
+          aria-label={t('nav.logout')}
+          title={t('nav.logout')}
+          onClick={() => void logout()}
+        >
+          <LogOut size={18} aria-hidden="true" />
+        </button>
       </div>
     </aside>
   );
