@@ -12,11 +12,11 @@ export class ApiError extends Error {
   readonly fieldErrors: Record<string, string[]>;
 
   constructor(status: number, problem: ProblemDetails = {}) {
-    super(problem.detail ?? problem.title ?? `HTTP ${status}`);
+    super(problem.detail ?? problem.message ?? problem.title ?? `HTTP ${status}`);
     this.name = 'ApiError';
     this.status = status;
     this.title = problem.title;
-    this.detail = problem.detail;
+    this.detail = problem.detail ?? problem.message;
     this.fieldErrors = normalizeFieldErrors(problem.errors);
   }
 

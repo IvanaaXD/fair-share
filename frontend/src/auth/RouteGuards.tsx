@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 
 /** Pages of the signed-in app. Anyone else is sent to the login page, which returns them here. */
 export function RequireAuth() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const location = useLocation();
 
   if (status === 'loading') {
@@ -13,8 +13,15 @@ export function RequireAuth() {
   if (status === 'anonymous') {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
+  // An account with a predefined password (the seeded admin) cannot use anything else until
+  // the password is changed - the backend would answer every other request with 403 anyway.
+  if (user?.mustChangePassword && location.pathname !== CHANGE_PASSWORD_PATH) {
+    return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
+  }
   return <Outlet />;
 }
+
+export const CHANGE_PASSWORD_PATH = '/change-password';
 
 /** Login, registration and "forgot password" make no sense when already signed in. */
 export function PublicOnly() {

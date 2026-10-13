@@ -3,6 +3,7 @@ import { PublicOnly, RequireAuth } from './auth/RouteGuards';
 import { AppLayout } from './components/layout/AppLayout';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { FullPageLoader } from './components/ui/FullPageLoader';
+import { ChangePasswordPage } from './pages/auth/ChangePasswordPage';
 import { ConfirmEmailPage } from './pages/auth/ConfirmEmailPage';
 import { EmailRequestPage } from './pages/auth/EmailRequestPage';
 import { LoginPage } from './pages/auth/LoginPage';
@@ -44,6 +45,11 @@ const router = createBrowserRouter([
     HydrateFallback: FullPageLoader,
     children: [
       {
+        // Before anything else, an account with a predefined password must choose its own.
+        element: <AuthLayout />,
+        children: [{ path: 'change-password', element: <ChangePasswordPage /> }],
+      },
+      {
         path: '/',
         element: <AppLayout />,
         children: [
@@ -65,7 +71,10 @@ const router = createBrowserRouter([
           { path: 'budgets', element: <PlaceholderPage titleKey="budgets" /> },
           { path: 'analytics', element: <PlaceholderPage titleKey="analytics" /> },
           { path: 'notifications', element: <PlaceholderPage titleKey="notifications" /> },
-          { path: 'profile', element: <PlaceholderPage titleKey="profile" /> },
+          {
+            path: 'profile',
+            lazy: () => import('./pages/profile/ProfilePage').then((module) => ({ Component: module.ProfilePage })),
+          },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

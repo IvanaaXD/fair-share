@@ -44,3 +44,14 @@
   background: var(--color-neutral-bg);
   color: var(--color-neutral-text);
 }
+
+.xl {
+  width: 96px;
+  height: 96px;
+  font-size: 1.75rem;
+}
+
+.photo {
+  object-fit: cover;
+  background: var(--color-track);
+}

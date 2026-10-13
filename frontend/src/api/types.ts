@@ -60,8 +60,24 @@ export interface Profile {
   email: string;
   defaultCurrency: string;
   bankAccountNumber: string | null;
+  /** "/api/users/{id}/profile-image?v=..." - needs the access token. */
   profileImageUrl: string | null;
   role: UserRole;
+  /** true for an account with a predefined password (e.g. the seeded admin); optional on older backends. */
+  mustChangePassword?: boolean;
+}
+
+export interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+  defaultCurrency: string;
+  /** Digits, spaces and dashes; empty removes the account. The backend stores only the digits. */
+  bankAccountNumber: string | null;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 // ---------- errors (ProblemDetails, see ExceptionHandlingMiddleware) ----------
@@ -70,6 +86,8 @@ export interface ProblemDetails {
   status?: number;
   title?: string;
   detail?: string;
+  /** Some filters answer with { message } instead of ProblemDetails (RequirePasswordChangeFilter). */
+  message?: string;
   /** Validation errors by field name, e.g. { "Email": ["E-mail адреса није исправна."] }. */
   errors?: Record<string, string[]>;
 }
