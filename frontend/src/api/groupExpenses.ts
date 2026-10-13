@@ -31,12 +31,12 @@ export const groupExpensesApi = {
 /** SettlementController (balances are in groupsApi). */
 export const settlementsApi = {
   list: (groupId: string, status?: SettlementStatus, signal?: AbortSignal) =>
-    apiRequest<Settlement[]>(`/groups/${groupId}/settlements${toQueryString({ status })}`, { signal }),
+    apiRequest<Settlement[]>(`/group/${groupId}/settlements${toQueryString({ status })}`, { signal }),
 
   /** Replaces the earlier unsettled suggestions. useExact: exact algorithm instead of the greedy one. */
   generate: (groupId: string, useExact: boolean) =>
-    apiRequest<Settlement[]>(`/groups/${groupId}/settlements/generate${toQueryString({ useExact })}`, { method: 'POST' }),
+    apiRequest<Settlement[]>(`/group/${groupId}/settlements/generate${toQueryString({ useExact })}`, { method: 'POST' }),
 
   settle: (groupId: string, settlementId: string) =>
-    apiRequest<Settlement>(`/groups/${groupId}/settlements/${settlementId}/settle`, { method: 'POST' }),
+    apiRequest<Settlement>(`/group/${groupId}/settlements/${settlementId}/settle`, { method: 'POST' }),
 };

@@ -11,8 +11,8 @@ interface DialogProps {
   footer?: ReactNode;
   /** false while something is being saved, so the dialog cannot be closed halfway. */
   dismissible?: boolean;
-  /** lg: wider window for forms with tables (e.g. splitting a group expense). */
-  size?: 'md' | 'lg';
+  /** lg: wider window for forms with tables (e.g. splitting a group expense); xl: side-by-side content (QR code + details). */
+  size?: 'md' | 'lg' | 'xl';
 }
 
 /**
@@ -47,7 +47,7 @@ export function Dialog({ title, onClose, children, footer, dismissible = true, s
   return (
     <dialog
       ref={ref}
-      className={size === 'lg' ? `${styles.dialog} ${styles.large}` : styles.dialog}
+      className={size === 'md' ? styles.dialog : `${styles.dialog} ${size === 'lg' ? styles.large : styles.extraLarge}`}
       aria-labelledby={titleId}
       onCancel={(event) => {
         // Escape: the parent decides (and removes the dialog), not the browser.

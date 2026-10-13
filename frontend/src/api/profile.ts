@@ -16,5 +16,5 @@ export const profileApi = {
 
   /** The one place to change if the backend route differs. */
   changePassword: (request: ChangePasswordRequest) =>
-    apiRequest<void>('/account/change-password', { method: 'POST', body: request }),
+    apiRequest<void>('/profile/password', { method: 'POST', body: request }),
 };

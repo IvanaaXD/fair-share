@@ -1,0 +1,431 @@
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.help {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.mono input {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.subTitle {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.amountLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.amountLine .money {
+  color: var(--color-text);
+  font-size: 1.375rem;
+  font-weight: 500;
+}
+
+/* ---------- QR / card switch ---------- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-track);
+}
+
+.tab {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-neutral-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tabActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(16, 50, 60, 0.16);
+}
+
+/* ---------- QR ---------- */
+.qr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (min-width: 640px) {
+  .qr {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+
+.qrImageBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: 240px;
+  height: 240px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  /* A QR code needs a light background in the dark theme as well, or banking apps cannot read it. */
+  background: #ffffff;
+}
+
+.qrImage {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.qrSide {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.details dt {
+  color: var(--color-text-muted);
+}
+
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.formButtons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--control-height);
+  padding: 0 16px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.linkButton:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+/* ---------- cards ---------- */
+.cardPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.cardOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.cardOption:has(input:checked) {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-positive-bg) 60%, transparent);
+}
+
+.cardOption input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.cardExpired {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cardName {
+  flex: 1;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardMeta {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.addCard {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.payButton {
+  width: 100%;
+}
+
+.simulator {
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.cardForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.cardRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.secure {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.secure svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---------- saved cards in the profile ---------- */
+.savedCards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.savedCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-divider);
+}
+
+.savedCard:first-child {
+  border-top: none;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  background: var(--color-negative-bg);
+  color: var(--color-negative-text);
+}
+
+/* ---------- scanning ---------- */
+.camera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.viewfinder {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-nav-bg);
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.videoHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.cameraIcon {
+  color: var(--color-nav-muted);
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 180px;
+  border: 1.5px dashed var(--color-input-border);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dropzone:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-positive-bg);
+}
+
+.errorList {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+/* The account number stays on one line ("161-0000012345678-90"). */
+.details dd.mono {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+/* Method switch and amount on one line on wider screens, so the window is less tall. */
+.topRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .topRow {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .topRow .tabs {
+    flex: 0 1 380px;
+  }
+
+  .topRow .amountLine {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 16px;
+    padding: 10px 16px;
+  }
+}
+
+/* Next to the QR code the details take less room in two columns of label + value. */
+@media (min-width: 640px) {
+  .qrSide {
+    gap: 12px;
+  }
+
+  .qrSide .help {
+    font-size: var(--text-xs);
+  }
+
+  .qrSide .formButtons {
+    margin-top: auto;
+  }
+}

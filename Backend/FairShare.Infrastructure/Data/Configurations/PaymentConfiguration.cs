@@ -20,6 +20,10 @@ namespace FairShare.Infrastructure.Data.Configurations
             builder.Property(p => p.Status)
                     .IsRequired();
 
+            // NEW: error code from the payment simulator ("insufficient_funds"...), null on success.
+            builder.Property(p => p.FailureReason)
+                    .HasMaxLength(50);
+
             builder.Property(p => p.CreatedAt)
                     .IsRequired();
 

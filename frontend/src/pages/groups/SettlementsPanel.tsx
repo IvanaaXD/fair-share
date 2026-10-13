@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ArrowRight, Check, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, Check, ChevronDown, CreditCard, QrCode, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { settlementsApi } from '../../api/groupExpenses';
 import type { GroupMember, Settlement } from '../../api/types';
@@ -8,7 +8,8 @@ import { Alert } from '../../components/ui/Alert';
 import { Avatar } from '../../components/ui/Avatar';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { balanceStatus, initials, isSettledStatus, memberColor, SETTLED_TOLERANCE } from '../../groups/groupUtils';
+import { balanceStatus, initials, isSettledStatus, memberColor, settlementsAreStale } from '../../groups/groupUtils';
+import type { PayTab } from '../payments/PayDialog';
 import { useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import styles from './Groups.module.css';
@@ -16,8 +17,9 @@ import styles from './Groups.module.css';
 interface SettlementsPanelProps {
   groupId: string;
   currency: string;
-  /** Changes whenever the settlements must be loaded again. */
-  version: number;
+  /** Loaded by the group page (it also needs them for the "your balance" band); null = failed. */
+  settlements: Settlement[] | null;
+  loadError: unknown;
   members: GroupMember[];
   colorOf: Map<string, string>;
   /** Current balance of every member; null when not available. */
@@ -25,53 +27,35 @@ interface SettlementsPanelProps {
   myId: string | undefined;
   /** Something changed (suggestion calculated, payment marked) - reload balances etc. */
   onChanged: (message: string) => void;
-}
-
-interface Loaded {
-  key: string;
-  settlements: Settlement[];
-  error: unknown;
-}
-
-/**
- * Do the open suggestions still match the balances? Each suggestion moves money from the
- * debtor to the creditor; after all of them everyone should be at zero. If an expense was
- * added or changed after the suggestion was calculated, that no longer holds.
- */
-function isStale(proposed: Settlement[], balanceOf: Map<string, number>): boolean {
-  const afterPayments = new Map(balanceOf);
-  for (const settlement of proposed) {
-    afterPayments.set(settlement.debtorUserId, (afterPayments.get(settlement.debtorUserId) ?? 0) + settlement.amount);
-    afterPayments.set(settlement.creditorUserId, (afterPayments.get(settlement.creditorUserId) ?? 0) - settlement.amount);
-  }
-  return [...afterPayments.values()].some((value) => Math.abs(value) > SETTLED_TOLERANCE * 2);
+  /** Opens the payment window (QR code or card) for a suggestion. */
+  onPay: (settlement: Settlement, tab: PayTab) => void;
+  onScan: () => void;
 }
 
 /** "Who pays whom" - the debt simplification result, and marking payments as done. */
-export function SettlementsPanel({ groupId, currency, version, members, colorOf, balanceOf, myId, onChanged }: SettlementsPanelProps) {
+export function SettlementsPanel({
+  groupId,
+  currency,
+  settlements: loadedSettlements,
+  loadError,
+  members,
+  colorOf,
+  balanceOf,
+  myId,
+  onChanged,
+  onPay,
+  onScan,
+}: SettlementsPanelProps) {
   const { t } = useTranslation();
   const errorMessage = useErrorMessage();
   const localize = useLocalizedText();
   const format = useFormatters();
 
-  const key = `${groupId}:${version}`;
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [useExact, setUseExact] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<Settlement | null>(null);
   const [showSettled, setShowSettled] = useState(false);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    settlementsApi.list(groupId, undefined, controller.signal).then(
-      (settlements) => setLoaded({ key, settlements, error: null }),
-      (error: unknown) => {
-        if (!controller.signal.aborted) setLoaded({ key, settlements: [], error });
-      },
-    );
-    return () => controller.abort();
-  }, [groupId, key]);
 
   const memberById = new Map(members.map((member) => [member.userId, member]));
   const shortName = (userId: string, fallback: string) => {
@@ -92,11 +76,11 @@ export function SettlementsPanel({ groupId, currency, version, members, colorOf,
   };
   const money = (amount: number) => format.money(amount, currency);
 
-  const settlements = loaded?.settlements ?? [];
+  const settlements = loadedSettlements ?? [];
   const proposed = settlements.filter((settlement) => !isSettledStatus(settlement.status));
   const settled = settlements.filter((settlement) => isSettledStatus(settlement.status));
   const everyoneAtZero = balanceOf ? [...balanceOf.values()].every((value) => balanceStatus(value) === 'settled') : false;
-  const stale = balanceOf !== null && proposed.length > 0 && isStale(proposed, balanceOf);
+  const stale = balanceOf !== null && proposed.length > 0 && settlementsAreStale(proposed, balanceOf);
 
   async function generate() {
     setGenerating(true);
@@ -120,7 +104,7 @@ export function SettlementsPanel({ groupId, currency, version, members, colorOf,
         <p className={styles.panelHint}>{t('settlements.text')}</p>
       </div>
 
-      {loaded?.error != null && <Alert tone="error">{t('settlements.loadError')} {errorMessage(loaded.error)}</Alert>}
+      {loadError != null && <Alert tone="error">{t('settlements.loadError')} {errorMessage(loadError)}</Alert>}
       {actionError && <Alert tone="error">{actionError}</Alert>}
       {stale && <Alert tone="info">{t('settlements.stale')}</Alert>}
 
@@ -145,17 +129,36 @@ export function SettlementsPanel({ groupId, currency, version, members, colorOf,
                   {money(settlement.amount)}
                 </span>
                 {involvesMe && (
-                  <Button variant="secondary" className={styles.transferButton} onClick={() => setConfirming(settlement)}>
-                    <Check size={16} aria-hidden="true" />
-                    {t('settlements.markPaid')}
-                  </Button>
+                  <span className={styles.transferActions}>
+                    {settlement.debtorUserId === myId ? (
+                      <>
+                        <Button className={styles.transferButton} onClick={() => onPay(settlement, 'card')} disabled={stale}>
+                          <CreditCard size={16} aria-hidden="true" />
+                          {t('settlements.pay')}
+                        </Button>
+                        <Button variant="secondary" className={styles.transferButton} onClick={() => onPay(settlement, 'qr')} disabled={stale}>
+                          <QrCode size={16} aria-hidden="true" />
+                          {t('settlements.showQr')}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="secondary" className={styles.transferButton} onClick={() => onPay(settlement, 'qr')} disabled={stale}>
+                        <QrCode size={16} aria-hidden="true" />
+                        {t('settlements.showQr')}
+                      </Button>
+                    )}
+                    <Button variant="secondary" className={styles.transferButton} onClick={() => setConfirming(settlement)}>
+                      <Check size={16} aria-hidden="true" />
+                      {t('settlements.markPaid')}
+                    </Button>
+                  </span>
                 )}
               </li>
             );
           })}
         </ul>
       ) : (
-        loaded && <p className={styles.panelHint}>{everyoneAtZero ? t('settlements.allSettled') : t('settlements.empty')}</p>
+        loadedSettlements && <p className={styles.panelHint}>{everyoneAtZero ? t('settlements.allSettled') : t('settlements.empty')}</p>
       )}
 
       {!everyoneAtZero && (
@@ -172,6 +175,11 @@ export function SettlementsPanel({ groupId, currency, version, members, colorOf,
           </Button>
         </div>
       )}
+
+      <button type="button" className={styles.disclosure} onClick={onScan}>
+        <ScanLine size={16} aria-hidden="true" />
+        {t('scan.open')}
+      </button>
 
       {settled.length > 0 && (
         <div>

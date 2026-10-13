@@ -27,7 +27,9 @@
   .dialog {
     width: calc(100% - 48px);
     max-width: 560px;
-    height: auto;
+    /* fit-content, not auto: a modal <dialog> is fixed with top and bottom 0, so "auto"
+       would stretch it to the full height of the window. */
+    height: fit-content;
     max-height: calc(100dvh - 48px);
     margin: auto;
     border: 1px solid var(--color-border);
@@ -39,6 +41,10 @@
 @media (min-width: 640px) {
   .large {
     max-width: 680px;
+  }
+
+  .extraLarge {
+    max-width: 820px;
   }
 }
 
