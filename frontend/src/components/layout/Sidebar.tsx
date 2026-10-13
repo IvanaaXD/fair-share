@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 import { useAuth } from '../../auth/useAuth';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
-import { sampleGroups, sampleUnreadNotifications } from '../../mocks/sidebarData';
+import { balanceStatus } from '../../groups/groupUtils';
+import { useMyGroups } from '../../groups/myGroupsStore';
+import { sampleUnreadNotifications } from '../../mocks/sidebarData';
 import { Logo } from '../brand/Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
@@ -27,6 +29,9 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'notifications', to: '/notifications', icon: Bell },
   { key: 'profile', to: '/profile', icon: UserRound },
 ];
+
+/** How many groups fit in the quick switcher; the rest are on the groups page. */
+const MAX_SIDEBAR_GROUPS = 5;
 
 interface SidebarProps {
   id: string;
@@ -51,6 +56,7 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
   const { t } = useTranslation();
   const localize = useLocalizedText();
   const { user, logout } = useAuth();
+  const { groups } = useMyGroups();
 
   const className = [styles.sidebar, isDrawer && styles.drawer, isDrawer && isOpen && styles.open]
     .filter(Boolean)
@@ -107,14 +113,14 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
           {t('nav.yourGroups')}
         </h2>
         <ul className={styles.list}>
-          {sampleGroups.map((group) => {
-            const status = group.balance < 0 ? 'owe' : group.balance > 0 ? 'owed' : 'settled';
+          {(groups ?? []).slice(0, MAX_SIDEBAR_GROUPS).map((group) => {
+            const status = group.myBalance === null ? null : balanceStatus(group.myBalance);
             return (
               <li key={group.id}>
                 <NavLink to={`/groups/${group.id}`} className={groupLinkClass} onClick={onNavigate}>
-                  <span className={`${styles.dot} ${styles[`dot_${status}`]}`} aria-hidden="true" />
+                  <span className={`${styles.dot} ${styles[`dot_${status ?? 'settled'}`]}`} aria-hidden="true" />
                   <span className={styles.groupName}>{localize(group.name)}</span>
-                  <span className="visually-hidden">, {t(`groupStatus.${status}`)}</span>
+                  {status && <span className="visually-hidden">, {t(`groupStatus.${status}`)}</span>}
                 </NavLink>
               </li>
             );

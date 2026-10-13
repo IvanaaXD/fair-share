@@ -53,7 +53,7 @@ export function useFormatters() {
     return {
       locale,
 
-      /** 1234.5, "BAM" -> "1.234,50 КМ" / "1.234,50 KM" / "BAM 1,234.50" */
+      /** 1234.5, "BAM" -> "1.234,50 КМ" / "1.234,50 KM" / "KM 1,234.50" */
       money(amount: number, currency: string): string {
         let format = moneyFormats.get(currency);
         if (!format) {
@@ -61,6 +61,8 @@ export function useFormatters() {
             format = new Intl.NumberFormat(locale, {
               style: 'currency',
               currency,
+              // English would write "BAM 12.00"; "KM 12.00" is what people here are used to.
+              currencyDisplay: locale === 'en-GB' ? 'narrowSymbol' : 'symbol',
               // Always two decimals, also for RSD, so amounts line up in a column.
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,

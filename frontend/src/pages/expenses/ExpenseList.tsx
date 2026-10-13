@@ -1,6 +1,7 @@
 import { Pencil, ReceiptText, Repeat } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Expense } from '../../api/types';
+import { useCategories } from '../../hooks/useCategories';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
@@ -22,8 +23,11 @@ function useExpenseText() {
   const { t } = useTranslation();
   const localize = useLocalizedText();
   const format = useFormatters();
+  const { categories } = useCategories();
+  const iconKeys = new Map(categories.map((category) => [category.id, category.icon]));
 
   return {
+    icon: (expense: Expense) => categoryIcon(expense.categoryName, iconKeys.get(expense.categoryId)),
     title: (expense: Expense) => localize(expense.description?.trim() || expense.categoryName),
     category: (expense: Expense) => localize(expense.categoryName),
     amount: (expense: Expense) => format.money(expense.amount, expense.currency),
@@ -77,7 +81,7 @@ function ExpenseTable({ expenses, onEdit }: ExpenseListProps) {
         </thead>
         <tbody>
           {expenses.map((expense) => {
-            const Icon = categoryIcon(expense.categoryName);
+            const Icon = text.icon(expense);
             const hasDescription = Boolean(expense.description?.trim());
             const repeats = text.repeats(expense);
             return (
@@ -123,7 +127,7 @@ function ExpenseCards({ expenses, onEdit }: ExpenseListProps) {
   return (
     <ul className={styles.cards}>
       {expenses.map((expense) => {
-        const Icon = categoryIcon(expense.categoryName);
+        const Icon = text.icon(expense);
         const repeats = text.repeats(expense);
         return (
           <li key={expense.id}>

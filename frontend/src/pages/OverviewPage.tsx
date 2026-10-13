@@ -3,10 +3,13 @@ import { Plus, ReceiptText, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ButtonLink } from '../components/ui/Button';
 import type { ExpensesPageState } from './expenses/ExpensesPage';
+import type { GroupsPageState } from './groups/GroupsPage';
 import styles from './Page.module.css';
 
 /** Opens the expenses page with the "new expense" window already open. */
 const ADD_EXPENSE_STATE: ExpensesPageState = { addExpense: true };
+/** Opens the groups page with the "new group" window already open. */
+const CREATE_GROUP_STATE: GroupsPageState = { createGroup: true };
 
 /** Start page. For now only the empty state; the cards come with the analytics step. */
 export function OverviewPage() {
@@ -42,7 +45,7 @@ export function OverviewPage() {
           <ButtonLink to="/expenses" state={ADD_EXPENSE_STATE} icon={<Plus size={18} aria-hidden="true" />}>
             {t('overview.addExpense')}
           </ButtonLink>
-          <ButtonLink to="/groups" variant="secondary" icon={<Users size={18} aria-hidden="true" />}>
+          <ButtonLink to="/groups" state={CREATE_GROUP_STATE} variant="secondary" icon={<Users size={18} aria-hidden="true" />}>
             {t('overview.createGroup')}
           </ButtonLink>
         </div>

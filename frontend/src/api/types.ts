@@ -91,6 +91,8 @@ export interface Category {
   id: string;
   name: string;
   isSystemDefined: boolean;
+  /** Name of a lucide icon, e.g. "shopping-basket"; optional - otherwise guessed from the name. */
+  icon?: string | null;
 }
 
 // ---------- personal expenses (ExpenseController, ExpenseReceiptController) ----------
@@ -151,4 +153,51 @@ export interface ExpenseQuery {
 
 export interface ImageUrlResponse {
   url: string;
+}
+
+// ---------- groups (GroupController, SettlementController) ----------
+
+/** "Owner" or "Member"; older backends without JsonStringEnumConverter send 0 / 1. */
+export type GroupRole = 'Owner' | 'Member' | number;
+
+export interface GroupMember {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: GroupRole;
+  joinedAt: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description: string | null;
+  /** Fixed when the group is created - all expenses and settlements are in it. */
+  currency: string;
+  createdAt: string;
+  members: GroupMember[];
+}
+
+export interface CreateGroupRequest {
+  name: string;
+  description: string | null;
+  currency: string;
+}
+
+export interface UpdateGroupRequest {
+  name: string;
+  description: string | null;
+}
+
+export interface AddGroupMemberRequest {
+  email: string;
+}
+
+/** GET /api/groups/{id}/settlements/balances - positive: the group owes the member. */
+export interface MemberBalance {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  netBalance: number;
 }
