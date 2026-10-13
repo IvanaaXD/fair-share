@@ -91,6 +91,8 @@ export interface Category {
   id: string;
   name: string;
   isSystemDefined: boolean;
+  /** Name of a lucide icon, e.g. "shopping-basket"; optional - otherwise guessed from the name. */
+  icon?: string | null;
 }
 
 // ---------- personal expenses (ExpenseController, ExpenseReceiptController) ----------
@@ -151,4 +153,116 @@ export interface ExpenseQuery {
 
 export interface ImageUrlResponse {
   url: string;
+}
+
+// ---------- groups (GroupController, SettlementController) ----------
+
+/** "Owner" or "Member"; older backends without JsonStringEnumConverter send 0 / 1. */
+export type GroupRole = 'Owner' | 'Member' | number;
+
+export interface GroupMember {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: GroupRole;
+  joinedAt: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description: string | null;
+  /** Fixed when the group is created - all expenses and settlements are in it. */
+  currency: string;
+  createdAt: string;
+  members: GroupMember[];
+}
+
+export interface CreateGroupRequest {
+  name: string;
+  description: string | null;
+  currency: string;
+}
+
+export interface UpdateGroupRequest {
+  name: string;
+  description: string | null;
+}
+
+export interface AddGroupMemberRequest {
+  email: string;
+}
+
+/** GET /api/groups/{id}/settlements/balances - positive: the group owes the member. */
+export interface MemberBalance {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  netBalance: number;
+}
+
+// ---------- group expenses (GroupExpenseController, GroupExpenseReceiptController) ----------
+
+/** Older backends without JsonStringEnumConverter send 0 / 1 / 2. */
+export type SplitType = 'Equal' | 'Percentage' | 'ExactAmount';
+
+export interface ExpenseSplit {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  amount: number;
+  percentage: number | null;
+}
+
+export interface GroupExpense {
+  id: string;
+  groupId: string;
+  categoryId: string;
+  categoryName: string;
+  paidByUserId: string;
+  paidByName: string;
+  amount: number;
+  description: string | null;
+  /** "/api/groups/{g}/expenses/{e}/receipt?v=..." - needs the access token. */
+  receiptImageUrl: string | null;
+  date: string;
+  splitType: SplitType | number;
+  splits: ExpenseSplit[];
+}
+
+export interface SplitParticipant {
+  userId: string;
+  /** Only for ExactAmount. */
+  amount: number | null;
+  /** Only for Percentage. */
+  percentage: number | null;
+}
+
+/** Body of POST and PUT - an edit sends the whole expense again and the splits are recalculated. */
+export interface SaveGroupExpenseRequest {
+  categoryId: string;
+  paidByUserId: string;
+  amount: number;
+  description: string | null;
+  /** "YYYY-MM-DD" */
+  date: string;
+  splitType: SplitType;
+  participants: SplitParticipant[];
+}
+
+// ---------- settlements (SettlementController) ----------
+
+export type SettlementStatus = 'Proposed' | 'Settled';
+
+export interface Settlement {
+  id: string;
+  groupId: string;
+  debtorUserId: string;
+  debtorName: string;
+  creditorUserId: string;
+  creditorName: string;
+  amount: number;
+  status: SettlementStatus | number;
+  createdAt: string;
 }

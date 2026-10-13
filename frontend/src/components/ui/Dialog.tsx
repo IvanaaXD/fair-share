@@ -11,6 +11,8 @@ interface DialogProps {
   footer?: ReactNode;
   /** false while something is being saved, so the dialog cannot be closed halfway. */
   dismissible?: boolean;
+  /** lg: wider window for forms with tables (e.g. splitting a group expense). */
+  size?: 'md' | 'lg';
 }
 
 /**
@@ -20,7 +22,7 @@ interface DialogProps {
  * On a phone it fills the screen; from 640px up it is a centered window.
  * Put data-autofocus on the element that should have focus when the dialog opens.
  */
-export function Dialog({ title, onClose, children, footer, dismissible = true }: DialogProps) {
+export function Dialog({ title, onClose, children, footer, dismissible = true, size = 'md' }: DialogProps) {
   const { t } = useTranslation();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -45,7 +47,7 @@ export function Dialog({ title, onClose, children, footer, dismissible = true }:
   return (
     <dialog
       ref={ref}
-      className={styles.dialog}
+      className={size === 'lg' ? `${styles.dialog} ${styles.large}` : styles.dialog}
       aria-labelledby={titleId}
       onCancel={(event) => {
         // Escape: the parent decides (and removes the dialog), not the browser.

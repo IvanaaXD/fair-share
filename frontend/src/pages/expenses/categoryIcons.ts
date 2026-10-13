@@ -1,9 +1,11 @@
 import {
+  Bike,
   BookOpen,
   Bus,
   Car,
   Coffee,
   Dumbbell,
+  Footprints,
   Gift,
   GraduationCap,
   HeartPulse,
@@ -50,7 +52,38 @@ const RULES: [LucideIcon, string[]][] = [
   [Smartphone, ['tehnolog', 'elektron', 'tech', 'gadget', 'uređaj']],
 ];
 
-export function categoryIcon(name: string): LucideIcon {
+/** Icons that the Icon column of a category may name (the ones used by the seeded categories). */
+const BY_KEY: Record<string, LucideIcon> = {
+  'shopping-basket': ShoppingBasket,
+  utensils: UtensilsCrossed,
+  coffee: Coffee,
+  bus: Bus,
+  car: Car,
+  house: House,
+  lightbulb: Lightbulb,
+  wifi: Wifi,
+  smartphone: Smartphone,
+  'heart-pulse': HeartPulse,
+  shirt: Shirt,
+  footprints: Footprints,
+  popcorn: Popcorn,
+  dumbbell: Dumbbell,
+  bike: Bike,
+  'graduation-cap': GraduationCap,
+  book: BookOpen,
+  plane: Plane,
+  gift: Gift,
+  'paw-print': PawPrint,
+  'shopping-bag': ShoppingBag,
+  tag: Tag,
+};
+
+/** The icon saved with the category if it is a known one, otherwise a guess from the name. */
+export function categoryIcon(name: string, iconKey?: string | null): LucideIcon {
+  const saved = iconKey ? BY_KEY[iconKey.trim().toLowerCase()] : undefined;
+  if (saved) {
+    return saved;
+  }
   const words = toLatin(name).toLowerCase().split(/[\s,./&-]+/);
   for (const [icon, prefixes] of RULES) {
     if (prefixes.some((prefix) => words.some((word) => word.startsWith(prefix.trim())))) {

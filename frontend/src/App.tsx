@@ -2,12 +2,12 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import { PublicOnly, RequireAuth } from './auth/RouteGuards';
 import { AppLayout } from './components/layout/AppLayout';
 import { AuthLayout } from './components/layout/AuthLayout';
+import { FullPageLoader } from './components/ui/FullPageLoader';
 import { ConfirmEmailPage } from './pages/auth/ConfirmEmailPage';
 import { EmailRequestPage } from './pages/auth/EmailRequestPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
-import { ExpensesPage } from './pages/expenses/ExpensesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
@@ -40,15 +40,28 @@ const router = createBrowserRouter([
   },
   {
     element: <RequireAuth />,
+    // Shown while a page that is loaded on demand (lazy) is downloaded on the first visit.
+    HydrateFallback: FullPageLoader,
     children: [
       {
         path: '/',
         element: <AppLayout />,
         children: [
           { index: true, element: <OverviewPage /> },
-          { path: 'expenses', element: <ExpensesPage /> },
-          { path: 'groups', element: <PlaceholderPage titleKey="groups" /> },
-          { path: 'groups/:groupId', element: <PlaceholderPage titleKey="groups" /> },
+          // The bigger sections are separate files that the browser downloads only when the
+          // section is opened for the first time, so the first visit loads less code.
+          {
+            path: 'expenses',
+            lazy: () => import('./pages/expenses/ExpensesPage').then((module) => ({ Component: module.ExpensesPage })),
+          },
+          {
+            path: 'groups',
+            lazy: () => import('./pages/groups/GroupsPage').then((module) => ({ Component: module.GroupsPage })),
+          },
+          {
+            path: 'groups/:groupId',
+            lazy: () => import('./pages/groups/GroupPage').then((module) => ({ Component: module.GroupPage })),
+          },
           { path: 'budgets', element: <PlaceholderPage titleKey="budgets" /> },
           { path: 'analytics', element: <PlaceholderPage titleKey="analytics" /> },
           { path: 'notifications', element: <PlaceholderPage titleKey="notifications" /> },

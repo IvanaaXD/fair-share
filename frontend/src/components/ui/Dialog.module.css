@@ -36,6 +36,12 @@
   }
 }
 
+@media (min-width: 640px) {
+  .large {
+    max-width: 680px;
+  }
+}
+
 .header {
   display: flex;
   align-items: center;

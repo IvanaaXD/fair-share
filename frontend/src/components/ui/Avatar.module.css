@@ -1,0 +1,46 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sm {
+  width: 30px;
+  height: 30px;
+  font-size: 0.6875rem;
+}
+
+.md {
+  width: 36px;
+  height: 36px;
+  font-size: 0.75rem;
+}
+
+.lg {
+  width: 48px;
+  height: 48px;
+  font-size: 0.9375rem;
+}
+
+.ringed {
+  border: 2px solid var(--color-surface);
+}
+
+.stack {
+  display: inline-flex;
+  align-items: center;
+}
+
+.stack > * + * {
+  margin-left: -8px;
+}
+
+.more {
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral-text);
+}
