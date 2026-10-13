@@ -259,3 +259,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* The name and picture lead to the profile. */
+.userLink {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: -6px;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.userLink:hover {
+  background: color-mix(in srgb, var(--color-nav-active) 60%, transparent);
+  color: inherit;
+}

@@ -15,6 +15,8 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
   /** Reloads the profile, e.g. after the user changes their name or picture. */
   reloadProfile: () => Promise<void>;
+  /** Uses a profile the API has just returned (after saving), without loading it again. */
+  setProfile: (profile: Profile) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

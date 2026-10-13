@@ -8,6 +8,7 @@ import { balanceStatus } from '../../groups/groupUtils';
 import { useMyGroups } from '../../groups/myGroupsStore';
 import { sampleUnreadNotifications } from '../../mocks/sidebarData';
 import { Logo } from '../brand/Logo';
+import { UserAvatar } from '../ui/UserAvatar';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import styles from './Sidebar.module.css';
@@ -63,7 +64,6 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
     .join(' ');
 
   const fullName = user ? localize(`${user.firstName} ${user.lastName}`) : '';
-  const initials = user ? localize(`${user.firstName.charAt(0)}${user.lastName.charAt(0)}`) : '';
 
   return (
     // A closed drawer is "inert": hidden from the keyboard and screen readers, not only from the eye.
@@ -139,13 +139,20 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
       </div>
 
       <div className={styles.user}>
-        <span className={styles.avatar} aria-hidden="true">
-          {initials}
-        </span>
-        <span className={styles.userText}>
-          <span className={styles.userName}>{fullName}</span>
-          <span className={styles.userEmail}>{user?.email}</span>
-        </span>
+        <NavLink to="/profile" className={styles.userLink} onClick={onNavigate}>
+          {user && (
+            <UserAvatar
+              firstName={user.firstName}
+              lastName={user.lastName}
+              imageUrl={user.profileImageUrl}
+              color="var(--member-3)"
+            />
+          )}
+          <span className={styles.userText}>
+            <span className={styles.userName}>{fullName}</span>
+            <span className={styles.userEmail}>{user?.email}</span>
+          </span>
+        </NavLink>
         <button
           type="button"
           className={styles.logoutButton}
