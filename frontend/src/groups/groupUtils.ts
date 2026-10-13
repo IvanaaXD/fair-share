@@ -56,3 +56,14 @@ export function groupIcon(name: string): LucideIcon {
   }
   return Users;
 }
+
+/** Enum values may arrive as names or (older backend) as numbers. */
+export function splitTypeName(value: string | number): 'Equal' | 'Percentage' | 'ExactAmount' {
+  if (value === 'Percentage' || value === 1) return 'Percentage';
+  if (value === 'ExactAmount' || value === 2) return 'ExactAmount';
+  return 'Equal';
+}
+
+export function isSettledStatus(value: string | number): boolean {
+  return value === 'Settled' || value === 1;
+}

@@ -14,6 +14,10 @@ interface ReceiptFieldProps {
   removed: boolean;
   error: string | null;
   disabled: boolean;
+  /** Replaces the default "JPEG, PNG or WebP..." line, e.g. to say who else can see the photo. */
+  hint?: string;
+  /** Only show the saved photo, without replace / remove (no permission to change it). */
+  readOnly?: boolean;
   onSelect: (file: File) => void;
   onClearFile: () => void;
   onRemoveSaved: () => void;
@@ -34,6 +38,8 @@ export function ReceiptField({
   onClearFile,
   onRemoveSaved,
   onUndoRemove,
+  hint,
+  readOnly,
 }: ReceiptFieldProps) {
   const { t } = useTranslation();
   const id = useId();
@@ -41,6 +47,10 @@ export function ReceiptField({
   const saved = useProtectedImage(file || removed ? null : savedUrl);
 
   const choose = () => inputRef.current?.click();
+
+  if (readOnly && !savedUrl) {
+    return null;
+  }
 
   let content;
   if (file) {
@@ -84,12 +94,16 @@ export function ReceiptField({
           ) : null
         }
       >
-        <ActionButton icon={<RefreshCw size={16} />} onClick={choose} disabled={disabled}>
-          {t('expenseForm.replaceReceipt')}
-        </ActionButton>
-        <ActionButton icon={<Trash2 size={16} />} onClick={onRemoveSaved} disabled={disabled}>
-          {t('expenseForm.removeReceipt')}
-        </ActionButton>
+        {!readOnly && (
+          <>
+            <ActionButton icon={<RefreshCw size={16} />} onClick={choose} disabled={disabled}>
+              {t('expenseForm.replaceReceipt')}
+            </ActionButton>
+            <ActionButton icon={<Trash2 size={16} />} onClick={onRemoveSaved} disabled={disabled}>
+              {t('expenseForm.removeReceipt')}
+            </ActionButton>
+          </>
+        )}
       </Preview>
     );
   } else {
@@ -114,7 +128,7 @@ export function ReceiptField({
       </legend>
       {content}
       <p id={`${id}-hint`} className={styles.hint}>
-        {t('expenseForm.receiptHint')}
+        {hint ?? t('expenseForm.receiptHint')}
       </p>
       {error && (
         <p id={`${id}-error`} className={styles.fieldError}>

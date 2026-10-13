@@ -604,3 +604,245 @@
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
+
+/* ---------- group expenses ---------- */
+.expenseList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.expenseList[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+.expenseList li + li {
+  border-top: 1px solid var(--color-divider);
+}
+
+.expenseRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 8px;
+  margin: 0 -8px;
+  width: calc(100% + 16px);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.expenseRow:hover {
+  background: var(--color-surface-muted);
+}
+
+.expenseMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.expenseTitle {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.expenseMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.expenseReceipt {
+  display: inline-flex;
+  margin-left: 4px;
+}
+
+.splitBar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  margin-top: 6px;
+  max-width: 260px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--color-track);
+}
+
+.splitBar > span {
+  flex-basis: 0;
+}
+
+.expenseRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.expenseAmount {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.expenseShare {
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.share_owe {
+  color: var(--color-negative-text);
+}
+
+.share_owed {
+  color: var(--color-positive-text);
+}
+
+.share_muted {
+  color: var(--color-text-muted);
+}
+
+.loadMore {
+  align-self: center;
+}
+
+/* ---------- settlement suggestion ---------- */
+.transferList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transfer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+}
+
+/* A payment the user takes part in stands out a little. */
+.transferMine {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+  background: color-mix(in srgb, var(--color-positive-bg) 55%, transparent);
+}
+
+.transferPeople {
+  display: flex;
+  flex: 1 1 200px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.transferArrow {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.transferNames {
+  overflow: hidden;
+  margin-left: 4px;
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transferAmount {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.transferButton {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: var(--text-sm);
+}
+
+.generate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exactOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.exactOption input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 2px 0 0;
+  accent-color: var(--color-primary);
+}
+
+.exactHint {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rotated {
+  transform: rotate(180deg);
+}
+
+.settledList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.settledList li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.settledList li > :first-child {
+  flex: 1;
+}
+
+.settledDate {
+  font-size: var(--text-xs);
+}

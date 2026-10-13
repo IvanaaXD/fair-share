@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, LogOut, Pencil, ReceiptText, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { ChevronLeft, LogOut, Pencil, Plus, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../../api/ApiError';
 import { groupsApi } from '../../api/groups';
-import type { Group, GroupMember, MemberBalance } from '../../api/types';
+import type { Group, GroupExpense, GroupMember, MemberBalance } from '../../api/types';
 import { useErrorMessage } from '../../api/useErrorMessage';
 import { useAuth } from '../../auth/useAuth';
 import { Alert } from '../../components/ui/Alert';
@@ -13,11 +13,15 @@ import { Button, ButtonLink } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { balanceStatus, initials, isOwnerRole, memberColor, membersByJoinDate } from '../../groups/groupUtils';
 import { useMyGroups } from '../../groups/myGroupsStore';
+import { useCategories } from '../../hooks/useCategories';
 import { useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
+import { GroupExpenseDialog, type GroupExpenseChange } from './GroupExpenseDialog';
+import { GroupExpenseList } from './GroupExpenseList';
 import { GroupFormDialog } from './GroupFormDialog';
 import type { GroupsPageState } from './GroupsPage';
 import { InviteMemberDialog } from './InviteMemberDialog';
+import { SettlementsPanel } from './SettlementsPanel';
 import pageStyles from '../Page.module.css';
 import styles from './Groups.module.css';
 
@@ -35,6 +39,7 @@ type Dialog =
   | { kind: 'remove'; member: GroupMember }
   | { kind: 'leave' }
   | { kind: 'delete' }
+  | { kind: 'expense'; expense: GroupExpense | null }
   | null;
 
 /** One group: who is in it, how everyone stands, and the group's settings. */
@@ -48,6 +53,7 @@ export function GroupPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { reload: reloadMyGroups } = useMyGroups();
+  const { categories } = useCategories();
 
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [version, setVersion] = useState(0);
@@ -192,8 +198,11 @@ export function GroupPage() {
               {t('group.edit')}
             </Button>
           )}
-          <Button icon={<UserPlus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'invite' })}>
+          <Button variant="secondary" icon={<UserPlus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'invite' })}>
             {t('group.invite')}
+          </Button>
+          <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'expense', expense: null })}>
+            {t('groupExpense.add')}
           </Button>
         </div>
       </header>
@@ -210,6 +219,22 @@ export function GroupPage() {
 
       <div className={styles.columns}>
         <div className={styles.column}>
+
+
+          <section className={styles.panel} aria-labelledby="expenses-title">
+            <h2 id="expenses-title" className={styles.panelTitle}>
+              {t('group.expensesTitle')}
+            </h2>
+            <GroupExpenseList
+              groupId={group.id}
+              currency={group.currency}
+              version={version}
+              myId={user?.id}
+              colorOf={colorOf}
+              onOpen={(expense) => setDialog({ kind: 'expense', expense })}
+            />
+          </section>
+
           <section className={styles.panel} aria-labelledby="members-title">
             <h2 id="members-title" className={styles.panelTitle}>
               {t('group.membersTitle')}
@@ -248,19 +273,20 @@ export function GroupPage() {
               })}
             </ul>
           </section>
-
-          <section className={styles.panel} aria-labelledby="expenses-title">
-            <h2 id="expenses-title" className={styles.panelTitle}>
-              {t('group.expensesTitle')}
-            </h2>
-            <div className={styles.soon}>
-              <ReceiptText size={22} strokeWidth={1.75} aria-hidden="true" />
-              <p>{t('group.expensesSoon')}</p>
-            </div>
-          </section>
         </div>
 
         <div className={styles.column}>
+          <SettlementsPanel
+            groupId={group.id}
+            currency={group.currency}
+            version={version}
+            members={members}
+            colorOf={colorOf}
+            balanceOf={current.balances ? balanceOf : null}
+            myId={user?.id}
+            onChanged={(message) => refresh(message)}
+          />
+
           {current.balances && (
             <BalancesPanel
               members={members}
@@ -299,6 +325,21 @@ export function GroupPage() {
           </section>
         </div>
       </div>
+
+      {dialog?.kind === 'expense' && user && (
+        <GroupExpenseDialog
+          group={group}
+          expense={dialog.expense}
+          categories={categories}
+          currentUserId={user.id}
+          onClose={() => setDialog(null)}
+          onDone={(change: GroupExpenseChange) => {
+            setDialog(null);
+            refresh(t(`groupExpense.${change}`));
+          }}
+          onChanged={() => refresh()}
+        />
+      )}
 
       {dialog?.kind === 'edit' && (
         <GroupFormDialog
