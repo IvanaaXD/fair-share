@@ -73,3 +73,82 @@ export interface ProblemDetails {
   /** Validation errors by field name, e.g. { "Email": ["E-mail адреса није исправна."] }. */
   errors?: Record<string, string[]>;
 }
+
+// ---------- lists with paging (PagedResponse<T>) ----------
+
+export interface PagedResponse<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+}
+
+// ---------- categories (CategoryController) ----------
+
+export interface Category {
+  id: string;
+  name: string;
+  isSystemDefined: boolean;
+}
+
+// ---------- personal expenses (ExpenseController, ExpenseReceiptController) ----------
+
+export type RecurrenceInterval = 'None' | 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
+
+export const RECURRENCE_INTERVALS: Exclude<RecurrenceInterval, 'None'>[] = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
+
+export type ExpenseSortField = 'Date' | 'Amount';
+
+export interface Expense {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  amount: number;
+  currency: string;
+  /** ISO date-time in UTC; only the date part matters ("2026-10-12T00:00:00Z"). */
+  date: string;
+  nextOccurrenceDate: string | null;
+  description: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** "/api/expenses/{id}/receipt?v=..." - needs the access token, see useAuthorizedImage. */
+  receiptImageUrl: string | null;
+  isRecurring: boolean;
+  recurrenceInterval: RecurrenceInterval;
+}
+
+/** Body of POST /api/expenses and PUT /api/expenses/{id}. The receipt is uploaded separately. */
+export interface SaveExpenseRequest {
+  amount: number;
+  currency: string;
+  /** "YYYY-MM-DD" */
+  date: string;
+  categoryId: string;
+  description: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  isRecurring: boolean;
+  recurrenceInterval: RecurrenceInterval;
+}
+
+/** Query string of GET /api/expenses; every field is optional. */
+export interface ExpenseQuery {
+  page?: number;
+  pageSize?: number;
+  /** "YYYY-MM-DD", both days included */
+  from?: string;
+  to?: string;
+  categoryId?: string;
+  search?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  isRecurring?: boolean;
+  sortBy?: ExpenseSortField;
+  sortDescending?: boolean;
+}
+
+export interface ImageUrlResponse {
+  url: string;
+}

@@ -2,7 +2,8 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link, type LinkProps } from 'react-router';
 import styles from './Button.module.css';
 
-type Variant = 'primary' | 'secondary';
+/** danger: irreversible actions such as deleting - amber, like "you owe". */
+type Variant = 'primary' | 'secondary' | 'danger';
 
 function classes(variant: Variant, extra?: string) {
   return [styles.button, styles[variant], extra].filter(Boolean).join(' ');

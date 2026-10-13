@@ -57,6 +57,11 @@ svg {
   display: block;
 }
 
+/* The page behind an open dialog (window) does not scroll. */
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
 /* Text that only screen readers announce. */
 .visually-hidden {
   position: absolute;

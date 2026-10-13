@@ -40,3 +40,23 @@
   border-color: var(--color-text-muted);
   color: var(--color-text);
 }
+
+.danger {
+  border: none;
+  background: var(--color-negative);
+  color: #ffffff;
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--color-negative-text);
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .danger,
+:root[data-theme='dark'] .danger:hover:not(:disabled) {
+  color: #241303;
+}
+
+:root[data-theme='dark'] .danger:hover:not(:disabled) {
+  background: #f6c38f;
+}

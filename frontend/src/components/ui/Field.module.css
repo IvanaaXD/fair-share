@@ -106,3 +106,43 @@ select.input {
   accent-color: var(--color-primary);
   cursor: pointer;
 }
+
+/* ---------- icon before the text ---------- */
+.leading {
+  display: inline-flex;
+  padding-left: 12px;
+  color: var(--color-text-muted);
+}
+
+.leading + .input {
+  padding-left: 8px;
+}
+
+/* ---------- compact controls (filter bars) ---------- */
+.compact .control {
+  min-height: var(--control-height);
+}
+
+.compact .input {
+  height: calc(var(--control-height) - 2px);
+  padding: 0 12px;
+}
+
+.compact .label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Native date picker icon follows the theme's text color. */
+.input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+:root[data-theme='dark'] .input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+.compact .leading + .input {
+  padding-left: 8px;
+}
