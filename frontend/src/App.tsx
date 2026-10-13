@@ -7,6 +7,7 @@ import { EmailRequestPage } from './pages/auth/EmailRequestPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
+import { ExpensesPage } from './pages/expenses/ExpensesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
@@ -45,7 +46,7 @@ const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <OverviewPage /> },
-          { path: 'expenses', element: <PlaceholderPage titleKey="expenses" /> },
+          { path: 'expenses', element: <ExpensesPage /> },
           { path: 'groups', element: <PlaceholderPage titleKey="groups" /> },
           { path: 'groups/:groupId', element: <PlaceholderPage titleKey="groups" /> },
           { path: 'budgets', element: <PlaceholderPage titleKey="budgets" /> },

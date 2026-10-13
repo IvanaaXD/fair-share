@@ -11,7 +11,10 @@ const API_BASE = '/api';
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** Sent as JSON, except FormData (file uploads), which the browser encodes itself. */
   body?: unknown;
+  /** 'blob' for images and other files; JSON otherwise. */
+  responseType?: 'json' | 'blob';
   /** false for sign-in, registration and the other public endpoints. */
   auth?: boolean;
   signal?: AbortSignal;
@@ -25,8 +28,13 @@ export function onSessionExpired(handler: () => void) {
 }
 
 async function send(path: string, options: RequestOptions, accessToken: string | null): Promise<Response> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
-  if (options.body !== undefined) {
+  const isForm = options.body instanceof FormData;
+  const headers: Record<string, string> = {};
+  if (options.responseType !== 'blob') {
+    headers.Accept = 'application/json';
+  }
+  // For FormData the browser sets multipart/form-data together with the boundary.
+  if (options.body !== undefined && !isForm) {
     headers['Content-Type'] = 'application/json';
   }
   if (accessToken) {
@@ -37,7 +45,7 @@ async function send(path: string, options: RequestOptions, accessToken: string |
     return await fetch(`${API_BASE}${path}`, {
       method: options.method ?? 'GET',
       headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body: isForm ? (options.body as FormData) : options.body !== undefined ? JSON.stringify(options.body) : undefined,
       signal: options.signal,
     });
   } catch (error) {
@@ -58,9 +66,12 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, problem);
 }
 
-async function parse<T>(response: Response): Promise<T> {
+async function parse<T>(response: Response, responseType: RequestOptions['responseType'] = 'json'): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
+  }
+  if (responseType === 'blob') {
+    return (await response.blob()) as T;
   }
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;
@@ -120,5 +131,28 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!response.ok) {
     throw await toApiError(response);
   }
-  return parse<T>(response);
+  return parse<T>(response, options.responseType);
+}
+
+/**
+ * "?search=stan&page=2" from an object. Empty values are left out, so the backend uses its
+ * defaults for them.
+ */
+export function toQueryString(params: Record<string, string | number | boolean | null | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      search.set(key, String(value));
+    }
+  }
+  const text = search.toString();
+  return text ? `?${text}` : '';
+}
+
+/**
+ * The backend returns file addresses that already start with /api (e.g.
+ * "/api/expenses/{id}/receipt?v=..."), while apiRequest adds /api itself.
+ */
+export function apiPath(url: string): string {
+  return url.startsWith(API_BASE + '/') ? url.slice(API_BASE.length) : url;
 }

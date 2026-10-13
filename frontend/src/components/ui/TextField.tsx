@@ -10,13 +10,27 @@ interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id
   hint?: string;
   /** Shown at the right end of the label row, e.g. a "Forgot password?" link. */
   labelAside?: ReactNode;
+  /** Icon inside the field, before the text (e.g. a magnifier in a search field). */
+  leadingIcon?: ReactNode;
+  /** Smaller control for filter bars. */
+  compact?: boolean;
 }
 
 /**
  * Label, input, hint and errors, wired together for screen readers: the input points to its
  * hint and errors (aria-describedby) and announces itself as invalid (aria-invalid).
  */
-export function TextField({ label, errors = [], hint, labelAside, type = 'text', className, ...inputProps }: TextFieldProps) {
+export function TextField({
+  label,
+  errors = [],
+  hint,
+  labelAside,
+  leadingIcon,
+  compact,
+  type = 'text',
+  className,
+  ...inputProps
+}: TextFieldProps) {
   const { t } = useTranslation();
   const id = useId();
   const [revealed, setRevealed] = useState(false);
@@ -26,7 +40,7 @@ export function TextField({ label, errors = [], hint, labelAside, type = 'text',
   const describedBy = [hint && `${id}-hint`, hasError && `${id}-error`].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className={[styles.field, hasError && styles.invalid, className].filter(Boolean).join(' ')}>
+    <div className={[styles.field, hasError && styles.invalid, compact && styles.compact, className].filter(Boolean).join(' ')}>
       <div className={styles.labelRow}>
         <label htmlFor={id} className={styles.label}>
           {label}
@@ -34,6 +48,11 @@ export function TextField({ label, errors = [], hint, labelAside, type = 'text',
         {labelAside}
       </div>
       <div className={styles.control}>
+        {leadingIcon && (
+          <span className={styles.leading} aria-hidden="true">
+            {leadingIcon}
+          </span>
+        )}
         <input
           id={id}
           type={isPassword && revealed ? 'text' : type}

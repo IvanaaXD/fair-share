@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Plus, ReceiptText, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, ButtonLink } from '../components/ui/Button';
+import { ButtonLink } from '../components/ui/Button';
+import type { ExpensesPageState } from './expenses/ExpensesPage';
 import styles from './Page.module.css';
 
-/** Start page. For now only the empty state; the cards are added with the expenses step. */
+/** Opens the expenses page with the "new expense" window already open. */
+const ADD_EXPENSE_STATE: ExpensesPageState = { addExpense: true };
+
+/** Start page. For now only the empty state; the cards come with the analytics step. */
 export function OverviewPage() {
   const { t, i18n } = useTranslation();
 
@@ -21,7 +25,9 @@ export function OverviewPage() {
           <h1 className={styles.title}>{t('overview.title')}</h1>
           <p className={styles.subtitle}>{currentMonth}</p>
         </div>
-        <Button icon={<Plus size={18} aria-hidden="true" />}>{t('overview.addExpense')}</Button>
+        <ButtonLink to="/expenses" state={ADD_EXPENSE_STATE} icon={<Plus size={18} aria-hidden="true" />}>
+          {t('overview.addExpense')}
+        </ButtonLink>
       </header>
 
       <section className={styles.empty} aria-labelledby="overview-empty-title">
@@ -33,7 +39,9 @@ export function OverviewPage() {
         </h2>
         <p className={styles.emptyText}>{t('overview.emptyText')}</p>
         <div className={styles.actions}>
-          <Button icon={<Plus size={18} aria-hidden="true" />}>{t('overview.addExpense')}</Button>
+          <ButtonLink to="/expenses" state={ADD_EXPENSE_STATE} icon={<Plus size={18} aria-hidden="true" />}>
+            {t('overview.addExpense')}
+          </ButtonLink>
           <ButtonLink to="/groups" variant="secondary" icon={<Users size={18} aria-hidden="true" />}>
             {t('overview.createGroup')}
           </ButtonLink>
