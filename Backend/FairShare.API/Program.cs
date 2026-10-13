@@ -73,6 +73,7 @@ builder.Services.AddRepositoryServices();
 // ---------- services, AutoMapper, FluentValidation, e-mail ----------
 builder.Services.AddApplicationServices(builder.Configuration);
 
+builder.Services.AddPayments();
 // ---------- budget notifications + automatic copies of recurring expenses ----------
 builder.Services.AddRecurringExpenses();
 

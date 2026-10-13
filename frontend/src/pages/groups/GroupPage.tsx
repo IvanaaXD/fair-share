@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, LogOut, Pencil, Plus, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { ChevronLeft, CreditCard, LogOut, Pencil, Plus, QrCode, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../../api/ApiError';
 import { groupsApi } from '../../api/groups';
-import type { Group, GroupExpense, GroupMember, MemberBalance } from '../../api/types';
+import type { Group, GroupExpense, GroupMember, MemberBalance, Settlement } from '../../api/types';
+import { settlementsApi } from '../../api/groupExpenses';
 import { useErrorMessage } from '../../api/useErrorMessage';
 import { useAuth } from '../../auth/useAuth';
 import { Alert } from '../../components/ui/Alert';
 import { Avatar, AvatarStack } from '../../components/ui/Avatar';
 import { Button, ButtonLink } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { balanceStatus, initials, isOwnerRole, memberColor, membersByJoinDate } from '../../groups/groupUtils';
+import { balanceStatus, initials, isOwnerRole, isSettledStatus, memberColor, membersByJoinDate, settlementsAreStale } from '../../groups/groupUtils';
 import { useMyGroups } from '../../groups/myGroupsStore';
 import { useCategories } from '../../hooks/useCategories';
 import { useFormatters } from '../../i18n/format';
@@ -22,6 +23,8 @@ import { GroupFormDialog } from './GroupFormDialog';
 import type { GroupsPageState } from './GroupsPage';
 import { InviteMemberDialog } from './InviteMemberDialog';
 import { SettlementsPanel } from './SettlementsPanel';
+import { PayDialog, type PayTab } from '../payments/PayDialog';
+import { ScanQrDialog } from '../payments/ScanQrDialog';
 import pageStyles from '../Page.module.css';
 import styles from './Groups.module.css';
 
@@ -30,6 +33,9 @@ interface Loaded {
   group: Group | null;
   /** null when the balances could not be loaded (the page still works without them). */
   balances: MemberBalance[] | null;
+  /** null when the settlements could not be loaded (settlementsError says why). */
+  settlements: Settlement[] | null;
+  settlementsError: unknown;
   error: unknown;
 }
 
@@ -40,6 +46,8 @@ type Dialog =
   | { kind: 'leave' }
   | { kind: 'delete' }
   | { kind: 'expense'; expense: GroupExpense | null }
+  | { kind: 'pay'; settlement: Settlement; tab: PayTab }
+  | { kind: 'scan' }
   | null;
 
 /** One group: who is in it, how everyone stands, and the group's settings. */
@@ -71,17 +79,24 @@ export function GroupPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let settlementsError: unknown = null;
     Promise.all([
       groupsApi.get(groupId, controller.signal),
       groupsApi.balances(groupId, controller.signal).catch((error: unknown) => {
         if (controller.signal.aborted) throw error;
         return null;
       }),
+      settlementsApi.list(groupId, undefined, controller.signal).catch((error: unknown) => {
+        if (controller.signal.aborted) throw error;
+        settlementsError = error;
+        return null;
+      }),
     ]).then(
-      ([group, balances]) => setLoaded({ groupId, group, balances, error: null }),
+      ([group, balances, settlements]) =>
+        setLoaded({ groupId, group, balances, settlements, settlementsError, error: null }),
       (error: unknown) => {
         if (!controller.signal.aborted) {
-          setLoaded({ groupId, group: null, balances: null, error });
+          setLoaded({ groupId, group: null, balances: null, settlements: null, settlementsError: null, error });
         }
       },
     );
@@ -156,6 +171,13 @@ export function GroupPage() {
   const balanceOf = new Map((current.balances ?? []).map((balance) => [balance.userId, balance.netBalance]));
   const myBalance = user ? balanceOf.get(user.id) : undefined;
   const money = (amount: number) => format.money(amount, group.currency);
+  const proposed = (current.settlements ?? []).filter((settlement) => !isSettledStatus(settlement.status));
+  const suggestionsStale = current.balances !== null && proposed.length > 0 && settlementsAreStale(proposed, balanceOf);
+  const myDebts = proposed.filter((settlement) => settlement.debtorUserId === user?.id);
+  const fullNameById = (userId: string, fallback: string) => {
+    const member = members.find((m) => m.userId === userId);
+    return member ? fullName(member) : localize(fallback);
+  };
 
   const goToGroups = (message: string) => {
     void reloadMyGroups();
@@ -215,7 +237,14 @@ export function GroupPage() {
         )}
       </div>
 
-      <MyBalanceCard balance={myBalance} money={money} />
+      <MyBalanceCard
+        balance={myBalance}
+        money={money}
+        myDebts={myDebts}
+        stale={suggestionsStale}
+        creditorName={(settlement) => fullNameById(settlement.creditorUserId, settlement.creditorName)}
+        onPay={(settlement, tab) => setDialog({ kind: 'pay', settlement, tab })}
+      />
 
       <div className={styles.columns}>
         <div className={styles.column}>
@@ -279,12 +308,15 @@ export function GroupPage() {
           <SettlementsPanel
             groupId={group.id}
             currency={group.currency}
-            version={version}
+            settlements={current.settlements}
+            loadError={current.settlementsError}
             members={members}
             colorOf={colorOf}
             balanceOf={current.balances ? balanceOf : null}
             myId={user?.id}
             onChanged={(message) => refresh(message)}
+            onPay={(settlement, tab) => setDialog({ kind: 'pay', settlement, tab })}
+            onScan={() => setDialog({ kind: 'scan' })}
           />
 
           {current.balances && (
@@ -325,6 +357,32 @@ export function GroupPage() {
           </section>
         </div>
       </div>
+
+      {dialog?.kind === 'pay' && (
+        <PayDialog
+          groupId={group.id}
+          currency={group.currency}
+          settlement={dialog.settlement}
+          myId={user?.id}
+          creditorName={fullNameById(dialog.settlement.creditorUserId, dialog.settlement.creditorName)}
+          initialTab={dialog.tab}
+          onClose={() => setDialog(null)}
+          onPaid={(message) => {
+            setDialog(null);
+            refresh(message);
+          }}
+        />
+      )}
+
+      {dialog?.kind === 'scan' && (
+        <ScanQrDialog
+          onClose={() => setDialog(null)}
+          onSettled={(message) => {
+            setDialog(null);
+            refresh(message);
+          }}
+        />
+      )}
 
       {dialog?.kind === 'expense' && user && (
         <GroupExpenseDialog
@@ -417,8 +475,21 @@ export function GroupPage() {
   );
 }
 
-/** The signed-in user's own position, in the dark band from the design. */
-function MyBalanceCard({ balance, money }: { balance: number | undefined; money: (amount: number) => string }) {
+interface MyBalanceCardProps {
+  balance: number | undefined;
+  money: (amount: number) => string;
+  /** Open suggestions in which the signed-in user pays. */
+  myDebts: Settlement[];
+  stale: boolean;
+  creditorName: (settlement: Settlement) => string;
+  onPay: (settlement: Settlement, tab: PayTab) => void;
+}
+
+/**
+ * The signed-in user's own position, in the dark band from the design. When the user owes
+ * and there is a settlement suggestion, the payments are offered right here.
+ */
+function MyBalanceCard({ balance, money, myDebts, stale, creditorName, onPay }: MyBalanceCardProps) {
   const { t } = useTranslation();
   const status = balance === undefined ? null : balanceStatus(balance);
 
@@ -436,6 +507,33 @@ function MyBalanceCard({ balance, money }: { balance: number | undefined; money:
             {money(Math.abs(balance))}
           </span>
         </p>
+      )}
+
+      {status === 'owe' && (stale || myDebts.length === 0) && (
+        <p className={styles.heroHint}>{stale ? t('group.staleFirst') : t('group.computeFirst')}</p>
+      )}
+
+      {status === 'owe' && !stale && myDebts.length > 0 && (
+        <ul className={styles.heroDebts}>
+          {myDebts.map((settlement) => (
+            <li key={settlement.id} className={styles.heroDebt}>
+              <span className={styles.heroDebtText}>
+                {t('group.payTo', { name: creditorName(settlement) })}{' '}
+                <span className="money">{money(settlement.amount)}</span>
+              </span>
+              <span className={styles.heroButtons}>
+                <button type="button" className={styles.heroGhost} onClick={() => onPay(settlement, 'qr')}>
+                  <QrCode size={17} aria-hidden="true" />
+                  {t('group.payQr')}
+                </button>
+                <button type="button" className={styles.heroAccent} onClick={() => onPay(settlement, 'card')}>
+                  <CreditCard size={17} aria-hidden="true" />
+                  {t('group.payCard')}
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

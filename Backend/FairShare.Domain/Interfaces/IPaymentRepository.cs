@@ -4,10 +4,9 @@ namespace FairShare.Domain.Interfaces;
 
 public interface IPaymentRepository : IRepository<Payment>
 {
-    /// <summary>Prevents duplicate processing of the same request to the Payment Simulator (feature 5.9).</summary>
+    /// <summary>The payment created by an earlier request with the same key (tracked, with card and settlement).</summary>
     Task<Payment?> GetByIdempotencyKeyAsync(string idempotencyKey, CancellationToken cancellationToken = default);
 
-    Task<Payment?> GetBySettlementTransactionAsync(
-        Guid settlementTransactionId,
-        CancellationToken cancellationToken = default);
+    /// <summary>The payment of a settlement, if there was an attempt (tracked, with card).</summary>
+    Task<Payment?> GetBySettlementAsync(Guid settlementTransactionId, CancellationToken cancellationToken = default);
 }

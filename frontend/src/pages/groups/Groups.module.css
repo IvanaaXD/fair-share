@@ -846,3 +846,81 @@
 .settledDate {
   font-size: var(--text-xs);
 }
+
+/* ---------- paying from the dark band ---------- */
+.heroHint {
+  margin-top: 6px;
+  color: var(--color-nav-muted);
+  font-size: var(--text-sm);
+}
+
+.heroDebts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.heroDebt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-nav-line);
+}
+
+.heroDebtText {
+  color: #e4ecee;
+}
+
+.heroButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.heroGhost,
+.heroAccent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+  cursor: pointer;
+}
+
+.heroGhost {
+  border: 1px solid #3e6b76;
+  background: transparent;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.heroGhost:hover {
+  border-color: #7fd0dd;
+}
+
+/* Amber on the dark band, as in the design: "pay" is the main action of someone who owes. */
+.heroAccent {
+  border: none;
+  background: #f4b26b;
+  color: #10323c;
+  font-weight: 700;
+}
+
+.heroAccent:hover {
+  background: #f8c58d;
+}
+
+.transferActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}

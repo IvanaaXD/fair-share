@@ -11,11 +11,12 @@ public class PaymentCardRepository : GenericRepository<PaymentCard>, IPaymentCar
     {
     }
 
-    public async Task<IReadOnlyList<PaymentCard>> GetByUserAsync(
-        Guid userId,
-        CancellationToken cancellationToken = default)
-        => await DbSet.AsNoTracking().Where(c => c.UserId == userId).ToListAsync(cancellationToken);
+    public async Task<IReadOnlyList<PaymentCard>> GetByUserAsync(Guid userId, CancellationToken cancellationToken = default)
+        => await DbSet.AsNoTracking()
+            .Where(c => c.UserId == userId)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync(cancellationToken);
 
-    public async Task<PaymentCard?> GetByTokenAsync(string token, CancellationToken cancellationToken = default)
-        => await DbSet.FirstOrDefaultAsync(c => c.Token == token, cancellationToken);
+    public async Task<bool> HasPaymentsAsync(Guid paymentCardId, CancellationToken cancellationToken = default)
+        => await DbSet.AnyAsync(c => c.Id == paymentCardId && c.Payments.Any(), cancellationToken);
 }

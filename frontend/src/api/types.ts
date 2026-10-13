@@ -284,3 +284,67 @@ export interface Settlement {
   status: SettlementStatus | number;
   createdAt: string;
 }
+
+// ---------- payments (QrController, PaymentCardController, PaymentController) ----------
+
+/** GET .../settlements/{id}/qr/payload - the IPS QR text and the fields it is made of. */
+export interface QrPayload {
+  settlementTransactionId: string;
+  payload: string;
+  recipientAccount: string;
+  recipientName: string;
+  amount: number;
+  currency: string;
+  purpose: string | null;
+  referenceCode: string;
+}
+
+/** POST /api/qr/parse - what was read from a QR code, and the settlement it belongs to. */
+export interface ParsedQr {
+  isValid: boolean;
+  errors: string[];
+  recipientAccount: string | null;
+  recipientName: string | null;
+  amount: number | null;
+  currency: string | null;
+  paymentCode: string | null;
+  purpose: string | null;
+  reference: string | null;
+  matchedSettlementId: string | null;
+  matchedGroupId: string | null;
+  matchedSettlementStatus: SettlementStatus | number | null;
+  canMarkAsSettled: boolean;
+}
+
+export interface PaymentCard {
+  id: string;
+  brand: string;
+  last4Digits: string;
+  expiryMonth: number;
+  expiryYear: number;
+  isExpired: boolean;
+}
+
+/** The number and CVV go to the payment simulator through the backend and are never stored. */
+export interface AddPaymentCardRequest {
+  cardNumber: string;
+  expiryMonth: number;
+  expiryYear: number;
+  cvv: string;
+  holderName: string | null;
+}
+
+export type PaymentStatus = 'Pending' | 'Succeeded' | 'Failed';
+
+export interface PaymentResult {
+  id: string;
+  settlementTransactionId: string;
+  status: PaymentStatus | number;
+  /** card_declined, insufficient_funds, expired_card, invalid_card, processing_error */
+  failureReason: string | null;
+  amount: number;
+  currency: string;
+  cardBrand: string;
+  cardLast4Digits: string;
+  createdAt: string;
+}

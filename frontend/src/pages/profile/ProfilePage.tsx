@@ -15,6 +15,7 @@ import { UserAvatar } from '../../components/ui/UserAvatar';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import { RECEIPT_TYPES, validateReceipt } from '../expenses/expenseValidation';
 import { formatBankAccount, validateBankAccount } from './bankAccount';
+import { PaymentCardsSection } from '../payments/PaymentCardsSection';
 import { PasswordForm } from './PasswordForm';
 import pageStyles from '../Page.module.css';
 import styles from './Profile.module.css';
@@ -73,7 +74,10 @@ export function ProfilePage() {
             <PasswordForm submitLabel={t('profile.changePassword')} onChanged={() => show(t('profile.passwordChanged'))} />
           </section>
         </div>
-        <DetailsCard key={user.id} user={user} onNotice={show} />
+        <div className={styles.column}>
+          <DetailsCard key={user.id} user={user} onNotice={show} />
+          <PaymentCardsSection onNotice={show} cardClassName={styles.card} titleClassName={styles.cardTitle} />
+        </div>
       </div>
     </div>
   );

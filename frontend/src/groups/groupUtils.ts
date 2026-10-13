@@ -67,3 +67,20 @@ export function splitTypeName(value: string | number): 'Equal' | 'Percentage' | 
 export function isSettledStatus(value: string | number): boolean {
   return value === 'Settled' || value === 1;
 }
+
+/**
+ * Do the open settlement suggestions still match the balances? Each suggestion moves money
+ * from the debtor to the creditor; after all of them everyone should be at zero. If an
+ * expense was added or changed after the suggestion was calculated, that no longer holds.
+ */
+export function settlementsAreStale(
+  proposed: { debtorUserId: string; creditorUserId: string; amount: number }[],
+  balanceOf: Map<string, number>,
+): boolean {
+  const afterPayments = new Map(balanceOf);
+  for (const settlement of proposed) {
+    afterPayments.set(settlement.debtorUserId, (afterPayments.get(settlement.debtorUserId) ?? 0) + settlement.amount);
+    afterPayments.set(settlement.creditorUserId, (afterPayments.get(settlement.creditorUserId) ?? 0) - settlement.amount);
+  }
+  return [...afterPayments.values()].some((value) => Math.abs(value) > SETTLED_TOLERANCE * 2);
+}
