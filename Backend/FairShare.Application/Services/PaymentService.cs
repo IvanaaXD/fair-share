@@ -1,4 +1,5 @@
 using FairShare.Application.Abstractions;
+using FairShare.Application.Common.Notifications;
 using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Payments;
 using FairShare.Application.Interfaces;
@@ -118,12 +119,23 @@ public class PaymentService : IPaymentService
 
         if (charge.Success)
         {
-            var debtor = $"{settlement.DebtorUser.FirstName} {settlement.DebtorUser.LastName}";
+            var amount = NotificationText.Money(settlement.Amount, group.Currency);
+            var groupName = NotificationText.Quote(group.Name);
+
+            // The member who receives the money.
             await _notificationService.NotifyAsync(
                 settlement.CreditorUserId,
                 NotificationType.PaymentConfirmation,
-                "Уплата картицом",
-                $"{debtor}: уплата картицом од {settlement.Amount:0.00} {group.Currency} у групи '{group.Name}'. Поравнање је измирено.",
+                "Стигла је уплата",
+                $"Стигла је уплата картицом у групи {groupName}: {NotificationText.FullName(settlement.DebtorUser)}, {amount}. Поравнање је измирено.",
+                cancellationToken);
+
+            // The member who paid gets a confirmation (a receipt in the app and by e-mail).
+            await _notificationService.NotifyAsync(
+                settlement.DebtorUserId,
+                NotificationType.PaymentConfirmation,
+                "Потврда плаћања",
+                $"Плаћање картицом {card.Brand} •••• {card.Last4Digits} је успјело: {amount} за {NotificationText.FullName(settlement.CreditorUser)} у групи {groupName}.",
                 cancellationToken);
         }
 

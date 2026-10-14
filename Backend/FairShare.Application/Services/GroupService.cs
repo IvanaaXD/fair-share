@@ -1,6 +1,7 @@
 using AutoMapper;
 using FairShare.Application.Common.Exceptions;
 using FairShare.Application.Common.Extensions;
+using FairShare.Application.Common.Notifications;
 using FairShare.Application.DTOs.Groups;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -137,11 +138,13 @@ public class GroupService : IGroupService
         await _unitOfWork.GroupMembers.AddAsync(member, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var inviter = await _unitOfWork.Users.GetByIdAsync(currentUserId, cancellationToken);
+        var invitedBy = inviter is null ? string.Empty : $" (позив од: {NotificationText.FullName(inviter)})";
         await _notificationService.NotifyAsync(
             userToAdd.Id,
             NotificationType.GroupInvite,
             "Нова група",
-            $"Додати сте у групу '{group.Name}'.",
+            $"Сада си члан групе {NotificationText.Quote(group.Name)}{invitedBy}.",
             cancellationToken);
 
         return _mapper.Map<GroupMemberResponse>(member);
@@ -176,8 +179,8 @@ public class GroupService : IGroupService
         await _notificationService.NotifyAsync(
             userId,
             NotificationType.GroupMembershipChanged,
-            "Уклоњени сте из групе",
-            $"Власник групе '{group.Name}' вас је уклонио из групе.",
+            "Уклањање из групе",
+            $"Више ниси члан групе {NotificationText.Quote(group.Name)} – власник групе те је уклонио из ње.",
             cancellationToken);
     }
 
@@ -219,8 +222,8 @@ public class GroupService : IGroupService
             await _notificationService.NotifyAsync(
                 newOwner.UserId,
                 NotificationType.GroupMembershipChanged,
-                "Постали сте власник групе",
-                $"Претходни власник је напустио групу '{group.Name}', па сте ви сада њен власник.",
+                "Нова улога у групи",
+                $"Сада си власник групе {NotificationText.Quote(group.Name)}, јер је претходни власник напустио групу.",
                 cancellationToken);
         }
     }

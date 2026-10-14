@@ -1,4 +1,4 @@
-using System.Globalization;
+using FairShare.Application.Common.Notifications;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
@@ -68,14 +68,15 @@ public class RecurringExpenseService : IRecurringExpenseService
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             created++;
 
+            // In the app only: a monthly rent would otherwise send an e-mail every month.
             await _notificationService.NotifyAsync(
                 template.UserId,
                 NotificationType.RecurringExpenseCreated,
-                "Recurring expense added",
-                $"Automatically added expense '{template.Description ?? categoryName}' " +
-                $"of {occurrence.Amount} {occurrence.Currency} " +
-                $"for {occurrence.Date.ToString("dd.MM.yyyy.", CultureInfo.InvariantCulture)}",
-                cancellationToken);
+                "Понављајући трошак",
+                $"Аутоматски је додат понављајући трошак {NotificationText.Quote(template.Description ?? categoryName)}: " +
+                $"{NotificationText.Money(occurrence.Amount, occurrence.Currency)} за {NotificationText.Date(occurrence.Date)}.",
+                cancellationToken,
+                sendEmail: false);
 
             await _budgetAlerts.NotifyIfThresholdCrossedAsync(
                 template.UserId, template.CategoryId, categoryName, occurrence.Currency,

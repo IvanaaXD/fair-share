@@ -6,15 +6,17 @@ namespace FairShare.Application.Interfaces;
 public interface INotificationService
 {
     /// <summary>
-    /// Saves the notification in the database and enqueues the e-mail for sending. Call AFTER
-    /// SaveChangesAsync in the service that triggered the event.
+    /// Saves the notification, pushes it to the user's open apps (SignalR) and, unless
+    /// <paramref name="sendEmail"/> is false, enqueues the e-mail. Call AFTER SaveChangesAsync in
+    /// the service that triggered the event.
     /// </summary>
     Task NotifyAsync(
         Guid userId,
         NotificationType type,
         string subject,
         string message,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        bool sendEmail = true);
 
     Task<IReadOnlyList<NotificationResponse>> GetMyNotificationsAsync(
         Guid currentUserId,

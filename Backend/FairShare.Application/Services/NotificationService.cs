@@ -13,12 +13,18 @@ public class NotificationService : INotificationService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEmailQueue _emailQueue;
+    private readonly INotificationPublisher _publisher;
     private readonly IMapper _mapper;
 
-    public NotificationService(IUnitOfWork unitOfWork, IEmailQueue emailQueue, IMapper mapper)
+    public NotificationService(
+        IUnitOfWork unitOfWork,
+        IEmailQueue emailQueue,
+        INotificationPublisher publisher,
+        IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _emailQueue = emailQueue;
+        _publisher = publisher;
         _mapper = mapper;
     }
 
@@ -27,7 +33,8 @@ public class NotificationService : INotificationService
         NotificationType type,
         string subject,
         string message,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool sendEmail = true)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
         if (user is null)
@@ -45,10 +52,19 @@ public class NotificationService : INotificationService
         await _unitOfWork.Notifications.AddAsync(notification, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // Real time: the badge and the list in the user's open apps change at once.
+        var unreadCount = await _unitOfWork.Notifications.CountUnreadAsync(userId, cancellationToken);
+        await _publisher.NotificationCreatedAsync(
+            userId, _mapper.Map<NotificationResponse>(notification), unreadCount, cancellationToken);
+
         // The e-mail is sent in the background; a failed send does not undo the in-app notification.
-        await _emailQueue.EnqueueAsync(
-            new EmailMessage(user.Email, $"{user.FirstName} {user.LastName}", subject, message),
-            cancellationToken);
+        // Frequent, less important events (e.g. every new group expense) stay in the app only.
+        if (sendEmail)
+        {
+            await _emailQueue.EnqueueAsync(
+                new EmailMessage(user.Email, $"{user.FirstName} {user.LastName}", subject, message),
+                cancellationToken);
+        }
     }
 
     public async Task<IReadOnlyList<NotificationResponse>> GetMyNotificationsAsync(
@@ -66,10 +82,10 @@ public class NotificationService : INotificationService
     public async Task MarkAsReadAsync(Guid notificationId, Guid currentUserId, CancellationToken cancellationToken = default)
     {
         var notification = await _unitOfWork.Notifications.GetByIdAsync(notificationId, cancellationToken)
-            ?? throw new NotFoundException("Notification not found.");
+            ?? throw new NotFoundException("Обавјештење није пронађено.");
 
         if (notification.UserId != currentUserId)
-            throw new ForbiddenException("You cannot modify someone else's notifications.");
+            throw new ForbiddenException("Не можеш мијењати туђа обавјештења.");
 
         if (notification.IsRead)
             return;
@@ -77,6 +93,8 @@ public class NotificationService : INotificationService
         notification.MarkAsRead();
         _unitOfWork.Notifications.Update(notification);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await PublishUnreadCountAsync(currentUserId, cancellationToken);
     }
 
     public async Task MarkAllAsReadAsync(Guid currentUserId, CancellationToken cancellationToken = default)
@@ -92,5 +110,14 @@ public class NotificationService : INotificationService
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await PublishUnreadCountAsync(currentUserId, cancellationToken);
+    }
+
+    /// <summary>Other open tabs (or the phone) lower their badge too.</summary>
+    private async Task PublishUnreadCountAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var unreadCount = await _unitOfWork.Notifications.CountUnreadAsync(userId, cancellationToken);
+        await _publisher.UnreadCountChangedAsync(userId, unreadCount, cancellationToken);
     }
 }
