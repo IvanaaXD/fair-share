@@ -21,22 +21,27 @@ public class AnalyticsController : ControllerBase
     }
 
     /// <summary>
-    /// Personal expense analytics. Example: ?period=Last3Months or
-    /// ?period=Custom&amp;from=2026-01-01&amp;to=2026-03-31
+    /// Personal expense analytics. Example: ?period=Last3Months&amp;currency=BAM or
+    /// ?period=Custom&amp;from=2026-01-01&amp;to=2026-03-31&amp;currency=BAM
     /// </summary>
+    /// <param name="currency">
+    /// Optional ISO code. When given, only expenses in that currency are counted, so amounts in
+    /// different currencies are never added together. The web app sends the user's default currency.
+    /// </param>
     [HttpGet("spending")]
     public async Task<ActionResult<SpendingAnalyticsResponse>> GetSpending(
         [FromQuery] AnalyticsPeriod period = AnalyticsPeriod.LastMonth,
         [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null,
+        [FromQuery] string? currency = null,
         CancellationToken cancellationToken = default)
     {
         var result = await _analyticsService.GetSpendingAnalyticsAsync(
-            _currentUser.UserId, period, from, to, cancellationToken);
+            _currentUser.UserId, period, from, to, currency, cancellationToken);
         return Ok(result);
     }
 
-    /// <summary>Expenses with location for map display (up to 500 most recent).</summary>
+    /// <summary>Expenses with location for map display (up to 500 most recent), in every currency.</summary>
     [HttpGet("map")]
     public async Task<ActionResult<IReadOnlyList<ExpenseLocationResponse>>> GetMap(
         [FromQuery] AnalyticsPeriod period = AnalyticsPeriod.LastMonth,

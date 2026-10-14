@@ -1,63 +1,18 @@
 import { createElement, useEffect, useState } from 'react';
-import {
-  ArrowLeftRight,
-  Bell,
-  BellOff,
-  CheckCheck,
-  CircleCheck,
-  CreditCard,
-  KeyRound,
-  type LucideIcon,
-  PiggyBank,
-  Repeat,
-  UserCog,
-  UserPlus,
-  UserRoundCheck,
-} from 'lucide-react';
+import { Bell, BellOff, CheckCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { notificationsApi } from '../../api/notifications';
-import type { AppNotification, NotificationType } from '../../api/types';
+import type { AppNotification } from '../../api/types';
 import { useErrorMessage } from '../../api/useErrorMessage';
 import { useAuth } from '../../auth/useAuth';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { formattingLocale } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
+import { NOTIFICATION_ICONS, notificationTypeName, WARNING_TYPES } from '../../notifications/notificationTypes';
 import { refreshUnreadCount, setUnreadCount } from '../../notifications/unreadStore';
 import pageStyles from '../Page.module.css';
 import styles from './Notifications.module.css';
-
-/** The order of NotificationType on the backend, for backends that send numbers. */
-const TYPES: NotificationType[] = [
-  'AccountActivation',
-  'GroupInvite',
-  'PasswordReset',
-  'PaymentConfirmation',
-  'BudgetExceeded',
-  'SettlementSuggested',
-  'SettlementCompleted',
-  'GroupMembershipChanged',
-  'RecurringExpenseCreated',
-];
-
-const ICONS: Record<NotificationType, LucideIcon> = {
-  AccountActivation: UserRoundCheck,
-  GroupInvite: UserPlus,
-  PasswordReset: KeyRound,
-  PaymentConfirmation: CreditCard,
-  BudgetExceeded: PiggyBank,
-  SettlementSuggested: ArrowLeftRight,
-  SettlementCompleted: CircleCheck,
-  GroupMembershipChanged: UserCog,
-  RecurringExpenseCreated: Repeat,
-};
-
-/** Notifications that need attention are marked in amber (budget over limit, someone owes). */
-const WARNING_TYPES = new Set<NotificationType>(['BudgetExceeded', 'SettlementSuggested']);
-
-function typeName(type: AppNotification['type']): NotificationType {
-  return typeof type === 'number' ? (TYPES[type] ?? 'GroupInvite') : type;
-}
 
 /** "YYYY-MM-DD" of a moment in the user's own time zone (for grouping by day). */
 function localDay(value: string | Date): string {
@@ -202,7 +157,7 @@ export function NotificationsPage() {
           </h2>
           <ul className={styles.list} aria-busy={loaded?.key !== key}>
             {group.items.map((item) => {
-              const type = typeName(item.type);
+              const type = notificationTypeName(item.type);
               return (
                 <li key={item.id}>
                   <button
@@ -213,7 +168,7 @@ export function NotificationsPage() {
                     title={item.isRead ? undefined : t('notificationsPage.markRead')}
                   >
                     <span className={WARNING_TYPES.has(type) ? `${styles.icon} ${styles.iconWarning}` : styles.icon} aria-hidden="true">
-                      {createElement(ICONS[type], { size: 20 })}
+                      {createElement(NOTIFICATION_ICONS[type], { size: 20 })}
                     </span>
                     <span className={styles.text}>
                       <span className={styles.meta}>

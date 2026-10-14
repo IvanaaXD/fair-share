@@ -394,3 +394,62 @@ export interface AppNotification {
   isRead: boolean;
   createdAt: string;
 }
+
+// ---------- analytics ----------
+
+export type AnalyticsPeriod = 'LastWeek' | 'LastMonth' | 'Last3Months' | 'Last6Months' | 'LastYear' | 'Custom';
+
+/** Chosen by the backend from the length of the period: up to 31 days by day, up to 92 by week. */
+export type TimeGranularity = 'Day' | 'Week' | 'Month';
+
+export interface AnalyticsQuery {
+  period: AnalyticsPeriod;
+  /** "YYYY-MM-DD", only with period=Custom (both days included, at most one year apart) */
+  from?: string;
+  to?: string;
+  /** Only expenses in this currency are counted, so KM and EUR are never added together. */
+  currency?: string;
+}
+
+export interface SpendingTimePoint {
+  periodStart: string;
+  periodEnd: string;
+  total: number;
+}
+
+export interface CategorySpending {
+  categoryId: string;
+  categoryName: string;
+  total: number;
+  count: number;
+  /** Share of the period's total, 0-100. */
+  percentage: number;
+  previousPeriodTotal: number;
+}
+
+export interface SpendingAnalytics {
+  from: string;
+  to: string;
+  granularity: TimeGranularity | number;
+  totalSpent: number;
+  expenseCount: number;
+  /** The period of the same length right before the chosen one. */
+  previousFrom: string;
+  previousTo: string;
+  previousPeriodTotal: number;
+  /** null when nothing was spent in the previous period. */
+  changePercentage: number | null;
+  timeline: SpendingTimePoint[];
+  byCategory: CategorySpending[];
+}
+
+export interface ExpenseLocation {
+  expenseId: string;
+  amount: number;
+  currency: string;
+  date: string;
+  description: string | null;
+  categoryName: string;
+  latitude: number;
+  longitude: number;
+}

@@ -111,9 +111,12 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
         Guid userId,
         DateTime from,
         DateTime toExclusive,
+        string? currency = null,
         CancellationToken cancellationToken = default)
         => await DbSet.AsNoTracking()
             .Where(e => e.UserId == userId && e.Date >= from && e.Date < toExclusive)
+            // Amounts in different currencies are never added together.
+            .Where(e => currency == null || e.Currency == currency)
             .GroupBy(e => e.Date.Date)
             .Select(g => new DailySpendingTotal(g.Key, g.Sum(e => e.Amount), g.Count()))
             .ToListAsync(cancellationToken);
@@ -122,9 +125,11 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
         Guid userId,
         DateTime from,
         DateTime toExclusive,
+        string? currency = null,
         CancellationToken cancellationToken = default)
         => await DbSet.AsNoTracking()
             .Where(e => e.UserId == userId && e.Date >= from && e.Date < toExclusive)
+            .Where(e => currency == null || e.Currency == currency)
             .GroupBy(e => new { e.CategoryId, e.Category.Name })
             .Select(g => new CategorySpendingTotal(g.Key.CategoryId, g.Key.Name, g.Sum(e => e.Amount), g.Count()))
             .ToListAsync(cancellationToken);

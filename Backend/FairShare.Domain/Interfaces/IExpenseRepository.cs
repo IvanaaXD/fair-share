@@ -41,6 +41,7 @@ public interface IExpenseRepository : IRepository<Expense>
         Guid userId,
         DateTime from,
         DateTime toExclusive,
+        string? currency = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>Total spending per category in the period.</summary>
@@ -48,6 +49,7 @@ public interface IExpenseRepository : IRepository<Expense>
         Guid userId,
         DateTime from,
         DateTime toExclusive,
+        string? currency = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>Newest expenses with a location in the period, for the map.</summary>

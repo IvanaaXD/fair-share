@@ -50,6 +50,9 @@ export function useFormatters() {
     });
     const longDate = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
     const monthFormat = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const monthShortFormat = new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' });
+    const rangeFormat = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    const percentNumber = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
 
     return {
       locale,
@@ -94,6 +97,42 @@ export function useFormatters() {
       /** "12. октобар 2026." */
       longDate(value: string): string {
         return longDate.format(dateOnlyToUtc(value));
+      },
+
+      /** "12. окт" - always without the year (chart labels, where the year is shown elsewhere). */
+      dayMonth(value: string): string {
+        return shortDate.format(dateOnlyToUtc(value));
+      },
+
+      /** "2026-10-01" -> "окт" */
+      monthShort(value: string): string {
+        return monthShortFormat.format(dateOnlyToUtc(value)).replace(/\.$/, '');
+      },
+
+      /** "15. сеп – 14. окт 2026." - the browser leaves out what both dates share. */
+      dateRange(from: string, to: string): string {
+        const start = dateOnlyToUtc(from);
+        const end = dateOnlyToUtc(to);
+        if (start.getTime() === end.getTime()) return rangeFormat.format(start);
+        // Serbian ICU writes "01.–14. окт 2026."; "1–14. окт 2026." is how it is written by hand.
+        if (
+          locale.startsWith('sr') &&
+          start.getUTCFullYear() === end.getUTCFullYear() &&
+          start.getUTCMonth() === end.getUTCMonth()
+        ) {
+          return `${start.getUTCDate()}–${rangeFormat.format(end)}`;
+        }
+        return rangeFormat.formatRange(start, end);
+      },
+
+      /** 1234.56 -> "1.235" (chart axes); small steps such as 0,25 keep their decimals. */
+      number(value: number, fractionDigits = 0): string {
+        return new Intl.NumberFormat(locale, { maximumFractionDigits: fractionDigits }).format(value);
+      },
+
+      /** 12.345 -> "12,3%" */
+      percent(value: number): string {
+        return `${percentNumber.format(value)}%`;
       },
     };
   }, [locale]);

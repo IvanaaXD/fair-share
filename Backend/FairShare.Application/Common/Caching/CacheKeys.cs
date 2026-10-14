@@ -13,8 +13,8 @@ public static class CacheKeys
 
     public static string AccountStatus(Guid userId) => $"account-status:{userId:N}";
 
-    public static string SpendingAnalytics(Guid userId, AnalyticsPeriod period, DateTime? from, DateTime? to)
-        => $"analytics:spending:{userId:N}:{period}:{Format(from)}:{Format(to)}";
+    public static string SpendingAnalytics(Guid userId, AnalyticsPeriod period, DateTime? from, DateTime? to, string? currency)
+        => $"analytics:spending:{userId:N}:{period}:{Format(from)}:{Format(to)}:{currency?.Trim().ToUpperInvariant() ?? "-"}";
 
     public static string ExpenseLocations(Guid userId, AnalyticsPeriod period, DateTime? from, DateTime? to)
         => $"analytics:locations:{userId:N}:{period}:{Format(from)}:{Format(to)}";

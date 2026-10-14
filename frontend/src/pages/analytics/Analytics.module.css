@@ -1,0 +1,416 @@
+/* ---------- period filter: one row above everything it scopes ---------- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-track);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-neutral-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.segment:hover {
+  color: var(--color-text);
+}
+
+.segmentActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(16, 50, 60, 0.16);
+}
+
+.customForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.dateField input {
+  height: var(--control-height);
+  padding: 0 12px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-md);
+}
+
+.dateField input[aria-invalid='true'] {
+  border-color: var(--color-negative);
+}
+
+.fieldError {
+  flex-basis: 100%;
+  color: var(--color-negative-text);
+  font-size: var(--text-sm);
+}
+
+.loading {
+  color: var(--color-text-muted);
+}
+
+/* ---------- content ---------- */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: opacity 150ms ease;
+}
+
+.content[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-border);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 18px 20px;
+  background: var(--color-surface);
+}
+
+.statLabel {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.statValue {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.statHero {
+  font-size: 2rem;
+  line-height: 1.15;
+  font-variant-numeric: normal;
+}
+
+.statNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardTitle {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.cardHint {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.viewSwitch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--color-track);
+}
+
+.viewButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.viewActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 2px rgba(16, 50, 60, 0.16);
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* ---------- categories ---------- */
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  margin: 0 -8px;
+  padding: 0;
+  list-style: none;
+}
+
+.categoryRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.categoryRow:hover {
+  background: var(--color-surface-muted);
+}
+
+.categoryIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--color-positive-bg);
+  color: var(--color-positive);
+}
+
+.categoryMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.categoryTop,
+.categoryMeta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.categoryName {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoryAmount {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.categoryTrack {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-track);
+}
+
+.categoryFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+}
+
+.categoryMeta {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.categoryChevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.changeUp,
+.changeDown,
+.changeNew,
+.changeSame {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.changeUp {
+  color: var(--color-negative-text);
+}
+
+.changeDown {
+  color: var(--color-positive-text);
+}
+
+.changeNew,
+.changeSame {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+/* ---------- map ---------- */
+.map {
+  z-index: 0;
+  height: 360px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-track);
+}
+
+/* Leaflet sets the colours as SVG attributes; CSS wins, so the dots follow the theme. */
+.marker {
+  fill: var(--color-primary);
+  stroke: var(--color-surface);
+}
+
+/* Dark theme: the light map tiles are inverted, so the map does not glare. */
+:root[data-theme='dark'] .map :global(.leaflet-tile-pane) {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
+
+.map :global(.leaflet-popup-content-wrapper),
+.map :global(.leaflet-popup-tip) {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.map:global(.leaflet-container) {
+  background: var(--color-track);
+  font-family: var(--font-ui);
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+    font-size: var(--text-sm);
+}
+
+.popup strong {
+  font-size: var(--text-md);
+}
+
+.popupMeta {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.mapEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.mapEmpty p {
+  max-width: 40ch;
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 1100px) {
+  .twoColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .statMain,
+  .stat:nth-child(4) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 16px;
+  }
+
+  .statHero {
+    font-size: 1.625rem;
+  }
+
+  .map {
+    height: 300px;
+  }
+}

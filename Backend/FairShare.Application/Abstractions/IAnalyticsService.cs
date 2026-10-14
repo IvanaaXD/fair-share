@@ -4,17 +4,21 @@ namespace FairShare.Application.Interfaces;
 
 public interface IAnalyticsService
 {
-    /// <summary>Total expenses over time, by category, and comparison with the previous period.</summary>
+    /// <summary>
+    /// Total spending over time, by category and compared with the previous period.
+    /// When <paramref name="currency"/> is given, only expenses in that currency are counted.
+    /// </summary>
     Task<SpendingAnalyticsResponse> GetSpendingAnalyticsAsync(
-    Guid currentUserId,
+        Guid currentUserId,
         AnalyticsPeriod period,
         DateTime? from,
         DateTime? to,
+        string? currency,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Expenses with location in the period, for map display.</summary>
+    /// <summary>Expenses with a location in the period, for the map.</summary>
     Task<IReadOnlyList<ExpenseLocationResponse>> GetExpenseLocationsAsync(
-    Guid currentUserId,
+        Guid currentUserId,
         AnalyticsPeriod period,
         DateTime? from,
         DateTime? to,

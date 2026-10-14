@@ -25,19 +25,24 @@ public class AnalyticsService : IAnalyticsService
         AnalyticsPeriod period,
         DateTime? from,
         DateTime? to,
+        string? currency,
         CancellationToken cancellationToken = default)
     {
         var range = AnalyticsPeriodResolver.Resolve(period, from, to, DateTime.UtcNow);
         var previous = AnalyticsPeriodResolver.GetPreviousRange(range);
         var granularity = AnalyticsPeriodResolver.GetGranularity(range);
 
+        // Amounts in different currencies cannot be added up without exchange rates, so the
+        // client asks for one currency (the user's default one). Without it everything is summed.
+        var currencyFilter = string.IsNullOrWhiteSpace(currency) ? null : currency.Trim().ToUpperInvariant();
+
         // All aggregation happens in the database; at most one row per day/category comes back.
         var daily = await _unitOfWork.Expenses.GetDailyTotalsAsync(
-            currentUserId, range.From, range.ToExclusive, cancellationToken);
+            currentUserId, range.From, range.ToExclusive, currencyFilter, cancellationToken);
         var categories = await _unitOfWork.Expenses.GetTotalsByCategoryAsync(
-            currentUserId, range.From, range.ToExclusive, cancellationToken);
+            currentUserId, range.From, range.ToExclusive, currencyFilter, cancellationToken);
         var previousCategories = await _unitOfWork.Expenses.GetTotalsByCategoryAsync(
-            currentUserId, previous.From, previous.ToExclusive, cancellationToken);
+            currentUserId, previous.From, previous.ToExclusive, currencyFilter, cancellationToken);
 
         var total = daily.Sum(d => d.Total);
         var previousTotal = previousCategories.Sum(c => c.Total);
