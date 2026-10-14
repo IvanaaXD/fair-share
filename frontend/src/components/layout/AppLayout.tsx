@@ -3,6 +3,8 @@ import { Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Outlet } from 'react-router';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { NotificationToasts } from '../../notifications/NotificationToasts';
+import { useRealtimeConnection } from '../../notifications/useRealtimeConnection';
 import { Logo } from '../brand/Logo';
 import { Sidebar } from './Sidebar';
 import styles from './AppLayout.module.css';
@@ -19,6 +21,9 @@ export function AppLayout() {
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [menuOpen, setMenuOpen] = useState(false);
   const drawerOpen = !isDesktop && menuOpen;
+
+  // Real-time notifications (SignalR) for as long as the signed-in app is open.
+  useRealtimeConnection();
 
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -91,6 +96,8 @@ export function AppLayout() {
       <main id="main-content" tabIndex={-1} className={styles.main}>
         <Outlet />
       </main>
+
+      <NotificationToasts />
     </div>
   );
 }

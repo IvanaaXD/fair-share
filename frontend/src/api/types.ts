@@ -384,7 +384,8 @@ export type NotificationType =
   | 'SettlementSuggested'
   | 'SettlementCompleted'
   | 'GroupMembershipChanged'
-  | 'RecurringExpenseCreated';
+  | 'RecurringExpenseCreated'
+  | 'GroupExpenseAdded';
 
 export interface AppNotification {
   id: string;

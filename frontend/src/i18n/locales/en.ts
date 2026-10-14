@@ -862,6 +862,12 @@ export const en: Translation = {
     SettlementCompleted: 'Settlement',
     GroupMembershipChanged: 'Group',
     RecurringExpenseCreated: 'Expense',
+    GroupExpenseAdded: 'Group expense',
+  },
+  toast: {
+    region: 'New notifications',
+    open: 'Show notifications',
+    close: 'Close',
   },
   validation: {
     required: 'This field is required.',

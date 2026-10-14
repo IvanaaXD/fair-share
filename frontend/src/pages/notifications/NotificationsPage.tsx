@@ -1,4 +1,4 @@
-import { createElement, useEffect, useState } from 'react';
+import { createElement, useEffect, useRef, useState } from 'react';
 import { Bell, BellOff, CheckCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { notificationsApi } from '../../api/notifications';
@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { formattingLocale } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import { NOTIFICATION_ICONS, notificationTypeName, WARNING_TYPES } from '../../notifications/notificationTypes';
+import { onNotificationCreated, onUnreadCountChanged } from '../../notifications/realtime';
 import { refreshUnreadCount, setUnreadCount } from '../../notifications/unreadStore';
 import pageStyles from '../Page.module.css';
 import styles from './Notifications.module.css';
@@ -45,8 +46,37 @@ export function NotificationsPage() {
     return () => controller.abort();
   }, [filter, key]);
 
+  // Pushed in real time (SignalR): added to the top of the list and briefly highlighted.
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(
+    () =>
+      onNotificationCreated((notification) => {
+        setLoaded((current) =>
+          current && !current.error && !current.items.some((item) => item.id === notification.id)
+            ? { ...current, items: [notification, ...current.items] }
+            : current,
+        );
+        setFresh((current) => new Set(current).add(notification.id));
+      }),
+    [],
+  );
+
   const items = loaded?.items ?? [];
   const unread = items.filter((item) => !item.isRead).length;
+
+  // Read somewhere else (another tab, the phone): the server's count drops below what this
+  // list shows, so the list is loaded again.
+  const unreadShown = useRef(0);
+  useEffect(() => {
+    unreadShown.current = unread;
+  }, [unread]);
+  useEffect(
+    () =>
+      onUnreadCountChanged((count) => {
+        if (count < unreadShown.current) setVersion((value) => value + 1);
+      }),
+    [],
+  );
 
   // Opening the page also corrects the badge in the sidebar.
   useEffect(() => {
@@ -162,7 +192,7 @@ export function NotificationsPage() {
                 <li key={item.id}>
                   <button
                     type="button"
-                    className={item.isRead ? styles.item : `${styles.item} ${styles.unread}`}
+                    className={[styles.item, !item.isRead && styles.unread, fresh.has(item.id) && styles.fresh].filter(Boolean).join(' ')}
                     onClick={() => void markRead(item)}
                     aria-describedby={item.isRead ? undefined : `unread-${item.id}`}
                     title={item.isRead ? undefined : t('notificationsPage.markRead')}
