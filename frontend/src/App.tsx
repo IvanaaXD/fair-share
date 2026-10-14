@@ -68,9 +68,16 @@ const router = createBrowserRouter([
             path: 'groups/:groupId',
             lazy: () => import('./pages/groups/GroupPage').then((module) => ({ Component: module.GroupPage })),
           },
-          { path: 'budgets', element: <PlaceholderPage titleKey="budgets" /> },
+          {
+            path: 'budgets',
+            lazy: () => import('./pages/budgets/BudgetsPage').then((module) => ({ Component: module.BudgetsPage })),
+          },
           { path: 'analytics', element: <PlaceholderPage titleKey="analytics" /> },
-          { path: 'notifications', element: <PlaceholderPage titleKey="notifications" /> },
+          {
+            path: 'notifications',
+            lazy: () =>
+              import('./pages/notifications/NotificationsPage').then((module) => ({ Component: module.NotificationsPage })),
+          },
           {
             path: 'profile',
             lazy: () => import('./pages/profile/ProfilePage').then((module) => ({ Component: module.ProfilePage })),
