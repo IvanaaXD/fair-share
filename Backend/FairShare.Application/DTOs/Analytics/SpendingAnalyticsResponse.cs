@@ -6,8 +6,20 @@ public class SpendingAnalyticsResponse
     public DateTime To { get; set; }
     public TimeGranularity Granularity { get; set; }
 
+    /// <summary>All amounts below are in this currency (the user's default one unless asked otherwise).</summary>
+    public string Currency { get; set; } = string.Empty;
+
     public decimal TotalSpent { get; set; }
     public int ExpenseCount { get; set; }
+
+    /// <summary>Expenses in another currency that were converted with the exchange rates below.</summary>
+    public int ConvertedExpenseCount { get; set; }
+
+    /// <summary>Expenses left out because no rate was known for their currency (rate service unreachable).</summary>
+    public int UnconvertedExpenseCount { get; set; }
+
+    /// <summary>When the rates used for conversion were published; null if only the fixed EUR/BAM rate was used.</summary>
+    public DateTime? RatesUpdatedAt { get; set; }
 
     /// <summary>Previous period of the same length, immediately before the selected one.</summary>
     public DateTime PreviousFrom { get; set; }

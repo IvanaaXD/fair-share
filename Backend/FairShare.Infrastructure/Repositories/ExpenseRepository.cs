@@ -95,7 +95,19 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
             .Where(e => e.UserId == userId && e.CategoryId == categoryId && e.Date >= from && e.Date <= to)
             .SumAsync(e => (decimal?)e.Amount, cancellationToken) ?? 0m;
 
-    // CHANGED: due by NextOccurrenceDate; also returns recurring expenses that have no date yet
+    public async Task<IReadOnlyList<CurrencyTotal>> GetTotalsByCurrencyAsync(
+        Guid userId,
+        Guid categoryId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default)
+        => await DbSet.AsNoTracking()
+            .Where(e => e.UserId == userId && e.CategoryId == categoryId && e.Date >= from && e.Date <= to)
+            .GroupBy(e => e.Currency)
+            .Select(g => new CurrencyTotal(g.Key, g.Sum(e => e.Amount)))
+            .ToListAsync(cancellationToken);
+
+    // Due by NextOccurrenceDate; also returns recurring expenses that have no date yet
     // (created before this feature), so the background job can schedule them.
     public async Task<IReadOnlyList<Guid>> GetRecurringDueIdsAsync(
         DateTime asOf,
@@ -115,10 +127,10 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
         CancellationToken cancellationToken = default)
         => await DbSet.AsNoTracking()
             .Where(e => e.UserId == userId && e.Date >= from && e.Date < toExclusive)
-            // Amounts in different currencies are never added together.
             .Where(e => currency == null || e.Currency == currency)
-            .GroupBy(e => e.Date.Date)
-            .Select(g => new DailySpendingTotal(g.Key, g.Sum(e => e.Amount), g.Count()))
+            // One row per day AND currency: KM and EUR are converted later, never added here.
+            .GroupBy(e => new { Day = e.Date.Date, e.Currency })
+            .Select(g => new DailySpendingTotal(g.Key.Day, g.Key.Currency, g.Sum(e => e.Amount), g.Count()))
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<CategorySpendingTotal>> GetTotalsByCategoryAsync(
@@ -130,8 +142,8 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
         => await DbSet.AsNoTracking()
             .Where(e => e.UserId == userId && e.Date >= from && e.Date < toExclusive)
             .Where(e => currency == null || e.Currency == currency)
-            .GroupBy(e => new { e.CategoryId, e.Category.Name })
-            .Select(g => new CategorySpendingTotal(g.Key.CategoryId, g.Key.Name, g.Sum(e => e.Amount), g.Count()))
+            .GroupBy(e => new { e.CategoryId, e.Category.Name, e.Currency })
+            .Select(g => new CategorySpendingTotal(g.Key.CategoryId, g.Key.Name, g.Key.Currency, g.Sum(e => e.Amount), g.Count()))
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<ExpenseLocation>> GetLocationsAsync(

@@ -50,36 +50,36 @@ public class PaymentService : IPaymentService
         if (repeated is not null)
         {
             if (repeated.SettlementTransactionId != settlementTransactionId || repeated.PaymentCard.UserId != currentUserId)
-                throw new ConflictException("Кључ захтјева је већ искоришћен за друго плаћање.");
+                throw new ConflictException("Кључ захтјева је већ искоришћен за друго плаћање.", ErrorCodes.PaymentKeyReused);
             return await ToResponseAsync(repeated, cancellationToken);
         }
 
         var settlement = await _unitOfWork.SettlementTransactions.GetByIdWithDetailsAsync(settlementTransactionId, cancellationToken);
         if (settlement is null || settlement.GroupId != groupId)
-            throw new NotFoundException("Поравнање није пронађено.");
+            throw new NotFoundException("Поравнање није пронађено.", ErrorCodes.SettlementNotFound);
 
         if (settlement.DebtorUserId != currentUserId)
-            throw new ForbiddenException("Картицом може платити само члан који дугује.");
+            throw new ForbiddenException("Картицом може платити само члан који дугује.", ErrorCodes.PaymentOnlyDebtor);
 
         if (settlement.Status == SettlementStatus.Settled)
-            throw new ConflictException("Поравнање је већ измирено.");
+            throw new ConflictException("Поравнање је већ измирено.", ErrorCodes.SettlementAlreadySettled);
 
         var card = await _unitOfWork.PaymentCards.GetByIdAsync(request.PaymentCardId, cancellationToken);
         if (card is null || card.UserId != currentUserId)
-            throw new NotFoundException("Картица није пронађена.");
+            throw new NotFoundException("Картица није пронађена.", ErrorCodes.CardNotFound);
 
         if (card.ExpiryDate.Date < _timeProvider.GetUtcNow().UtcDateTime.Date)
-            throw new ConflictException("Картица је истекла. Изаберите другу картицу.");
+            throw new ConflictException("Картица је истекла. Изаберите другу картицу.", ErrorCodes.CardExpired);
 
         var group = await _unitOfWork.Groups.GetByIdAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.");
+            ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
 
         // A settlement has at most one payment row (unique index). A failed attempt is reused.
         var payment = await _unitOfWork.Payments.GetBySettlementAsync(settlementTransactionId, cancellationToken);
         if (payment is { Status: PaymentStatus.Succeeded })
-            throw new ConflictException("Поравнање је већ плаћено картицом.");
+            throw new ConflictException("Поравнање је већ плаћено картицом.", ErrorCodes.PaymentAlreadyPaid);
         if (payment is { Status: PaymentStatus.Pending })
-            throw new ConflictException("Плаћање овог поравнања је већ у току. Сачекајте неколико секунди.");
+            throw new ConflictException("Плаћање овог поравнања је већ у току. Сачекајте неколико секунди.", ErrorCodes.PaymentInProgress);
 
         // 2) Pending record first: if the server stops during the charge, the attempt is still visible.
         if (payment is null)

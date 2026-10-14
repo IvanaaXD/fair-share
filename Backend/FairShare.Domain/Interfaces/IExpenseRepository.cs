@@ -19,8 +19,19 @@ public interface IExpenseRepository : IRepository<Expense>
     /// <summary>One expense with its category, not tracked (for reading only).</summary>
     Task<Expense?> GetWithCategoryAsync(Guid expenseId, CancellationToken cancellationToken = default);
 
-    /// <summary>Spending of a user in a category within a period (budget thresholds).</summary>
+    /// <summary>Spending of a user in a category within a period, all currencies added as they are (kept for existing callers).</summary>
     Task<decimal> GetTotalByUserAndCategoryAsync(
+        Guid userId,
+        Guid categoryId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Spending of a user in a category within a period (both ends included), one row per
+    /// currency - budgets convert them to the user's currency instead of adding KM and EUR.
+    /// </summary>
+    Task<IReadOnlyList<CurrencyTotal>> GetTotalsByCurrencyAsync(
         Guid userId,
         Guid categoryId,
         DateTime from,
@@ -35,8 +46,9 @@ public interface IExpenseRepository : IRepository<Expense>
 
     // ---------- analytics aggregates ----------
     // All periods are [from, toExclusive) - start included, end excluded.
+    // Rows are grouped by currency too; AnalyticsService converts them to one currency.
 
-    /// <summary>Total spending per day; grouping by day is done in the database, not in memory.</summary>
+    /// <summary>Total spending per day and currency; grouping is done in the database, not in memory.</summary>
     Task<IReadOnlyList<DailySpendingTotal>> GetDailyTotalsAsync(
         Guid userId,
         DateTime from,
@@ -44,7 +56,7 @@ public interface IExpenseRepository : IRepository<Expense>
         string? currency = null,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Total spending per category in the period.</summary>
+    /// <summary>Total spending per category and currency in the period.</summary>
     Task<IReadOnlyList<CategorySpendingTotal>> GetTotalsByCategoryAsync(
         Guid userId,
         DateTime from,

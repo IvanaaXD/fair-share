@@ -1,3 +1,4 @@
+using FairShare.Application.Abstractions;
 using FairShare.Application.Common.Notifications;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities.Enums;
@@ -17,19 +18,27 @@ public class BudgetAlertService : IBudgetAlertService
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
+    private readonly IExchangeRateProvider _exchangeRates;
 
-    public BudgetAlertService(IUnitOfWork unitOfWork, INotificationService notificationService)
+    public BudgetAlertService(
+        IUnitOfWork unitOfWork,
+        INotificationService notificationService,
+        IExchangeRateProvider exchangeRates)
     {
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
+        _exchangeRates = exchangeRates;
     }
 
+    /// <summary>Spending in the category that month, in the user's default currency (the budget's currency).</summary>
     public async Task<decimal> GetSpentInMonthAsync(
         Guid userId, Guid categoryId, DateTime date, CancellationToken cancellationToken = default)
     {
         var (monthStart, monthEnd) = GetMonth(date);
-        return await _unitOfWork.Expenses.GetTotalByUserAndCategoryAsync(
+        var totals = await _unitOfWork.Expenses.GetTotalsByCurrencyAsync(
             userId, categoryId, monthStart, monthEnd, cancellationToken);
+        var rates = await _exchangeRates.GetRatesAsync(cancellationToken);
+        return rates.SumIn(await UserCurrencyAsync(userId, cancellationToken), totals);
     }
 
     public async Task NotifyIfThresholdCrossedAsync(
@@ -47,7 +56,13 @@ public class BudgetAlertService : IBudgetAlertService
         if (budget is null || budget.MonthlyLimit <= 0)
             return;
 
-        var spentAfter = spentBefore + amount;
+        // The new expense may be in another currency than the budget (the user's default one).
+        var budgetCurrency = await UserCurrencyAsync(userId, cancellationToken);
+        var rates = await _exchangeRates.GetRatesAsync(cancellationToken);
+        if (!rates.TryConvert(amount, currency, budgetCurrency, out var convertedAmount))
+            return;
+
+        var spentAfter = spentBefore + convertedAmount;
 
         foreach (var fraction in BudgetThresholds)
         {
@@ -58,7 +73,7 @@ public class BudgetAlertService : IBudgetAlertService
             {
                 var category = NotificationText.Quote(categoryName);
                 var period = NotificationText.Month(date);
-                var limit = NotificationText.Money(budget.MonthlyLimit, currency);
+                var limit = NotificationText.Money(budget.MonthlyLimit, budgetCurrency);
 
                 var (subject, message) = fraction >= 1.0m
                     ? ("Буџет је потрошен",
@@ -72,6 +87,9 @@ public class BudgetAlertService : IBudgetAlertService
             }
         }
     }
+
+    private async Task<string> UserCurrencyAsync(Guid userId, CancellationToken cancellationToken)
+        => (await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken))?.DefaultCurrency ?? "BAM";
 
     private static (DateTime Start, DateTime End) GetMonth(DateTime date)
     {

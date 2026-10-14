@@ -93,7 +93,7 @@ public class GroupService : IGroupService
 
         var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
         if (!balances.Values.All(GroupBalanceCalculator.IsSettled))
-            throw new ConflictException("Група се не може обрисати док постоје неизмирена дуговања.");
+            throw new ConflictException("Група се не може обрисати док постоје неизмирена дуговања.", ErrorCodes.GroupHasDebts);
 
         // Settlements reference the group with ON DELETE RESTRICT, so they are removed explicitly.
         // Members, expenses, splits and comments are removed by cascade delete.
@@ -115,16 +115,16 @@ public class GroupService : IGroupService
         CancellationToken cancellationToken = default)
     {
         var group = await _unitOfWork.Groups.GetByIdAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.");
+            ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
 
         if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken))
-            throw new ForbiddenException("Само члан групе може додавати нове чланове.");
+            throw new ForbiddenException("Само члан групе може додавати нове чланове.", ErrorCodes.NotGroupMember);
 
         var userToAdd = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken)
-            ?? throw new NotFoundException($"Корисник са email адресом '{request.Email}' не постоји.");
+            ?? throw new NotFoundException($"Корисник са e-mail адресом '{request.Email}' не постоји.", ErrorCodes.UserEmailNotFound);
 
         if (await _unitOfWork.GroupMembers.IsMemberAsync(groupId, userToAdd.Id, cancellationToken))
-            throw new ConflictException("Корисник је већ члан ове групе.");
+            throw new ConflictException("Корисник је већ члан ове групе.", ErrorCodes.AlreadyGroupMember);
 
         var member = new GroupMember
         {
@@ -160,14 +160,15 @@ public class GroupService : IGroupService
         EnsureOwner(GetMembership(group, currentUserId), "Само власник групе може уклањати чланове.");
 
         if (userId == currentUserId)
-            throw new ConflictException("Не можете уклонити себе. Ако желите изаћи из групе, користите напуштање групе.");
+            throw new ConflictException("Не можете уклонити себе. Ако желите изаћи из групе, користите напуштање групе.", ErrorCodes.CannotRemoveSelf);
 
         var target = group.Members.FirstOrDefault(m => m.UserId == userId)
-            ?? throw new NotFoundException("Корисник није члан ове групе.");
+            ?? throw new NotFoundException("Корисник није члан ове групе.", ErrorCodes.NotGroupMember);
 
         await EnsureBalanceSettledAsync(
             groupId, userId,
             "Члан се не може уклонити док има неизмирена дуговања или потраживања у групи.",
+            ErrorCodes.MemberHasBalance,
             cancellationToken);
 
         // The member's balance is zero, so any suggestion that still involves them is out of date.
@@ -195,11 +196,12 @@ public class GroupService : IGroupService
             .ToList();
 
         if (otherMembers.Count == 0)
-            throw new ConflictException("Ви сте једини члан групе. Умјесто напуштања, обришите групу.");
+            throw new ConflictException("Ви сте једини члан групе. Умјесто напуштања, обришите групу.", ErrorCodes.OnlyMemberCannotLeave);
 
         await EnsureBalanceSettledAsync(
             groupId, currentUserId,
             "Не можете напустити групу док имате неизмирена дуговања или потраживања.",
+            ErrorCodes.LeaveWithBalance,
             cancellationToken);
 
         // A group must always have an owner: when the owner leaves, the member who has been
@@ -241,28 +243,29 @@ public class GroupService : IGroupService
     /// <summary>Loads the group together with its members and their users (tracked).</summary>
     private async Task<Group> LoadGroupAsync(Guid groupId, CancellationToken cancellationToken)
         => await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-           ?? throw new NotFoundException("Група није пронађена.");
+           ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
 
     /// <summary>Returns the current user's membership, or 403 if they are not in the group.</summary>
     private static GroupMember GetMembership(Group group, Guid userId)
         => group.Members.FirstOrDefault(m => m.UserId == userId)
-           ?? throw new ForbiddenException("Нисте члан ове групе.");
+           ?? throw new ForbiddenException("Нисте члан ове групе.", ErrorCodes.NotGroupMember);
 
     private static void EnsureOwner(GroupMember membership, string message)
     {
         if (membership.Role != GroupRole.Owner)
-            throw new ForbiddenException(message);
+            throw new ForbiddenException(message, ErrorCodes.GroupOwnerOnly);
     }
 
     private async Task EnsureBalanceSettledAsync(
         Guid groupId,
         Guid userId,
         string message,
+        string code,
         CancellationToken cancellationToken)
     {
         var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
 
         if (!GroupBalanceCalculator.IsSettled(balances.GetValueOrDefault(userId, 0m)))
-            throw new ConflictException(message);
+            throw new ConflictException(message, code);
     }
 }
