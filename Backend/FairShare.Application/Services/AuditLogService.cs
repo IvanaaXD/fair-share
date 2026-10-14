@@ -1,4 +1,3 @@
-using AutoMapper;
 using FairShare.Application.DTOs.Admin;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -11,12 +10,10 @@ public class AuditLogService : IAuditLogService
     private const int MaxPageSize = 100;
 
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
 
-    public AuditLogService(IUnitOfWork unitOfWork, IMapper mapper)
+    public AuditLogService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
-        _mapper = mapper;
     }
 
     public async Task LogAsync(
@@ -48,13 +45,32 @@ public class AuditLogService : IAuditLogService
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        // Query parameters are clamped instead of rejected - a too large page size is not an error.
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
 
-        var entries = await _unitOfWork.AuditLogs.SearchAsync(
-            userId, entityType, from, to, page, pageSize, cancellationToken);
+        // Dates come from the query string as whole days ("2026-10-14") with no time zone.
+        // Npgsql only accepts UTC values for timestamptz columns, and "to" must include the
+        // whole last day, so the range becomes [from 00:00, to 23:59:59.9999999] in UTC.
+        var fromUtc = from.HasValue
+            ? DateTime.SpecifyKind(from.Value.Date, DateTimeKind.Utc)
+            : (DateTime?)null;
+        var toUtc = to.HasValue
+            ? DateTime.SpecifyKind(to.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc)
+            : (DateTime?)null;
 
-        return _mapper.Map<List<AuditLogResponse>>(entries);
+        var entries = await _unitOfWork.AuditLogs.SearchAsync(
+            userId, entityType, fromUtc, toUtc, page, pageSize, cancellationToken);
+
+        return entries.Select(a => new AuditLogResponse
+        {
+            Id = a.Id,
+            UserId = a.UserId,
+            UserFullName = a.User is null ? string.Empty : $"{a.User.FirstName} {a.User.LastName}",
+            UserEmail = a.User?.Email ?? string.Empty,
+            Action = a.Action,
+            EntityType = a.EntityType,
+            EntityId = a.EntityId == Guid.Empty ? null : a.EntityId,
+            Timestamp = a.Timestamp
+        }).ToList();
     }
 }

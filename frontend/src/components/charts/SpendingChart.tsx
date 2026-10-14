@@ -8,7 +8,10 @@ import styles from './Charts.module.css';
 interface SpendingChartProps {
   points: SpendingTimePoint[];
   granularity: TimeGranularity | number;
-  currency: string;
+  /** Amounts are shown as money in this currency... */
+  currency?: string;
+  /** ...or, for counts (new users, payments), as whole numbers. */
+  unit?: 'money' | 'count';
   /** Accessible name of the chart, e.g. "Spending over time". */
   label: string;
   height?: number;
@@ -25,7 +28,15 @@ const RIGHT = 8;
  * Spending per day, week or month as columns. One series, so no legend - the card title says
  * what is shown. Hover, touch or the arrow keys show the exact amount of a column.
  */
-export function SpendingChart({ points, granularity, currency, label, height = 260, compact = false }: SpendingChartProps) {
+export function SpendingChart({
+  points,
+  granularity,
+  currency = 'BAM',
+  unit: valueUnit = 'money',
+  label,
+  height = 260,
+  compact = false,
+}: SpendingChartProps) {
   const format = useFormatters();
   const [ref, width] = useElementWidth<HTMLDivElement>();
   const [active, setActive] = useState<number | null>(null);
@@ -33,7 +44,9 @@ export function SpendingChart({ points, granularity, currency, label, height = 2
   const unit = granularityName(granularity);
 
   const totals = points.map((point) => point.total);
-  const ticks = niceTicks(Math.max(0, ...totals), compact ? 3 : 4);
+  // Counts never get ticks like 0,5 - a step is at least 1.
+  const ticks = niceTicks(Math.max(0, ...totals), compact ? 3 : 4, valueUnit === 'count' ? 1 : 0);
+  const value = (amount: number) => (valueUnit === 'count' ? format.number(amount) : format.money(amount, currency));
   const top = ticks[ticks.length - 1] || 1;
   const step = ticks[1] ?? 1;
   const tickDigits = step < 1 ? 2 : 0;
@@ -161,20 +174,26 @@ export function SpendingChart({ points, granularity, currency, label, height = 2
           }}
           aria-hidden="true"
         >
-          <strong className="money">{format.money(activePoint.total, currency)}</strong>
+          <strong className={valueUnit === 'money' ? 'money' : undefined}>{value(activePoint.total)}</strong>
           <span>{periodLabel(activePoint)}</span>
         </div>
       )}
 
       <p id={descriptionId} className="visually-hidden" aria-live="polite">
-        {activePoint ? `${periodLabel(activePoint)}: ${format.money(activePoint.total, currency)}` : ''}
+        {activePoint ? `${periodLabel(activePoint)}: ${value(activePoint.total)}` : ''}
       </p>
     </div>
   );
 }
 
 /** The same numbers as a table - for screen readers, and for anyone who wants exact values. */
-export function SpendingTable({ points, granularity, currency, caption }: Omit<SpendingChartProps, 'label' | 'height' | 'compact'> & { caption: string }) {
+export function SpendingTable({
+  points,
+  granularity,
+  currency = 'BAM',
+  unit: valueUnit = 'money',
+  caption,
+}: Omit<SpendingChartProps, 'label' | 'height' | 'compact'> & { caption: string }) {
   const format = useFormatters();
   const unit = granularityName(granularity);
   const periodLabel = (point: SpendingTimePoint) => {
@@ -191,7 +210,9 @@ export function SpendingTable({ points, granularity, currency, caption }: Omit<S
           {points.map((point) => (
             <tr key={point.periodStart}>
               <th scope="row">{periodLabel(point)}</th>
-              <td className="money">{format.money(point.total, currency)}</td>
+              <td className={valueUnit === 'money' ? 'money' : undefined}>
+                {valueUnit === 'count' ? format.number(point.total) : format.money(point.total, currency)}
+              </td>
             </tr>
           ))}
         </tbody>

@@ -48,7 +48,10 @@ export function LoginPage() {
       const from = (location.state as { from?: Location } | null)?.from;
       void navigate(from ? `${from.pathname}${from.search}` : '/', { replace: true });
     } catch (error) {
-      setFormError(errorMessage(error, { 401: t('auth.login.invalid') }));
+      // The backend answers a blocked account with 403 "Account is blocked." (English, so it is
+      // recognised here and translated); other 403 answers keep their own message.
+      const blocked = error instanceof ApiError && error.status === 403 && /block/i.test(error.detail ?? '');
+      setFormError(blocked ? t('auth.login.blocked') : errorMessage(error, { 401: t('auth.login.invalid') }));
       if (error instanceof ApiError && error.status === 401) {
         setValues((current) => ({ ...current, password: '' }));
       }

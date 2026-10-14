@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation, type Location } from 'react-router';
 import { FullPageLoader } from '../components/ui/FullPageLoader';
+import { isAdminRole } from './roles';
 import { useAuth } from './useAuth';
 
 /** Pages of the signed-in app. Anyone else is sent to the login page, which returns them here. */
@@ -22,6 +23,18 @@ export function RequireAuth() {
 }
 
 export const CHANGE_PASSWORD_PATH = '/change-password';
+
+/**
+ * Administration pages. A customer who types the address is sent to the overview - the
+ * backend refuses the data anyway ([Authorize(Roles = "Admin")]), this only keeps the screen clean.
+ */
+export function RequireAdmin() {
+  const { user } = useAuth();
+  if (!isAdminRole(user?.role)) {
+    return <Navigate to="/" replace />;
+  }
+  return <Outlet />;
+}
 
 /** Login, registration and "forgot password" make no sense when already signed in. */
 export function PublicOnly() {
