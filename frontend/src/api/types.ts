@@ -348,3 +348,49 @@ export interface PaymentResult {
   cardLast4Digits: string;
   createdAt: string;
 }
+
+// ---------- budgets (BudgetController) ----------
+
+export interface Budget {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  monthlyLimit: number;
+  /** "YYYY-MM" */
+  month: string;
+  /** Sum of the user's expenses in the category in that month (calculated by the backend). */
+  currentSpending: number;
+  percentageUsed: number;
+}
+
+export interface CreateBudgetRequest {
+  categoryId: string;
+  monthlyLimit: number;
+  month: string;
+}
+
+export interface UpdateBudgetRequest {
+  monthlyLimit: number;
+}
+
+// ---------- notifications (NotificationController) ----------
+
+export type NotificationType =
+  | 'AccountActivation'
+  | 'GroupInvite'
+  | 'PasswordReset'
+  | 'PaymentConfirmation'
+  | 'BudgetExceeded'
+  | 'SettlementSuggested'
+  | 'SettlementCompleted'
+  | 'GroupMembershipChanged'
+  | 'RecurringExpenseCreated';
+
+export interface AppNotification {
+  id: string;
+  /** A name, or a number on backends without JsonStringEnumConverter. */
+  type: NotificationType | number;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}

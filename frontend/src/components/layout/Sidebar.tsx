@@ -6,7 +6,7 @@ import { useAuth } from '../../auth/useAuth';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import { balanceStatus } from '../../groups/groupUtils';
 import { useMyGroups } from '../../groups/myGroupsStore';
-import { sampleUnreadNotifications } from '../../mocks/sidebarData';
+import { useUnreadCount } from '../../notifications/unreadStore';
 import { Logo } from '../brand/Logo';
 import { UserAvatar } from '../ui/UserAvatar';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -58,6 +58,7 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
   const localize = useLocalizedText();
   const { user, logout } = useAuth();
   const { groups } = useMyGroups();
+  const unreadNotifications = useUnreadCount();
 
   const className = [styles.sidebar, isDrawer && styles.drawer, isDrawer && isOpen && styles.open]
     .filter(Boolean)
@@ -92,13 +93,13 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
               <NavLink to={to} end={to === '/'} className={navLinkClass} onClick={onNavigate}>
                 <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
                 <span className={styles.navLabel}>{t(`nav.${key}`)}</span>
-                {key === 'notifications' && sampleUnreadNotifications > 0 && (
+                {key === 'notifications' && unreadNotifications > 0 && (
                   <>
                     <span className={styles.badge} aria-hidden="true">
-                      {sampleUnreadNotifications}
+                      {unreadNotifications}
                     </span>
                     <span className="visually-hidden">
-                      {t('nav.unread', { count: sampleUnreadNotifications })}
+                      {t('nav.unread', { count: unreadNotifications })}
                     </span>
                   </>
                 )}

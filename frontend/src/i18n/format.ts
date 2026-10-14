@@ -49,6 +49,7 @@ export function useFormatters() {
       timeZone: 'UTC',
     });
     const longDate = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const monthFormat = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
     return {
       locale,
@@ -84,10 +85,28 @@ export function useFormatters() {
         return (date.getUTCFullYear() === CURRENT_YEAR ? shortDate : shortDateWithYear).format(date);
       },
 
+      /** "2026-10" -> "октобар 2026" / "October 2026" */
+      month(value: string): string {
+        // Serbian adds a period after the year ("октобар 2026."), which reads badly inside a sentence.
+        return monthFormat.format(new Date(`${value}-01T00:00:00Z`)).replace(/\.$/, '');
+      },
+
       /** "12. октобар 2026." */
       longDate(value: string): string {
         return longDate.format(dateOnlyToUtc(value));
       },
     };
   }, [locale]);
+}
+
+/** "YYYY-MM" of today in the user's time zone. */
+export function currentMonth(now = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** "2026-01", -1 -> "2025-12" */
+export function addMonths(month: string, delta: number): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const date = new Date(Date.UTC(year, monthNumber - 1 + delta, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
