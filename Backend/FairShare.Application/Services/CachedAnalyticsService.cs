@@ -27,10 +27,11 @@ public class CachedAnalyticsService : IAnalyticsService
         AnalyticsPeriod period,
         DateTime? from,
         DateTime? to,
+        string? currency,
         CancellationToken cancellationToken = default)
         => _cache.GetOrCreateAsync(
-            CacheKeys.SpendingAnalytics(currentUserId, period, from, to),
-            token => _inner.GetSpendingAnalyticsAsync(currentUserId, period, from, to, token),
+            CacheKeys.SpendingAnalytics(currentUserId, period, from, to, currency),
+            token => _inner.GetSpendingAnalyticsAsync(currentUserId, period, from, to, currency, token),
             CacheDurations.Analytics,
             Tags(currentUserId),
             cancellationToken);

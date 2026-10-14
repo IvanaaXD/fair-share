@@ -11,7 +11,6 @@ import { RegisterPage } from './pages/auth/RegisterPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OverviewPage } from './pages/OverviewPage';
-import { PlaceholderPage } from './pages/PlaceholderPage';
 
 /**
  * All pages of the app.
@@ -72,7 +71,10 @@ const router = createBrowserRouter([
             path: 'budgets',
             lazy: () => import('./pages/budgets/BudgetsPage').then((module) => ({ Component: module.BudgetsPage })),
           },
-          { path: 'analytics', element: <PlaceholderPage titleKey="analytics" /> },
+          {
+            path: 'analytics',
+            lazy: () => import('./pages/analytics/AnalyticsPage').then((module) => ({ Component: module.AnalyticsPage })),
+          },
           {
             path: 'notifications',
             lazy: () =>
