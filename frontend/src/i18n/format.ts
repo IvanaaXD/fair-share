@@ -53,6 +53,14 @@ export function useFormatters() {
     const monthShortFormat = new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' });
     const rangeFormat = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
     const percentNumber = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+    const dateTimeFormat = new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const timeFormat = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
 
     return {
       locale,
@@ -128,6 +136,16 @@ export function useFormatters() {
       /** 1234.56 -> "1.235" (chart axes); small steps such as 0,25 keep their decimals. */
       number(value: number, fractionDigits = 0): string {
         return new Intl.NumberFormat(locale, { maximumFractionDigits: fractionDigits }).format(value);
+      },
+
+      /** A moment (not a calendar day), in the user's own time zone: "14. окт 2026. 12:34" */
+      dateTime(value: string): string {
+        return dateTimeFormat.format(new Date(value));
+      },
+
+      /** "12:34" in the user's own time zone */
+      time(value: string): string {
+        return timeFormat.format(new Date(value));
       },
 
       /** 12.345 -> "12,3%" */

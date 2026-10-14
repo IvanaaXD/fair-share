@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
-import { BarChart3, CalendarRange, MapPin, Plus, Table2 } from 'lucide-react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { BarChart3, MapPin, Plus, Table2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { analyticsApi } from '../../api/analytics';
@@ -9,20 +9,13 @@ import { useAuth } from '../../auth/useAuth';
 import { SpendingChart, SpendingTable } from '../../components/charts/SpendingChart';
 import { granularityName } from '../../components/charts/chartMath';
 import { Alert } from '../../components/ui/Alert';
-import { Button, ButtonLink } from '../../components/ui/Button';
-import { todayDateOnly, useFormatters } from '../../i18n/format';
+import { ButtonLink } from '../../components/ui/Button';
+import { useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import type { ExpensesPageState } from '../expenses/ExpensesPage';
 import { CategoryBreakdown, Change } from './CategoryBreakdown';
-import {
-  daysBetween,
-  periodToParams,
-  PRESETS,
-  readPeriod,
-  validateCustomRange,
-  type PeriodSelection,
-  type RangeError,
-} from './analyticsPeriod';
+import { daysBetween, periodToParams, readPeriod, type PeriodSelection } from './analyticsPeriod';
+import { PeriodFilter } from './PeriodFilter';
 import pageStyles from '../Page.module.css';
 import styles from './Analytics.module.css';
 
@@ -31,21 +24,10 @@ const ExpenseMap = lazy(() => import('./ExpenseMap'));
 
 const ADD_EXPENSE_STATE: ExpensesPageState = { addExpense: true };
 
-const RANGE_ERRORS: Record<RangeError, 'analytics.errorRequired' | 'analytics.errorOrder' | 'analytics.errorTooLong'> = {
-  required: 'analytics.errorRequired',
-  order: 'analytics.errorOrder',
-  tooLong: 'analytics.errorTooLong',
-};
-
 interface Loaded<T> {
   key: string;
   data: T | null;
   error: unknown;
-}
-
-/** First day of the current month, "YYYY-MM-01" - the default start of a custom period. */
-function monthStart(today: string) {
-  return `${today.slice(0, 7)}-01`;
 }
 
 export function AnalyticsPage() {
@@ -60,14 +42,6 @@ export function AnalyticsPage() {
   const selection = readPeriod(params);
   const select = (next: PeriodSelection) => setParams(periodToParams(next), { replace: true, preventScrollReset: true });
 
-  // The "from - to" form is open while a custom period is shown, or after its button is pressed.
-  const [customOpen, setCustomOpen] = useState(selection.period === 'Custom');
-  const [today] = useState(() => todayDateOnly());
-  const [draft, setDraft] = useState({
-    from: selection.period === 'Custom' ? selection.from : monthStart(today),
-    to: selection.period === 'Custom' ? selection.to : today,
-  });
-  const [draftError, setDraftError] = useState<RangeError | null>(null);
   const [view, setView] = useState<'chart' | 'table'>('chart');
 
   const query: AnalyticsQuery =
@@ -105,13 +79,6 @@ export function AnalyticsPage() {
   const mapData = locations?.data ?? null;
   const mapError = locations?.key === key ? locations.error : null;
 
-  function showCustom(event: FormEvent) {
-    event.preventDefault();
-    const problem = validateCustomRange(draft.from, draft.to);
-    setDraftError(problem);
-    if (!problem) select({ period: 'Custom', from: draft.from, to: draft.to });
-  }
-
   const isEmpty = data !== null && data.expenseCount === 0 && !loading;
   const days = data ? daysBetween(data.from, data.to) : 1;
   const top = data?.byCategory[0];
@@ -128,74 +95,7 @@ export function AnalyticsPage() {
         </div>
       </header>
 
-      <div className={styles.filters}>
-        <div className={styles.segmented} role="group" aria-label={t('analytics.periodLabel')}>
-          {PRESETS.map((period) => {
-            const pressed = !customOpen && selection.period === period;
-            return (
-              <button
-                key={period}
-                type="button"
-                aria-pressed={pressed}
-                className={pressed ? `${styles.segment} ${styles.segmentActive}` : styles.segment}
-                onClick={() => {
-                  setCustomOpen(false);
-                  setDraftError(null);
-                  select({ period, from: '', to: '' });
-                }}
-              >
-                {t(`analytics.period_${period}`)}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            aria-pressed={customOpen}
-            aria-expanded={customOpen}
-            aria-controls="analytics-custom"
-            className={customOpen ? `${styles.segment} ${styles.segmentActive}` : styles.segment}
-            onClick={() => setCustomOpen(true)}
-          >
-            <CalendarRange size={16} aria-hidden="true" />
-            {t('analytics.period_Custom')}
-          </button>
-        </div>
-
-        {customOpen && (
-          <form id="analytics-custom" className={styles.customForm} onSubmit={showCustom} noValidate>
-            <label className={styles.dateField}>
-              <span>{t('analytics.from')}</span>
-              <input
-                type="date"
-                value={draft.from}
-                max={draft.to || undefined}
-                aria-invalid={draftError !== null}
-                aria-describedby={draftError ? 'analytics-range-error' : undefined}
-                onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))}
-              />
-            </label>
-            <label className={styles.dateField}>
-              <span>{t('analytics.to')}</span>
-              <input
-                type="date"
-                value={draft.to}
-                min={draft.from || undefined}
-                aria-invalid={draftError !== null}
-                aria-describedby={draftError ? 'analytics-range-error' : undefined}
-                onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))}
-              />
-            </label>
-            <Button type="submit" variant="secondary">
-              {t('analytics.show')}
-            </Button>
-            {draftError && (
-              <p id="analytics-range-error" className={styles.fieldError} role="alert">
-                {t(RANGE_ERRORS[draftError])}
-              </p>
-            )}
-          </form>
-        )}
-      </div>
+      <PeriodFilter selection={selection} onSelect={select} />
 
       {spendingError != null && (
         <Alert tone="error">

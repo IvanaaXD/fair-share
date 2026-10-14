@@ -453,3 +453,82 @@ export interface ExpenseLocation {
   latitude: number;
   longitude: number;
 }
+
+// ---------- administration (AdminController, AdminUserController) ----------
+
+export interface AdminTotals {
+  users: number;
+  blockedUsers: number;
+  admins: number;
+  groups: number;
+  personalExpenses: number;
+  groupExpenses: number;
+  proposedSettlements: number;
+  settledSettlements: number;
+  /** Status name ("Pending", "Succeeded", "Failed"...) -> number of payments. */
+  paymentsByStatus: Record<string, number>;
+}
+
+export interface AdminTimePoint {
+  periodStart: string;
+  periodEnd: string;
+  newUsers: number;
+  newGroups: number;
+  personalExpenses: number;
+  groupExpenses: number;
+  settlements: number;
+  payments: number;
+}
+
+export type AdminSeries = Exclude<keyof AdminTimePoint, 'periodStart' | 'periodEnd'>;
+
+export interface AdminStatistics {
+  from: string;
+  to: string;
+  granularity: TimeGranularity | number;
+  /** All-time state of the system, not only the chosen period. */
+  totals: AdminTotals;
+  /** New records per day/week/month in the chosen period. */
+  timeline: AdminTimePoint[];
+}
+
+export interface AdminUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole;
+  isBlocked: boolean;
+  mustChangePassword: boolean;
+  createdAt: string;
+}
+
+export interface AdminUserQuery {
+  search?: string;
+  isBlocked?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  userId: string;
+  userFullName: string;
+  userEmail: string;
+  /** "Controller.Action", e.g. "AdminUser.Block" or "Auth.Login". */
+  action: string;
+  /** The controller name, e.g. "Expense", "Group", "AdminUser". */
+  entityType: string;
+  entityId: string | null;
+  timestamp: string;
+}
+
+export interface AuditLogQuery {
+  userId?: string;
+  entityType?: string;
+  /** "YYYY-MM-DD" */
+  from?: string;
+  to?: string;
+  page?: number;
+  pageSize?: number;
+}

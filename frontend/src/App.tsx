@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider } from 'react-router';
-import { PublicOnly, RequireAuth } from './auth/RouteGuards';
+import { PublicOnly, RequireAdmin, RequireAuth } from './auth/RouteGuards';
 import { AppLayout } from './components/layout/AppLayout';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { FullPageLoader } from './components/ui/FullPageLoader';
@@ -83,6 +83,24 @@ const router = createBrowserRouter([
           {
             path: 'profile',
             lazy: () => import('./pages/profile/ProfilePage').then((module) => ({ Component: module.ProfilePage })),
+          },
+          {
+            path: 'admin',
+            element: <RequireAdmin />,
+            children: [
+              {
+                index: true,
+                lazy: () => import('./pages/admin/AdminStatisticsPage').then((module) => ({ Component: module.AdminStatisticsPage })),
+              },
+              {
+                path: 'users',
+                lazy: () => import('./pages/admin/AdminUsersPage').then((module) => ({ Component: module.AdminUsersPage })),
+              },
+              {
+                path: 'audit',
+                lazy: () => import('./pages/admin/AdminAuditPage').then((module) => ({ Component: module.AdminAuditPage })),
+              },
+            ],
           },
           { path: '*', element: <NotFoundPage /> },
         ],

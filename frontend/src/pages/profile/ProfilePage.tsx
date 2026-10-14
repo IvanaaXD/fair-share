@@ -16,6 +16,7 @@ import { useLocalizedText } from '../../i18n/useLocalizedText';
 import { RECEIPT_TYPES, validateReceipt } from '../expenses/expenseValidation';
 import { formatBankAccount, validateBankAccount } from './bankAccount';
 import { PaymentCardsSection } from '../payments/PaymentCardsSection';
+import { isAdminRole } from '../../auth/roles';
 import { PasswordForm } from './PasswordForm';
 import pageStyles from '../Page.module.css';
 import styles from './Profile.module.css';
@@ -141,7 +142,7 @@ function PhotoCard({ user, onNotice }: { user: Profile; onNotice: (text: string)
           <p className={styles.photoName}>{localize(`${user.firstName} ${user.lastName}`)}</p>
           <p className={styles.muted}>
             {user.email}
-            {(user.role === 'Admin' || user.role === 0) && <span className={styles.badge}>{t('profile.roleAdmin')}</span>}
+            {isAdminRole(user.role) && <span className={styles.badge}>{t('profile.roleAdmin')}</span>}
           </p>
           <div className={styles.photoActions}>
             <Button variant="secondary" icon={<ImagePlus size={17} aria-hidden="true" />} onClick={() => inputRef.current?.click()} disabled={busy}>

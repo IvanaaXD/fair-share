@@ -1,7 +1,22 @@
 import type { RefObject } from 'react';
-import { Bell, ChartColumn, ChartPie, House, LogOut, ReceiptText, UserRound, Users, X, type LucideIcon } from 'lucide-react';
+import {
+  Bell,
+  ChartColumn,
+  ChartPie,
+  FileClock,
+  Gauge,
+  House,
+  LogOut,
+  ReceiptText,
+  UserCog,
+  UserRound,
+  Users,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
+import { isAdminRole } from '../../auth/roles';
 import { useAuth } from '../../auth/useAuth';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import { balanceStatus } from '../../groups/groupUtils';
@@ -29,6 +44,15 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'analytics', to: '/analytics', icon: ChartColumn },
   { key: 'notifications', to: '/notifications', icon: Bell },
   { key: 'profile', to: '/profile', icon: UserRound },
+];
+
+type AdminNavKey = 'adminStatistics' | 'adminUsers' | 'adminAudit';
+
+/** Shown only to administrators. */
+const ADMIN_ITEMS: { key: AdminNavKey; to: string; icon: LucideIcon }[] = [
+  { key: 'adminStatistics', to: '/admin', icon: Gauge },
+  { key: 'adminUsers', to: '/admin/users', icon: UserCog },
+  { key: 'adminAudit', to: '/admin/audit', icon: FileClock },
 ];
 
 /** How many groups fit in the quick switcher; the rest are on the groups page. */
@@ -108,6 +132,24 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
           ))}
         </ul>
       </nav>
+
+      {isAdminRole(user?.role) && (
+        <nav className={styles.admin} aria-labelledby={`${id}-admin`}>
+          <h2 id={`${id}-admin`} className={styles.groupsTitle}>
+            {t('nav.admin')}
+          </h2>
+          <ul className={styles.list}>
+            {ADMIN_ITEMS.map(({ key, to, icon: Icon }) => (
+              <li key={key}>
+                <NavLink to={to} end={to === '/admin'} className={navLinkClass} onClick={onNavigate}>
+                  <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
+                  <span className={styles.navLabel}>{t(`nav.${key}`)}</span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
 
       <section className={styles.groups} aria-labelledby={`${id}-groups`}>
         <h2 id={`${id}-groups`} className={styles.groupsTitle}>

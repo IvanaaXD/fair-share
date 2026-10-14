@@ -4,11 +4,13 @@ import type { TimeGranularity } from '../../api/types';
  * "Nice" axis steps: 0, 50, 100, 150 rather than 0, 47.3, 94.6. Returns the tick values from
  * zero up to the first tick at or above the maximum, with about `count` intervals.
  */
-export function niceTicks(max: number, count = 4): number[] {
-  if (!(max > 0)) return [0];
-  const rough = max / count;
+export function niceTicks(max: number, count = 4, minStep = 0): number[] {
+  if (!(max > 0)) return minStep > 0 ? [0, minStep] : [0];
+  const rough = Math.max(max / count, minStep);
   const magnitude = 10 ** Math.floor(Math.log10(rough));
-  const step = [1, 2, 2.5, 5, 10].map((factor) => factor * magnitude).find((candidate) => candidate >= rough) ?? 10 * magnitude;
+  // Whole-number axes skip 2.5 (it would give ticks like 7,5).
+  const factors = minStep >= 1 ? [1, 2, 5, 10] : [1, 2, 2.5, 5, 10];
+  const step = factors.map((factor) => factor * magnitude).find((candidate) => candidate >= rough) ?? 10 * magnitude;
   const ticks: number[] = [];
   for (let value = 0; value < max + step * 0.0001; value += step) {
     ticks.push(Math.round(value * 1e6) / 1e6);
