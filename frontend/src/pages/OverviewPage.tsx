@@ -232,7 +232,7 @@ export function OverviewPage() {
             linkText={t('overview.toAnalytics')}
           />
           {data.thisMonth.status === 'error' && <Alert tone="error">{errorMessage(data.thisMonth.error)}</Alert>}
-          {thisMonth && thisMonth.expenseCount === 0 && <p className={styles.empty}>{t('overview.noSpendingYet', { currency })}</p>}
+          {thisMonth && thisMonth.expenseCount === 0 && <p className={styles.empty}>{t('overview.noSpendingYet')}</p>}
           {thisMonth && thisMonth.expenseCount > 0 && (
             <SpendingChart
               points={thisMonth.timeline}

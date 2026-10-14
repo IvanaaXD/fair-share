@@ -29,6 +29,7 @@ import {
   validateDescription,
   validateReceipt,
 } from './expenseValidation';
+import { LocationField, type Coordinates } from './LocationField';
 import { ReceiptField } from './ReceiptField';
 import styles from './ExpenseDialog.module.css';
 
@@ -114,6 +115,11 @@ export function ExpenseDialog({
   const [formError, setFormError] = useState<string | null>(null);
   const [phase, setPhase] = useState<'editing' | 'saving' | 'confirmDelete' | 'deleting'>('editing');
 
+  const [location, setLocation] = useState<Coordinates | null>(() =>
+    initialExpense?.latitude != null && initialExpense.longitude != null
+      ? { latitude: initialExpense.latitude, longitude: initialExpense.longitude }
+      : null,
+  );
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptRemoved, setReceiptRemoved] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
@@ -181,9 +187,8 @@ export function ExpenseDialog({
       date: values.date,
       categoryId: values.categoryId,
       description: values.description.trim() || null,
-      // The form does not edit the location (it comes from the mobile app), so it is kept as is.
-      latitude: expense?.latitude ?? null,
-      longitude: expense?.longitude ?? null,
+      latitude: location?.latitude ?? null,
+      longitude: location?.longitude ?? null,
       isRecurring: values.isRecurring,
       recurrenceInterval: values.isRecurring ? values.interval : 'None',
     };
@@ -389,6 +394,8 @@ export function ExpenseDialog({
             </>
           )}
         </div>
+
+        <LocationField value={location} onChange={setLocation} disabled={busy} />
 
         <ReceiptField
           savedUrl={expense?.receiptImageUrl ?? null}

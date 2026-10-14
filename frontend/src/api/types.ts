@@ -90,6 +90,8 @@ export interface ProblemDetails {
   message?: string;
   /** Validation errors by field name, e.g. { "Email": ["E-mail адреса није исправна."] }. */
   errors?: Record<string, string[]>;
+  /** Stable error code (ErrorCodes on the backend), translated by the app, e.g. "groupHasDebts". */
+  code?: string;
 }
 
 // ---------- lists with paging (PagedResponse<T>) ----------
@@ -438,6 +440,13 @@ export interface SpendingAnalytics {
   previousFrom: string;
   previousTo: string;
   previousPeriodTotal: number;
+  /** All amounts are in this currency (older backends do not send it). */
+  currency?: string;
+  /** Expenses in other currencies, converted with the rates of `ratesUpdatedAt`. */
+  convertedExpenseCount?: number;
+  /** Expenses left out because no rate was known for their currency. */
+  unconvertedExpenseCount?: number;
+  ratesUpdatedAt?: string | null;
   /** null when nothing was spent in the previous period. */
   changePercentage: number | null;
   timeline: SpendingTimePoint[];

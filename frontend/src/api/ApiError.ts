@@ -8,6 +8,8 @@ export class ApiError extends Error {
   readonly status: number;
   readonly title?: string;
   readonly detail?: string;
+  /** Stable code from the backend (ErrorCodes), translated by useErrorMessage. */
+  readonly code?: string;
   /** Field errors keyed by camelCase field name, e.g. { email: ['...'] }. */
   readonly fieldErrors: Record<string, string[]>;
 
@@ -17,6 +19,7 @@ export class ApiError extends Error {
     this.status = status;
     this.title = problem.title;
     this.detail = problem.detail ?? problem.message;
+    this.code = problem.code;
     this.fieldErrors = normalizeFieldErrors(problem.errors);
   }
 
@@ -27,6 +30,11 @@ export class ApiError extends Error {
 
   get isNetworkError() {
     return this.status === 0;
+  }
+
+  /** The account was blocked by an administrator (403 from the account filter or the login). */
+  get isAccountBlocked() {
+    return this.status === 403 && (this.code === 'accountBlocked' || /blocked|блокиран/i.test(this.detail ?? ''));
   }
 }
 
