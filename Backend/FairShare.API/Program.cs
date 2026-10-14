@@ -81,6 +81,9 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 }
 
 await AdminUserSeeder.SeedAsync(app.Services);
+if (app.Configuration.GetValue<bool>("DemoData:Enabled"))
+    await DemoDataSeeder.SeedAsync(app.Services);
+
 
 if (app.Environment.IsDevelopment())
 {
