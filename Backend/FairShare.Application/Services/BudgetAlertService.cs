@@ -1,3 +1,4 @@
+using FairShare.Application.Common.Notifications;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
@@ -12,11 +13,7 @@ public class BudgetAlertService : IBudgetAlertService
 {
     // Budget thresholds, checked from highest to lowest so only one notification is sent
     // (for the highest threshold that was just crossed).
-    private static readonly (decimal Fraction, string Label)[] BudgetThresholds =
-    {
-        (1.0m, "100%"),
-        (0.8m, "80%")
-    };
+    private static readonly decimal[] BudgetThresholds = { 1.0m, 0.8m };
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
@@ -52,20 +49,25 @@ public class BudgetAlertService : IBudgetAlertService
 
         var spentAfter = spentBefore + amount;
 
-        foreach (var (fraction, label) in BudgetThresholds)
+        foreach (var fraction in BudgetThresholds)
         {
             var limitAtThreshold = budget.MonthlyLimit * fraction;
 
             // Notify only at the moment a threshold is crossed, not for every expense above it.
             if (spentBefore < limitAtThreshold && spentAfter >= limitAtThreshold)
             {
+                var category = NotificationText.Quote(categoryName);
+                var period = NotificationText.Month(date);
+                var limit = NotificationText.Money(budget.MonthlyLimit, currency);
+
+                var (subject, message) = fraction >= 1.0m
+                    ? ("Буџет је потрошен",
+                       $"Буџет за категорију {category} за {period} је потрошен: достигнуто је 100% лимита од {limit}.")
+                    : ("Буџет: 80% лимита",
+                       $"Потрошено је 80% буџета за категорију {category} за {period} (лимит {limit}).");
+
                 await _notificationService.NotifyAsync(
-                    userId,
-                    NotificationType.BudgetExceeded,
-                    "Budget exceeded",
-                    $"Spending in the '{categoryName}' category has reached {label} of the monthly " +
-                    $"limit of {budget.MonthlyLimit} {currency} for {month}.",
-                    cancellationToken);
+                    userId, NotificationType.BudgetExceeded, subject, message, cancellationToken);
                 return;
             }
         }

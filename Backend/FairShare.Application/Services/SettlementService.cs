@@ -1,6 +1,7 @@
 using AutoMapper;
 using FairShare.Application.Common.Exceptions;
 using FairShare.Application.Common.Extensions;
+using FairShare.Application.Common.Notifications;
 using FairShare.Application.DTOs.Settlements;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
@@ -100,16 +101,27 @@ public class SettlementService : ISettlementService
         // settlement that was just paid.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Every debtor is notified about their part of the settlement.
+        // Both sides of every transfer are told: the debtor what to pay (also by e-mail),
+        // the creditor what to expect (in the app only).
         foreach (var t in transactions)
         {
+            var amount = NotificationText.Money(t.Amount, group.Currency);
+            var groupName = NotificationText.Quote(group.Name);
+
             await _notificationService.NotifyAsync(
                 t.DebtorUserId,
                 NotificationType.SettlementSuggested,
-                "New settlement proposal",
-                $"A settlement has been proposed in the group '{group.Name}': you owe user " +
-                $"{t.CreditorUser.FirstName} {t.CreditorUser.LastName} the amount of {t.Amount} {group.Currency}.",
+                "Нови приједлог поравнања",
+                $"Нови приједлог поравнања у групи {groupName}: треба да уплатиш {amount}, прима {NotificationText.FullName(t.CreditorUser)}.",
                 cancellationToken);
+
+            await _notificationService.NotifyAsync(
+                t.CreditorUserId,
+                NotificationType.SettlementSuggested,
+                "Нови приједлог поравнања",
+                $"Нови приједлог поравнања у групи {groupName}: {NotificationText.FullName(t.DebtorUser)} треба да ти уплати {amount}.",
+                cancellationToken,
+                sendEmail: false);
         }
 
         return _mapper.Map<List<SettlementTransactionResponse>>(transactions);
@@ -150,11 +162,10 @@ public class SettlementService : ISettlementService
         await _notificationService.NotifyAsync(
             otherUserId,
             NotificationType.SettlementCompleted,
-            "Settlement completed",
-            $"The settlement of {transaction.Amount} {group?.Currency} between user " +
-            $"{transaction.DebtorUser.FirstName} {transaction.DebtorUser.LastName} and " +
-            $"{transaction.CreditorUser.FirstName} {transaction.CreditorUser.LastName} " +
-            $"in the group '{group?.Name}' has been marked as settled.",
+            "Поравнање измирено",
+            $"Поравнање у групи {NotificationText.Quote(group?.Name ?? string.Empty)} је означено као измирено: " +
+            $"{NotificationText.FullName(transaction.DebtorUser)} → {NotificationText.FullName(transaction.CreditorUser)}, " +
+            $"{NotificationText.Money(transaction.Amount, group?.Currency)}.",
             cancellationToken);
 
         return _mapper.Map<SettlementTransactionResponse>(transaction);

@@ -15,5 +15,8 @@ public enum NotificationType
     GroupMembershipChanged,
 
     // a copy of a recurring expense was added automatically. Also at the end.
-    RecurringExpenseCreated
+    RecurringExpenseCreated,
+
+    // Another member added a group expense in which this user takes part. Also at the end.
+    GroupExpenseAdded
 }

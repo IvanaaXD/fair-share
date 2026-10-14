@@ -1,12 +1,13 @@
 using AutoMapper;
 using FairShare.Application.Common.Exceptions;
-using FairShare.Application.Common.Extensions;
+using FairShare.Application.Common.Notifications;
 using FairShare.Application.DTOs.GroupExpenses;
 using FairShare.Application.Interfaces;
 using FairShare.Domain.Entities;
 using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
 using FairShare.Domain.Services;
+using FairShare.Application.Common.Extensions;
 
 namespace FairShare.Application.Services;
 
@@ -15,11 +16,13 @@ public class GroupExpenseService : IGroupExpenseService
     private const int MaxPageSize = 100;
 
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notificationService;
     private readonly IMapper _mapper;
 
-    public GroupExpenseService(IUnitOfWork unitOfWork, IMapper mapper)
+    public GroupExpenseService(IUnitOfWork unitOfWork, INotificationService notificationService, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _notificationService = notificationService;
         _mapper = mapper;
     }
 
@@ -33,10 +36,10 @@ public class GroupExpenseService : IGroupExpenseService
         // CreateGroupExpenseRequestValidator. Here we check what only the database knows.
         var group = await LoadGroupAsync(groupId, cancellationToken);
         if (group.Members.All(m => m.UserId != currentUserId))
-            throw new ForbiddenException("Only a group member can add a group expense.");
+            throw new ForbiddenException("Само члан групе може додати групни трошак.");
 
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Category not found.");
+            ?? throw new NotFoundException("Категорија није пронађена.");
 
         var usersById = GetMemberUsers(group);
         var payer = ResolvePayer(request, usersById);
@@ -60,6 +63,8 @@ public class GroupExpenseService : IGroupExpenseService
         // The expense, its splits and the removal of old suggestions are saved in one
         // SaveChanges call, i.e. one transaction.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await NotifyParticipantsAsync(group, groupExpense, category.Name, currentUserId, cancellationToken);
 
         return _mapper.Map<GroupExpenseResponse>(groupExpense);
     }
@@ -106,7 +111,7 @@ public class GroupExpenseService : IGroupExpenseService
         EnsureCanModify(group, expense, currentUserId);
 
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Category not found.");
+            ?? throw new NotFoundException("Категорија није пронађена.");
 
         var usersById = GetMemberUsers(group);
         var payer = ResolvePayer(request, usersById);
@@ -161,10 +166,37 @@ public class GroupExpenseService : IGroupExpenseService
 
     // ---------- helpers ----------
 
+    /// <summary>
+    /// Every participant except the member who entered the expense learns about it and about
+    /// their share - in the app only, because a busy group would otherwise flood the inbox.
+    /// </summary>
+    private async Task NotifyParticipantsAsync(
+        Group group,
+        GroupExpense expense,
+        string categoryName,
+        Guid currentUserId,
+        CancellationToken cancellationToken)
+    {
+        var title = NotificationText.Quote(string.IsNullOrWhiteSpace(expense.Description) ? categoryName : expense.Description);
+        var total = NotificationText.Money(expense.Amount, group.Currency);
+
+        foreach (var split in expense.Splits.Where(s => s.UserId != currentUserId))
+        {
+            await _notificationService.NotifyAsync(
+                split.UserId,
+                NotificationType.GroupExpenseAdded,
+                "Нови групни трошак",
+                $"Нови трошак у групи {NotificationText.Quote(group.Name)}: {title}, укупно {total}. " +
+                $"Твој дио је {NotificationText.Money(split.Amount, group.Currency)}.",
+                cancellationToken,
+                sendEmail: false);
+        }
+    }
+
     /// <summary>Loads the group together with its members and their users (tracked).</summary>
     private async Task<Group> LoadGroupAsync(Guid groupId, CancellationToken cancellationToken)
         => await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-           ?? throw new NotFoundException("Group not found.");
+           ?? throw new NotFoundException("Група није пронађена.");
 
     /// <summary>Loads the expense with all details and checks that it belongs to the given group.</summary>
     private async Task<GroupExpense> LoadExpenseAsync(
@@ -177,7 +209,7 @@ public class GroupExpenseService : IGroupExpenseService
         // An expense of another group is reported exactly like a missing one, so the response
         // does not reveal that it exists.
         if (expense is null || expense.GroupId != groupId)
-            throw new NotFoundException("Group expense not found.");
+            throw new NotFoundException("Групни трошак није пронађен.");
 
         return expense;
     }
@@ -185,7 +217,7 @@ public class GroupExpenseService : IGroupExpenseService
     private async Task EnsureMemberAsync(Guid groupId, Guid userId, CancellationToken cancellationToken)
     {
         if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, userId, cancellationToken))
-            throw new ForbiddenException("Only a group member can view group expenses.");
+            throw new ForbiddenException("Само члан групе може видјети трошкове групе.");
     }
 
     /// <summary>
@@ -196,12 +228,12 @@ public class GroupExpenseService : IGroupExpenseService
     private static void EnsureCanModify(Group group, GroupExpense expense, Guid currentUserId)
     {
         var membership = group.Members.FirstOrDefault(m => m.UserId == currentUserId)
-            ?? throw new ForbiddenException("You are not a member of this group.");
+            ?? throw new ForbiddenException("Нисте члан ове групе.");
 
         var isPayer = expense.PaidByUserId == currentUserId;
         var isOwner = membership.Role == GroupRole.Owner;
         if (!isPayer && !isOwner)
-            throw new ForbiddenException("An expense can only be modified or deleted by the member who paid it or the group owner.");
+            throw new ForbiddenException("Трошак може мијењати или брисати само члан који га је платио или власник групе.");
 
         var memberIds = group.Members.Select(m => m.UserId).ToHashSet();
         var involvesFormerMember =
@@ -209,7 +241,7 @@ public class GroupExpenseService : IGroupExpenseService
             expense.Splits.Any(s => !memberIds.Contains(s.UserId));
 
         if (involvesFormerMember)
-            throw new ConflictException("An expense involving a former group member cannot be modified or deleted.");
+            throw new ConflictException("Трошак у којем учествује бивши члан групе није могуће мијењати нити брисати.");
     }
 
     private static Dictionary<Guid, User> GetMemberUsers(Group group)
@@ -218,7 +250,7 @@ public class GroupExpenseService : IGroupExpenseService
     private static User ResolvePayer(CreateGroupExpenseRequest request, Dictionary<Guid, User> usersById)
         => usersById.TryGetValue(request.PaidByUserId, out var payer)
             ? payer
-            : throw new NotFoundException("The user who paid the expense is not a member of this group.");
+            : throw new NotFoundException("Корисник који је платио трошак није члан ове групе.");
 
     /// <summary>
     /// Checks that every participant is a member of the group and calculates the splits.
@@ -231,7 +263,7 @@ public class GroupExpenseService : IGroupExpenseService
         foreach (var participant in request.Participants)
         {
             if (!usersById.ContainsKey(participant.UserId))
-                throw new NotFoundException($"User '{participant.UserId}' is not a member of this group.");
+                throw new NotFoundException($"Корисник '{participant.UserId}' није члан ове групе.");
         }
 
         var splitInputs = request.Participants

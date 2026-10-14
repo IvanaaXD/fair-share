@@ -130,3 +130,20 @@
   border-radius: 50%;
   background: var(--color-primary);
 }
+
+/* A notification that has just arrived in real time. */
+.fresh {
+  animation: fresh-in 2.4s ease-out;
+}
+
+@keyframes fresh-in {
+  from {
+    background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fresh {
+    animation: none;
+  }
+}

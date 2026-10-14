@@ -866,6 +866,12 @@ export const srCyrl = {
     SettlementCompleted: 'Поравнање',
     GroupMembershipChanged: 'Група',
     RecurringExpenseCreated: 'Трошак',
+    GroupExpenseAdded: 'Групни трошак',
+  },
+  toast: {
+    region: 'Нова обавјештења',
+    open: 'Прикажи обавјештења',
+    close: 'Затвори',
   },
   validation: {
     required: 'Ово поље је обавезно.',

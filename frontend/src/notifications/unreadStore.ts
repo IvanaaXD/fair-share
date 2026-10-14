@@ -5,12 +5,20 @@ import { useAuth } from '../auth/useAuth';
 /**
  * Number of unread notifications for the badge in the sidebar. Checked when the app opens,
  * every minute while it is open (and visible), and right after the notifications page changes
- * something. Notifications are created on the server (a new expense in a group, a payment...),
- * so the app has to ask - live updates (SignalR) can replace this later.
+ * something. Notifications are created on the server (a new expense in a group, a payment...);
+ * while the SignalR connection is up (realtime.ts) the server pushes the new number and the
+ * minute-by-minute check pauses - it only covers the time without a connection.
  */
 const POLL_MS = 60_000;
 
 let state: { userId: string | null; count: number } = { userId: null, count: 0 };
+
+/** While the real-time connection is up, the server pushes every change and polling pauses. */
+let liveUpdates = false;
+
+export function setLiveUpdates(on: boolean) {
+  liveUpdates = on;
+}
 const listeners = new Set<() => void>();
 
 function set(next: typeof state) {
@@ -49,7 +57,7 @@ export function useUnreadCount(): number {
     if (!userId) return;
     void refreshUnreadCount(userId);
     const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void refreshUnreadCount(userId);
+      if (!liveUpdates && document.visibilityState === 'visible') void refreshUnreadCount(userId);
     }, POLL_MS);
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refreshUnreadCount(userId);
