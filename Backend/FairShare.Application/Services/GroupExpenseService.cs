@@ -1,5 +1,6 @@
 using AutoMapper;
 using FairShare.Application.Common.Exceptions;
+using FairShare.Application.Common.Extensions;
 using FairShare.Application.Common.Notifications;
 using FairShare.Application.DTOs.GroupExpenses;
 using FairShare.Application.Interfaces;
@@ -7,7 +8,6 @@ using FairShare.Domain.Entities;
 using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
 using FairShare.Domain.Services;
-using FairShare.Application.Common.Extensions;
 
 namespace FairShare.Application.Services;
 
@@ -36,10 +36,10 @@ public class GroupExpenseService : IGroupExpenseService
         // CreateGroupExpenseRequestValidator. Here we check what only the database knows.
         var group = await LoadGroupAsync(groupId, cancellationToken);
         if (group.Members.All(m => m.UserId != currentUserId))
-            throw new ForbiddenException("Само члан групе може додати групни трошак.");
+            throw new ForbiddenException("Само члан групе може додати групни трошак.", ErrorCodes.NotGroupMember);
 
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.");
+            ?? throw new NotFoundException("Категорија није пронађена.", ErrorCodes.CategoryNotFound);
 
         var usersById = GetMemberUsers(group);
         var payer = ResolvePayer(request, usersById);
@@ -111,7 +111,7 @@ public class GroupExpenseService : IGroupExpenseService
         EnsureCanModify(group, expense, currentUserId);
 
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.");
+            ?? throw new NotFoundException("Категорија није пронађена.", ErrorCodes.CategoryNotFound);
 
         var usersById = GetMemberUsers(group);
         var payer = ResolvePayer(request, usersById);
@@ -196,7 +196,7 @@ public class GroupExpenseService : IGroupExpenseService
     /// <summary>Loads the group together with its members and their users (tracked).</summary>
     private async Task<Group> LoadGroupAsync(Guid groupId, CancellationToken cancellationToken)
         => await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-           ?? throw new NotFoundException("Група није пронађена.");
+           ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
 
     /// <summary>Loads the expense with all details and checks that it belongs to the given group.</summary>
     private async Task<GroupExpense> LoadExpenseAsync(
@@ -209,7 +209,7 @@ public class GroupExpenseService : IGroupExpenseService
         // An expense of another group is reported exactly like a missing one, so the response
         // does not reveal that it exists.
         if (expense is null || expense.GroupId != groupId)
-            throw new NotFoundException("Групни трошак није пронађен.");
+            throw new NotFoundException("Групни трошак није пронађен.", ErrorCodes.GroupExpenseNotFound);
 
         return expense;
     }
@@ -217,7 +217,7 @@ public class GroupExpenseService : IGroupExpenseService
     private async Task EnsureMemberAsync(Guid groupId, Guid userId, CancellationToken cancellationToken)
     {
         if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, userId, cancellationToken))
-            throw new ForbiddenException("Само члан групе може видјети трошкове групе.");
+            throw new ForbiddenException("Само члан групе може видјети трошкове групе.", ErrorCodes.NotGroupMember);
     }
 
     /// <summary>
@@ -228,12 +228,12 @@ public class GroupExpenseService : IGroupExpenseService
     private static void EnsureCanModify(Group group, GroupExpense expense, Guid currentUserId)
     {
         var membership = group.Members.FirstOrDefault(m => m.UserId == currentUserId)
-            ?? throw new ForbiddenException("Нисте члан ове групе.");
+            ?? throw new ForbiddenException("Нисте члан ове групе.", ErrorCodes.NotGroupMember);
 
         var isPayer = expense.PaidByUserId == currentUserId;
         var isOwner = membership.Role == GroupRole.Owner;
         if (!isPayer && !isOwner)
-            throw new ForbiddenException("Трошак може мијењати или брисати само члан који га је платио или власник групе.");
+            throw new ForbiddenException("Трошак може мијењати или брисати само члан који га је платио или власник групе.", ErrorCodes.GroupExpenseModifyForbidden);
 
         var memberIds = group.Members.Select(m => m.UserId).ToHashSet();
         var involvesFormerMember =
@@ -241,7 +241,7 @@ public class GroupExpenseService : IGroupExpenseService
             expense.Splits.Any(s => !memberIds.Contains(s.UserId));
 
         if (involvesFormerMember)
-            throw new ConflictException("Трошак у којем учествује бивши члан групе није могуће мијењати нити брисати.");
+            throw new ConflictException("Трошак у којем учествује бивши члан групе није могуће мијењати нити брисати.", ErrorCodes.GroupExpenseFormerMember);
     }
 
     private static Dictionary<Guid, User> GetMemberUsers(Group group)
@@ -250,7 +250,7 @@ public class GroupExpenseService : IGroupExpenseService
     private static User ResolvePayer(CreateGroupExpenseRequest request, Dictionary<Guid, User> usersById)
         => usersById.TryGetValue(request.PaidByUserId, out var payer)
             ? payer
-            : throw new NotFoundException("Корисник који је платио трошак није члан ове групе.");
+            : throw new NotFoundException("Корисник који је платио трошак није члан ове групе.", ErrorCodes.PayerNotMember);
 
     /// <summary>
     /// Checks that every participant is a member of the group and calculates the splits.
@@ -263,7 +263,7 @@ public class GroupExpenseService : IGroupExpenseService
         foreach (var participant in request.Participants)
         {
             if (!usersById.ContainsKey(participant.UserId))
-                throw new NotFoundException($"Корисник '{participant.UserId}' није члан ове групе.");
+                throw new NotFoundException("Неко од учесника трошка није члан ове групе.", ErrorCodes.ParticipantNotMember);
         }
 
         var splitInputs = request.Participants

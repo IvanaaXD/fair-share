@@ -82,6 +82,18 @@ namespace FairShare.API.Middleware
                     : null
             };
 
+            // A stable code the apps translate into the user's language (ErrorCodes).
+            var code = exception switch
+            {
+                AppException { Code: { } own } => own,
+                DbUpdateConcurrencyException => ErrorCodes.DataChanged,
+                DbUpdateException => ErrorCodes.DataConflict,
+                _ when status == StatusCodes.Status500InternalServerError => ErrorCodes.ServerError,
+                _ => null
+            };
+            if (code is not null)
+                problem.Extensions["code"] = code;
+
             if (exception is ValidationException validationException)
             {
                 problem.Extensions["errors"] = validationException.Errors

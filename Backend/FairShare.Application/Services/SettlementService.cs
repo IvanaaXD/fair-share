@@ -30,7 +30,7 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken = default)
     {
         var group = await LoadGroupForMemberAsync(
-            groupId, currentUserId, "Only a group member can view group balances.", cancellationToken);
+            groupId, currentUserId, "Само члан групе може видјети стање групе.", cancellationToken);
 
         var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
 
@@ -53,7 +53,7 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken = default)
     {
         var group = await LoadGroupForMemberAsync(
-            groupId, currentUserId, "Only a group member can generate a settlement proposal.", cancellationToken);
+            groupId, currentUserId, "Само члан групе може израчунати приједлог поравнања.", cancellationToken);
 
         var usersById = group.Members.ToDictionary(m => m.UserId, m => m.User);
         var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
@@ -61,7 +61,7 @@ public class SettlementService : ISettlementService
         // Members can leave only with a settled balance, so this should never happen. The check
         // protects the algorithm: it relies on the balances of the listed users adding up to zero.
         if (balances.Any(b => !usersById.ContainsKey(b.Key) && !GroupBalanceCalculator.IsSettled(b.Value)))
-            throw new ConflictException("There is an unsettled balance in the group for a user who is no longer a member, so the proposal cannot be generated.");
+            throw new ConflictException("У групи постоји неизмирен салдо корисника који више није члан, па приједлог није могуће израчунати.", ErrorCodes.FormerMemberBalance);
 
         var memberBalances = balances
             .Where(b => usersById.ContainsKey(b.Key))
@@ -138,13 +138,13 @@ public class SettlementService : ISettlementService
 
         // A settlement of another group is reported exactly like a missing one.
         if (transaction is null || transaction.GroupId != groupId)
-            throw new NotFoundException("Settlement transaction not found.");
+            throw new NotFoundException("Поравнање није пронађено.", ErrorCodes.SettlementNotFound);
 
         if (transaction.DebtorUserId != currentUserId && transaction.CreditorUserId != currentUserId)
-            throw new ForbiddenException("Only the debtor or creditor can mark the settlement as settled.");
+            throw new ForbiddenException("Поравнање може означити као измирено само члан који дугује или члан коме се дугује.", ErrorCodes.SettlementNotParticipant);
 
         if (transaction.Status == SettlementStatus.Settled)
-            throw new ConflictException("The transaction is already settled.");
+            throw new ConflictException("Поравнање је већ измирено.", ErrorCodes.SettlementAlreadySettled);
 
         transaction.Status = SettlementStatus.Settled;
 
@@ -178,7 +178,7 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken = default)
     {
         if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, currentUserId, cancellationToken))
-            throw new ForbiddenException("Only a group member can view group settlements.");
+            throw new ForbiddenException("Само члан групе може видјети поравнања групе.", ErrorCodes.NotGroupMember);
 
         var transactions = await _unitOfWork.SettlementTransactions.GetByGroupAsync(groupId, status, cancellationToken);
         return _mapper.Map<List<SettlementTransactionResponse>>(transactions);
@@ -194,10 +194,10 @@ public class SettlementService : ISettlementService
         CancellationToken cancellationToken)
     {
         var group = await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Group not found.");
+            ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
 
         if (group.Members.All(m => m.UserId != currentUserId))
-            throw new ForbiddenException(forbiddenMessage);
+            throw new ForbiddenException(forbiddenMessage, ErrorCodes.NotGroupMember);
 
         return group;
     }

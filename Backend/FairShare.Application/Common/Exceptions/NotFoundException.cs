@@ -1,8 +1,6 @@
+namespace FairShare.Application.Common.Exceptions;
 
-namespace FairShare.Application.Common.Exceptions
+public class NotFoundException : AppException
 {
-    public class NotFoundException : Exception
-    {
-        public NotFoundException(string message) : base(message) { }
-    }
+    public NotFoundException(string message, string? code = null) : base(message, code) { }
 }

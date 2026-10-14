@@ -1,8 +1,6 @@
+namespace FairShare.Application.Common.Exceptions;
 
-namespace FairShare.Application.Common.Exceptions
+public class ConflictException : AppException
 {
-    public class ConflictException : Exception
-    {
-        public ConflictException(string message) : base(message) { }
-    }
+    public ConflictException(string message, string? code = null) : base(message, code) { }
 }

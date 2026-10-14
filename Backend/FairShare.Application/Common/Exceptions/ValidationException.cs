@@ -1,8 +1,6 @@
+namespace FairShare.Application.Common.Exceptions;
 
-namespace FairShare.Application.Common.Exceptions
+public class ValidationException : AppException
 {
-    public class ValidationException : Exception
-    {
-        public ValidationException(string message) : base(message) { }
-    }
+    public ValidationException(string message, string? code = null) : base(message, code) { }
 }
