@@ -30,7 +30,8 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("Action")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -40,7 +41,8 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("EntityType")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
@@ -49,6 +51,8 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Timestamp");
 
                     b.HasIndex("UserId");
 
@@ -69,10 +73,12 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("Month")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)");
 
                     b.Property<decimal>("MonthlyLimit")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -81,7 +87,8 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "CategoryId", "Month")
+                        .IsUnique();
 
                     b.ToTable("Budgets");
                 });
@@ -96,16 +103,21 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Icon")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<bool>("IsSystemDefined")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Categories");
                 });
@@ -124,7 +136,8 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -145,7 +158,8 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
@@ -155,13 +169,15 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsRecurring")
                         .HasColumnType("boolean");
@@ -176,7 +192,8 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ReceiptImageUrl")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("RecurrenceInterval")
                         .HasColumnType("integer");
@@ -188,7 +205,9 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("IsRecurring", "NextOccurrenceDate");
+
+                    b.HasIndex("UserId", "Date");
 
                     b.ToTable("Expenses");
                 });
@@ -200,7 +219,8 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -234,14 +254,17 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
@@ -255,7 +278,8 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
@@ -267,7 +291,8 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("GroupId")
                         .HasColumnType("uuid");
@@ -276,7 +301,8 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("ReceiptImageUrl")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("SplitType")
                         .HasColumnType("integer");
@@ -285,9 +311,9 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("GroupId");
-
                     b.HasIndex("PaidByUserId");
+
+                    b.HasIndex("GroupId", "Date");
 
                     b.ToTable("GroupExpenses");
                 });
@@ -315,9 +341,10 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GroupId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("GroupId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("GroupMembers");
                 });
@@ -336,7 +363,8 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -346,7 +374,7 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "IsRead");
 
                     b.ToTable("Notifications");
                 });
@@ -361,11 +389,13 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("FailureReason")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("IdempotencyKey")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("PaymentCardId")
                         .HasColumnType("uuid");
@@ -377,6 +407,9 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
 
                     b.HasIndex("PaymentCardId");
 
@@ -394,7 +427,8 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("Brand")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -404,16 +438,21 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("Last4Digits")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 
@@ -427,22 +466,26 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
 
                     b.Property<string>("RecipientAccount")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)");
 
                     b.Property<string>("ReferenceCode")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)");
 
                     b.Property<Guid>("SettlementTransactionId")
                         .HasColumnType("uuid");
@@ -462,7 +505,8 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -479,14 +523,11 @@ namespace FairShare.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("UserId1")
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("Version")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -494,11 +535,7 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.HasIndex("DebtorUserId");
 
-                    b.HasIndex("GroupId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
+                    b.HasIndex("GroupId", "Status");
 
                     b.ToTable("SettlementTransactions");
                 });
@@ -510,29 +547,34 @@ namespace FairShare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("BankAccountNumber")
-                        .HasColumnType("text");
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DefaultCurrency")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<bool>("IsBlocked")
                         .HasColumnType("boolean");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("boolean");
@@ -542,15 +584,20 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("ProfileImageUrl")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("Role")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
@@ -569,7 +616,8 @@ namespace FairShare.Infrastructure.Migrations
 
                     b.Property<string>("TokenHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -580,14 +628,20 @@ namespace FairShare.Infrastructure.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<long>("Version")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
 
-                    b.ToTable("UserTokens");
+                    b.HasIndex("UserId", "Type");
+
+                    b.ToTable("UserTokens", (string)null);
                 });
 
             modelBuilder.Entity("FairShare.Domain.Entities.AuditLog", b =>
@@ -595,7 +649,7 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.User", "User")
                         .WithMany("AuditLogs")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -606,7 +660,7 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.Category", "Category")
                         .WithMany("Budgets")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("FairShare.Domain.Entities.User", "User")
@@ -631,7 +685,7 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.User", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("GroupExpense");
@@ -644,7 +698,7 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.Category", "Category")
                         .WithMany("Expenses")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("FairShare.Domain.Entities.User", "User")
@@ -669,7 +723,7 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.User", "User")
                         .WithMany("ExpenseSplits")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("GroupExpense");
@@ -682,7 +736,7 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.Category", "Category")
                         .WithMany("GroupExpenses")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("FairShare.Domain.Entities.Group", "Group")
@@ -694,7 +748,7 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.User", "PaidByUser")
                         .WithMany()
                         .HasForeignKey("PaidByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");
@@ -739,7 +793,7 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.PaymentCard", "PaymentCard")
                         .WithMany("Payments")
                         .HasForeignKey("PaymentCardId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("FairShare.Domain.Entities.SettlementTransaction", "SettlementTransaction")
@@ -778,13 +832,13 @@ namespace FairShare.Infrastructure.Migrations
             modelBuilder.Entity("FairShare.Domain.Entities.SettlementTransaction", b =>
                 {
                     b.HasOne("FairShare.Domain.Entities.User", "CreditorUser")
-                        .WithMany()
+                        .WithMany("SettlementsAsCreditor")
                         .HasForeignKey("CreditorUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("FairShare.Domain.Entities.User", "DebtorUser")
-                        .WithMany()
+                        .WithMany("SettlementsAsDebtor")
                         .HasForeignKey("DebtorUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -792,16 +846,8 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasOne("FairShare.Domain.Entities.Group", "Group")
                         .WithMany("Settlements")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("FairShare.Domain.Entities.User", null)
-                        .WithMany("SettlementsAsCreditor")
-                        .HasForeignKey("UserId");
-
-                    b.HasOne("FairShare.Domain.Entities.User", null)
-                        .WithMany("SettlementsAsDebtor")
-                        .HasForeignKey("UserId1");
 
                     b.Navigation("CreditorUser");
 

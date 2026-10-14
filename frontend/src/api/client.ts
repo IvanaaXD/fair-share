@@ -21,10 +21,16 @@ interface RequestOptions {
 }
 
 let sessionExpiredHandler: (() => void) | null = null;
+let accountBlockedHandler: (() => void) | null = null;
 
 /** AuthProvider registers what happens when the session can no longer be renewed. */
 export function onSessionExpired(handler: () => void) {
   sessionExpiredHandler = handler;
+}
+
+/** AuthProvider registers what happens when an administrator blocks the signed-in account. */
+export function onAccountBlocked(handler: () => void) {
+  accountBlockedHandler = handler;
 }
 
 async function send(path: string, options: RequestOptions, accessToken: string | null): Promise<Response> {
@@ -129,7 +135,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   if (!response.ok) {
-    throw await toApiError(response);
+    const error = await toApiError(response);
+    // Blocked while signed in: every further request would fail, so the session ends here.
+    if (useAuth && error.isAccountBlocked) {
+      accountBlockedHandler?.();
+    }
+    throw error;
   }
   return parse<T>(response, options.responseType);
 }

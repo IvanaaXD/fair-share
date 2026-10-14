@@ -113,7 +113,7 @@ export function AnalyticsPage() {
           <h2 id="analytics-empty-title" className={pageStyles.emptyTitle}>
             {t('analytics.emptyTitle')}
           </h2>
-          <p className={pageStyles.emptyText}>{t('analytics.emptyText', { currency })}</p>
+          <p className={pageStyles.emptyText}>{t('analytics.emptyText')}</p>
           <div className={pageStyles.actions}>
             <ButtonLink to="/expenses" state={ADD_EXPENSE_STATE} icon={<Plus size={18} aria-hidden="true" />}>
               {t('overview.addExpense')}
@@ -235,7 +235,22 @@ export function AnalyticsPage() {
             </section>
           </div>
 
-          <p className={styles.note}>{t('analytics.note', { currency })}</p>
+          <p className={styles.note}>
+            {t('analytics.note', { currency: data.currency ?? currency })}
+            {data.convertedExpenseCount ? (
+              <>
+                {' '}
+                {t('analytics.converted', {
+                  count: data.convertedExpenseCount,
+                  date: data.ratesUpdatedAt ? format.longDate(data.ratesUpdatedAt).replace(/\.$/, '') : '—',
+                })}{' '}
+                <a href="https://www.exchangerate-api.com" target="_blank" rel="noreferrer">
+                  {t('analytics.ratesSource')}
+                </a>
+              </>
+            ) : null}
+            {data.unconvertedExpenseCount ? <> {t('analytics.unconverted', { count: data.unconvertedExpenseCount })}</> : null}
+          </p>
         </div>
       )}
     </div>

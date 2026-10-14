@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import { onSessionExpired, refreshSession } from '../api/client';
+import { onAccountBlocked, onSessionExpired, refreshSession } from '../api/client';
 import { tokenStore } from '../api/tokenStore';
 import type { Profile } from '../api/types';
+import { clearAccountBlocked, markAccountBlocked } from './accountBlocked';
 import { AuthContext, type AuthStatus } from './AuthContext';
 
 /**
@@ -43,6 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     onSessionExpired(signOutLocally);
+    onAccountBlocked(() => {
+      markAccountBlocked();
+      signOutLocally();
+    });
   }, [signOutLocally]);
 
   useEffect(() => {
@@ -64,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string, remember: boolean) => {
     const tokens = await authApi.login({ username: email.trim(), password });
+    clearAccountBlocked();
     tokenStore.save(tokens, remember);
     try {
       const profile = await authApi.getProfile();

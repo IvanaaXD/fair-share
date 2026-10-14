@@ -60,6 +60,7 @@ builder.Services.AddApplicationServices(builder.Configuration);
 
 // ---------- features ----------
 builder.Services.AddPayments();
+builder.Services.AddExchangeRates();
 builder.Services.AddRealtimeNotifications();   // SignalR + token for the hub
 builder.Services.AddRecurringExpenses();
 

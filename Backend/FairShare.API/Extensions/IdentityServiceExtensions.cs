@@ -22,6 +22,11 @@ namespace FairShare.WebAPI.Extensions
             var jwtSettings = config.GetSection("JwtSettings");
             var secretKey = jwtSettings["Secret"];
 
+            if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Length < 32)
+                throw new InvalidOperationException(
+                    "JwtSettings:Secret is not set or does not have 32 signs.");
+
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

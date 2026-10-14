@@ -27,16 +27,6 @@ public class FairShareDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<SettlementTransaction>()
-                .HasOne(st => st.CreditorUser)
-                .WithMany()
-                .HasForeignKey(st => st.CreditorUserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<SettlementTransaction>()
-            .HasOne(st => st.DebtorUser)
-            .WithMany()
-            .HasForeignKey(st => st.DebtorUserId)
-            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(FairShareDbContext).Assembly);
     }
 }

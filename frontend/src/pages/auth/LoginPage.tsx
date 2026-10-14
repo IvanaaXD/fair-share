@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, type Location } from 'react-router';
 import { ApiError } from '../../api/ApiError';
 import { useErrorMessage } from '../../api/useErrorMessage';
+import { wasAccountBlocked } from '../../auth/accountBlocked';
 import { useAuth } from '../../auth/useAuth';
 import { email as validateEmail, onlyErrors, required, type ValidationKey } from '../../auth/validation';
 import { Alert } from '../../components/ui/Alert';
@@ -23,7 +24,8 @@ export function LoginPage() {
   const [values, setValues] = useState({ email: '', password: '' });
   const [remember, setRemember] = useState(true);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, ValidationKey>>>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  // Signed out because an administrator blocked the account: say so right away.
+  const [formError, setFormError] = useState<string | null>(() => (wasAccountBlocked() ? t('auth.login.blocked') : null));
   const [submitting, setSubmitting] = useState(false);
 
   const update = (field: Field) => (event: { target: { value: string } }) => {
@@ -48,9 +50,9 @@ export function LoginPage() {
       const from = (location.state as { from?: Location } | null)?.from;
       void navigate(from ? `${from.pathname}${from.search}` : '/', { replace: true });
     } catch (error) {
-      // The backend answers a blocked account with 403 "Account is blocked." (English, so it is
-      // recognised here and translated); other 403 answers keep their own message.
-      const blocked = error instanceof ApiError && error.status === 403 && /block/i.test(error.detail ?? '');
+      // A blocked account gets 403 "Account is blocked." (or the Cyrillic text of the account
+      // filter); it is recognised here and translated. Other 403 answers keep their own message.
+      const blocked = error instanceof ApiError && error.isAccountBlocked;
       setFormError(blocked ? t('auth.login.blocked') : errorMessage(error, { 401: t('auth.login.invalid') }));
       if (error instanceof ApiError && error.status === 401) {
         setValues((current) => ({ ...current, password: '' }));
