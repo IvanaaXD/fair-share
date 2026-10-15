@@ -29,6 +29,17 @@ public interface ISettlementService
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Reminds the debtor of an unsettled debt (in the app and by e-mail). Only the creditor of
+    /// the settlement may do it, at most once every 24 hours per settlement.
+    /// </summary>
+    Task<SettlementTransactionResponse> SendReminderAsync(
+        Guid groupId,
+        Guid settlementTransactionId,
+        string? message,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Settlements of the group, optionally filtered by status. Members only.</summary>
     Task<IReadOnlyList<SettlementTransactionResponse>> GetGroupSettlementsAsync(
         Guid groupId,

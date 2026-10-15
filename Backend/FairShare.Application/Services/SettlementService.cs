@@ -171,6 +171,59 @@ public class SettlementService : ISettlementService
         return _mapper.Map<SettlementTransactionResponse>(transaction);
     }
 
+    public async Task<SettlementTransactionResponse> SendReminderAsync(
+        Guid groupId,
+        Guid settlementTransactionId,
+        string? message,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var transaction = await _unitOfWork.SettlementTransactions.GetByIdWithDetailsAsync(
+            settlementTransactionId, cancellationToken);
+
+        // A settlement of another group is reported exactly like a missing one.
+        if (transaction is null || transaction.GroupId != groupId)
+            throw new NotFoundException("Поравнање није пронађено.", ErrorCodes.SettlementNotFound);
+
+        if (transaction.CreditorUserId != currentUserId)
+            throw new ForbiddenException("Подсјетник може послати само члан коме се дугује.", ErrorCodes.ReminderOnlyCreditor);
+
+        if (transaction.Status == SettlementStatus.Settled)
+            throw new ConflictException("Поравнање је већ измирено.", ErrorCodes.SettlementAlreadySettled);
+
+        var now = DateTime.UtcNow;
+        if (transaction.NextReminderAllowedAt(now) is not null)
+            throw new ConflictException(
+                "Подсјетник за ово дуговање је већ послат. Нови можеш послати 24 сата након претходног.",
+                ErrorCodes.ReminderTooSoon);
+
+        transaction.MarkReminderSent(now);
+
+        // Saved before the notification is sent. Two clicks at the same moment: the row version
+        // (xmin) lets only one UPDATE through, the other gets HTTP 409 - one reminder, not two.
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var group = await _unitOfWork.Groups.GetByIdAsync(groupId, cancellationToken);
+        var creditor = NotificationText.FullName(transaction.CreditorUser);
+        var text = $"{creditor} те подсјећа на дуг у групи {NotificationText.Quote(group?.Name ?? string.Empty)}: " +
+                   $"треба да уплатиш {NotificationText.Money(transaction.Amount, group?.Currency)}.";
+
+        // The personal message is plain text: the app shows it as text and the e-mail template
+        // HTML-encodes it, so it cannot inject anything.
+        var personal = message?.Trim();
+        if (!string.IsNullOrEmpty(personal))
+            text += $" Порука: {NotificationText.Quote(personal)}";
+
+        await _notificationService.NotifyAsync(
+            transaction.DebtorUserId,
+            NotificationType.DebtReminder,
+            "Подсјетник за дуг",
+            text,
+            cancellationToken);
+
+        return _mapper.Map<SettlementTransactionResponse>(transaction);
+    }
+
     public async Task<IReadOnlyList<SettlementTransactionResponse>> GetGroupSettlementsAsync(
         Guid groupId,
         SettlementStatus? status,

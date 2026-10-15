@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FairShare.Api.Controllers;
 
 [ApiController]
-[Route("api/group/{groupId:guid}/settlements")]
+[Route("api/groups/{groupId:guid}/settlements")]
 [Authorize]
 public class SettlementController : ControllerBase
 {
@@ -52,6 +52,22 @@ public class SettlementController : ControllerBase
     {
         var result = await _settlementService.GetGroupSettlementsAsync(
             groupId, status, _currentUser.UserId, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Reminds the debtor of this settlement to pay (in the app and by e-mail), with an optional
+    /// short message. Only the creditor may do it, at most once every 24 hours per settlement.
+    /// </summary>
+    [HttpPost("{settlementId:guid}/remind")]
+    public async Task<ActionResult<SettlementTransactionResponse>> SendReminder(
+        [FromRoute] Guid groupId,
+        [FromRoute] Guid settlementId,
+        [FromBody] SendReminderRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _settlementService.SendReminderAsync(
+            groupId, settlementId, request.Message, _currentUser.UserId, cancellationToken);
         return Ok(result);
     }
 
