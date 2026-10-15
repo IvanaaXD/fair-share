@@ -598,6 +598,10 @@ export const srCyrl = {
     failed_expired_card: 'Картица је истекла.',
     failed_invalid_card: 'Подаци картице нису исправни.',
     failed_processing_error: 'Грешка при обради плаћања. Покушај поново за тренутак.',
+    failed_gateway_unavailable: 'Сервис за плаћање тренутно није доступан. Ништа није наплаћено – покушај поново за минут.',
+    processingTitle: 'Плаћање је у обради',
+    processingText: 'Симулатор плаћања обрађује уплату – обично траје неколико секунди. Можеш затворити прозор, резултат стиже и као обавјештење.',
+    processingSlow: 'Обрада траје дуже него обично. Резултат ће стићи као обавјештење чим буде познат.',
     failedGeneric: 'Плаћање није успјело.',
     tryOther: 'Можеш покушати поново или изабрати другу картицу.',
     simulatorNote:
@@ -960,6 +964,8 @@ export const srCyrl = {
     cardExpired: 'Картица је истекла. Изабери другу картицу.',
     paymentAlreadyPaid: 'Поравнање је већ плаћено картицом.',
     paymentInProgress: 'Плаћање је већ у току. Сачекај неколико секунди.',
+    paymentNotFound: 'Плаћање картицом за ово поравнање не постоји.',
+    paymentServiceUnavailable: 'Сервис за плаћање тренутно није доступан. Покушај поново за минут.',
     reminderOnlyCreditor: 'Подсјетник може послати само члан коме се дугује.',
     commentNotFound: 'Коментар није пронађен – можда је већ обрисан.',
     commentDeleteForbidden: 'Коментар може обрисати само његов аутор или власник групе.',
@@ -986,6 +992,7 @@ export const srCyrl = {
     GroupExpenseAdded: 'Групни трошак',
     DebtReminder: 'Подсјетник',
     GroupExpenseComment: 'Коментар',
+    PaymentFailed: 'Плаћање',
   },
   toast: {
     region: 'Нова обавјештења',

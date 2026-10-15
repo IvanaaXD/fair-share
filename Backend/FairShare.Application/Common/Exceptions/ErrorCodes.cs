@@ -45,6 +45,8 @@ public static class ErrorCodes
     public const string CardExpired = "cardExpired";
     public const string PaymentAlreadyPaid = "paymentAlreadyPaid";
     public const string PaymentInProgress = "paymentInProgress";
+    public const string PaymentNotFound = "paymentNotFound";
+    public const string PaymentServiceUnavailable = "paymentServiceUnavailable";
     public const string ReminderOnlyCreditor = "reminderOnlyCreditor";
     public const string ReminderTooSoon = "reminderTooSoon";
 

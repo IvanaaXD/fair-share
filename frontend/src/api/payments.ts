@@ -33,4 +33,8 @@ export const paymentsApi = {
       method: 'POST',
       body: { paymentCardId, idempotencyKey },
     }),
+
+  /** Current state of the card payment (Pending until the simulator's webhook arrives). */
+  status: (groupId: string, settlementId: string, signal?: AbortSignal) =>
+    apiRequest<PaymentResult>(`${settlement(groupId, settlementId)}/pay`, { signal }),
 };

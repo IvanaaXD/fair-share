@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FairShare.Api.Controllers;
 
 [ApiController]
-[Route("api/groups/{groupId:guid}/settlements")]
+[Route("api/group/{groupId:guid}/settlements")]
 [Authorize]
 public class SettlementController : ControllerBase
 {

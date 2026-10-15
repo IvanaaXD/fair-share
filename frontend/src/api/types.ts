@@ -404,7 +404,8 @@ export type NotificationType =
   | 'RecurringExpenseCreated'
   | 'GroupExpenseAdded'
   | 'DebtReminder'
-  | 'GroupExpenseComment';
+  | 'GroupExpenseComment'
+  | 'PaymentFailed';
 
 export interface AppNotification {
   id: string;

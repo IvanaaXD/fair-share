@@ -24,5 +24,8 @@ public enum NotificationType
     DebtReminder,
 
     // Someone commented on a group expense this user paid or takes part in. Also at the end.
-    GroupExpenseComment
+    GroupExpenseComment,
+
+    // A card payment was declined by the payment simulator. Also at the end.
+    PaymentFailed
 }

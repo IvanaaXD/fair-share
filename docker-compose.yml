@@ -1,4 +1,5 @@
-# FairShare - the whole system in containers: PostgreSQL + API + Nginx.
+# FairShare - the whole system in containers: PostgreSQL + API + Nginx, and the separate
+# payment simulator service with its own PostgreSQL database.
 # Start:   docker compose up --build -d
 # Stop:    docker compose down          (data stays in the volumes)
 # Reset:   docker compose down -v       (also deletes the database and uploaded files)
@@ -23,12 +24,46 @@ services:
       retries: 10
     # No "ports": the database is reachable only from the other containers.
 
+  # ---------- payment simulator: its own service and its own database ----------
+  # Card data and charges live only here (PCI-DSS style isolation): the API stores tokens and
+  # payment states, never card numbers. Neither container is reachable from outside.
+  payments-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fairshare_payments
+      POSTGRES_USER: payments
+      POSTGRES_PASSWORD: ${PAYMENTS_DB_PASSWORD}
+    volumes:
+      - paymentsdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payments -d fairshare_payments"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  payments:
+    build: ./Backend/FairShare.PaymentSimulator
+    restart: unless-stopped
+    depends_on:
+      payments-db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Payments: "Host=payments-db;Port=5432;Database=fairshare_payments;Username=payments;Password=${PAYMENTS_DB_PASSWORD}"
+      Database__MigrateOnStartup: "true"
+      Simulator__ApiKey: ${PAYMENT_API_KEY}
+      Simulator__WebhookSecret: ${PAYMENT_WEBHOOK_SECRET}
+      # Results go straight to the API container (inside the Docker network, not through Nginx).
+      Simulator__WebhookUrl: http://api:8080/api/webhooks/payments
+
   api:
     build: ./Backend
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      payments:
+        condition: service_started
     environment:
       # Development keeps Swagger UI available at http://localhost/swagger for the defence.
       ASPNETCORE_ENVIRONMENT: Development
@@ -47,6 +82,9 @@ services:
       EmailSettings__Password: ${EMAIL_PASSWORD}
       EmailSettings__FromAddress: ${EMAIL_USERNAME}
       EmailSettings__FromName: FairShare
+      PaymentSimulator__BaseUrl: http://payments:8080
+      PaymentSimulator__ApiKey: ${PAYMENT_API_KEY}
+      PaymentSimulator__WebhookSecret: ${PAYMENT_WEBHOOK_SECRET}
     volumes:
       - uploads:/app/uploads
     # No "ports": only Nginx can reach the API. That is also why the API may trust the
@@ -67,3 +105,4 @@ services:
 volumes:
   pgdata:
   uploads:
+  paymentsdata:

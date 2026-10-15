@@ -29,6 +29,7 @@ public class UnitOfWork : IUnitOfWork
         Notifications = new NotificationRepository(context);
         AuditLogs = new AuditLogRepository(context);
         UserTokens = new UserTokenRepository(context);
+        ProcessedWebhookEvents = new ProcessedWebhookEventRepository(context);
     }
 
     public IUserRepository Users { get; }
@@ -47,6 +48,7 @@ public class UnitOfWork : IUnitOfWork
     public INotificationRepository Notifications { get; }
     public IAuditLogRepository AuditLogs { get; }
     public IUserTokenRepository UserTokens { get; }
+    public IProcessedWebhookEventRepository ProcessedWebhookEvents { get; }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => _context.SaveChangesAsync(cancellationToken);

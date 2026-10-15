@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Payment simulator: a separate service that plays the role of a card payment provider
+    (bank / payment gateway). It has its own database and shares no code with FairShare -
+    the API talks to it only over HTTP, and it reports results back with signed webhooks.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FairShare.PaymentSimulator</RootNamespace>
+    <UserSecretsId>fairshare-payment-simulator</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
