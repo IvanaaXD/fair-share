@@ -13,11 +13,37 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   /** Sent as JSON, except FormData (file uploads), which the browser encodes itself. */
   body?: unknown;
-  /** 'blob' for images and other files; JSON otherwise. */
-  responseType?: 'json' | 'blob';
+  /** 'blob' for images; 'file' for downloads (the blob plus the server's file name); JSON otherwise. */
+  responseType?: 'json' | 'blob' | 'file';
   /** false for sign-in, registration and the other public endpoints. */
   auth?: boolean;
   signal?: AbortSignal;
+}
+
+/** A downloaded file and the name the server gave it, if any. */
+export interface DownloadedFile {
+  blob: Blob;
+  fileName: string | null;
+}
+
+/**
+ * The file name from a Content-Disposition header. ASP.NET Core sends both forms:
+ * filename="a.pdf" and filename*=UTF-8''a.pdf - the second one can hold any characters.
+ */
+function fileNameFrom(header: string | null): string | null {
+  if (!header) {
+    return null;
+  }
+  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header);
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[1].trim());
+    } catch {
+      // Not valid percent-encoding - fall back to the plain form below.
+    }
+  }
+  const plain = /filename\s*=\s*"?([^";]+)"?/i.exec(header);
+  return plain ? plain[1].trim() : null;
 }
 
 let sessionExpiredHandler: (() => void) | null = null;
@@ -36,7 +62,7 @@ export function onAccountBlocked(handler: () => void) {
 async function send(path: string, options: RequestOptions, accessToken: string | null): Promise<Response> {
   const isForm = options.body instanceof FormData;
   const headers: Record<string, string> = {};
-  if (options.responseType !== 'blob') {
+  if (!options.responseType || options.responseType === 'json') {
     headers.Accept = 'application/json';
   }
   // For FormData the browser sets multipart/form-data together with the boundary.
@@ -78,6 +104,13 @@ async function parse<T>(response: Response, responseType: RequestOptions['respon
   }
   if (responseType === 'blob') {
     return (await response.blob()) as T;
+  }
+  if (responseType === 'file') {
+    const file: DownloadedFile = {
+      blob: await response.blob(),
+      fileName: fileNameFrom(response.headers.get('Content-Disposition')),
+    };
+    return file as T;
   }
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;

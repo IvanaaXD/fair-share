@@ -731,6 +731,24 @@ export const en: Translation = {
     unconverted_other: '{{count}} expenses in currencies without a known rate are not included.',
     ratesSource: 'Rates by ExchangeRate-API',
   },
+  reports: {
+    button: 'Download report',
+    groupButton: 'Report',
+    download: 'Download',
+    preparing: 'Preparing report…',
+    format: 'Format',
+    formatPdf: 'PDF',
+    formatPdfHint: 'A formatted document to read, print or send – with a summary and tables.',
+    formatCsv: 'CSV',
+    formatCsvHint: 'A table for Excel or Google Sheets – all data in columns.',
+    languageNote: 'The report uses the language you are using in the app right now.',
+    spendingTitle: 'Spending report',
+    spendingText:
+      'Spending for {{range}} by category and over time, with a list of every expense. Amounts are in {{currency}}.',
+    groupTitle: 'Debt report',
+    groupText:
+      'Balances of all members of "{{name}}", suggested payments to settle up, completed settlements and all group expenses.',
+  },
   admin: {
     statisticsTitle: 'System statistics',
     statisticsSubtitle: 'The state of the app and new records over time.',

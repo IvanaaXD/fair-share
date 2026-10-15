@@ -735,6 +735,24 @@ export const srCyrl = {
     unconverted_other: '{{count}} трошкова у валути без познатог курса није урачунато.',
     ratesSource: 'Курсеви: ExchangeRate-API',
   },
+  reports: {
+    button: 'Преузми извјештај',
+    groupButton: 'Извјештај',
+    download: 'Преузми',
+    preparing: 'Припремам извјештај…',
+    format: 'Формат',
+    formatPdf: 'PDF',
+    formatPdfHint: 'Уређен документ за читање, штампу или слање – са сажетком и табелама.',
+    formatCsv: 'CSV',
+    formatCsvHint: 'Табела за Excel или Google табеле – сви подаци по колонама.',
+    languageNote: 'Извјештај је на језику и писму који тренутно користиш у апликацији.',
+    spendingTitle: 'Извјештај о потрошњи',
+    spendingText:
+      'Потрошња за период {{range}} по категоријама и кроз вријеме, са списком свих трошкова. Износи су у валути {{currency}}.',
+    groupTitle: 'Извјештај о дуговањима',
+    groupText:
+      'Стање свих чланова групе „{{name}}“, приједлог уплата за измирење, измирена поравнања и сви трошкови групе.',
+  },
   admin: {
     statisticsTitle: 'Статистика система',
     statisticsSubtitle: 'Стање апликације и нови записи кроз вријеме.',
