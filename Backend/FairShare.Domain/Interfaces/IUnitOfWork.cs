@@ -21,7 +21,12 @@ public interface IUnitOfWork
     IPaymentRepository Payments { get; }
     INotificationRepository Notifications { get; }
     IAuditLogRepository AuditLogs { get; }
+
+    // NEW: activation, password reset and refresh tokens
     IUserTokenRepository UserTokens { get; }
+
+    // NEW: webhooks of the payment simulator that were already handled (idempotency)
+    IProcessedWebhookEventRepository ProcessedWebhookEvents { get; }
 
     /// <summary>Saves all pending changes in one transaction and returns the number of affected rows.</summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -385,6 +385,9 @@ namespace FairShare.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -400,11 +403,24 @@ namespace FairShare.Infrastructure.Migrations
                     b.Property<Guid>("PaymentCardId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ProviderChargeId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<Guid>("SettlementTransactionId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -412,6 +428,8 @@ namespace FairShare.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("PaymentCardId");
+
+                    b.HasIndex("ProviderChargeId");
 
                     b.HasIndex("SettlementTransactionId")
                         .IsUnique();
@@ -457,6 +475,43 @@ namespace FairShare.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("PaymentCards");
+                });
+
+            modelBuilder.Entity("FairShare.Domain.Entities.ProcessedWebhookEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChargeId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid?>("PaymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId")
+                        .IsUnique();
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("ProcessedWebhookEvent");
                 });
 
             modelBuilder.Entity("FairShare.Domain.Entities.QrPaymentData", b =>

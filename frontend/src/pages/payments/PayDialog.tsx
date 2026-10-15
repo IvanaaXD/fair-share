@@ -5,7 +5,7 @@ import { Link } from 'react-router';
 import { ApiError } from '../../api/ApiError';
 import { settlementsApi } from '../../api/groupExpenses';
 import { paymentsApi, qrApi } from '../../api/payments';
-import type { QrPayload, Settlement } from '../../api/types';
+import type { PaymentResult, QrPayload, Settlement } from '../../api/types';
 import { useErrorMessage } from '../../api/useErrorMessage';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
@@ -13,6 +13,8 @@ import { Dialog } from '../../components/ui/Dialog';
 import { useProtectedImage } from '../../hooks/useProtectedImage';
 import { useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
+import { notificationTypeName } from '../../notifications/notificationTypes';
+import { onNotificationCreated } from '../../notifications/realtime';
 import { formatBankAccount } from '../profile/bankAccount';
 import { CardForm } from './CardForm';
 import { newIdempotencyKey } from './cardUtils';
@@ -28,7 +30,54 @@ const FAILURE_MESSAGES = {
   expired_card: 'payment.failed_expired_card',
   invalid_card: 'payment.failed_invalid_card',
   processing_error: 'payment.failed_processing_error',
+  gateway_unavailable: 'payment.failed_gateway_unavailable',
 } as const;
+
+const PAYMENT_STATUSES = ['Pending', 'Succeeded', 'Failed'] as const;
+/** How often the status is checked while the simulator processes the payment. */
+const POLL_MS = 1500;
+/** After this long the dialog stops waiting; the result still arrives as a notification. */
+const MAX_WAIT_MS = 60_000;
+
+function statusName(status: PaymentResult['status']) {
+  return typeof status === 'number' ? (PAYMENT_STATUSES[status] ?? 'Pending') : status;
+}
+
+/** Asks for the payment until it is no longer pending; null after MAX_WAIT_MS or when aborted. */
+async function pollUntilCompleted(
+  load: (signal: AbortSignal) => Promise<PaymentResult | null>,
+  signal: AbortSignal,
+): Promise<PaymentResult | null> {
+  const started = Date.now();
+  while (!signal.aborted && Date.now() - started < MAX_WAIT_MS) {
+    await waitForNextCheck(POLL_MS, signal);
+    if (signal.aborted) return null;
+    const current = await load(signal);
+    if (current && statusName(current.status) !== 'Pending') return current;
+  }
+  return null;
+}
+
+/**
+ * Resolves after `ms`, or earlier when a payment notification arrives over SignalR (the
+ * webhook has just completed the payment) - so the result appears without waiting for the poll.
+ */
+function waitForNextCheck(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      window.clearTimeout(timer);
+      unsubscribe();
+      signal.removeEventListener('abort', done);
+      resolve();
+    };
+    const timer = window.setTimeout(done, ms);
+    const unsubscribe = onNotificationCreated((notification) => {
+      const type = notificationTypeName(notification.type);
+      if (type === 'PaymentConfirmation' || type === 'PaymentFailed') done();
+    });
+    signal.addEventListener('abort', done);
+  });
+}
 
 function failureKey(reason: string | null) {
   return reason && reason in FAILURE_MESSAGES
@@ -223,7 +272,14 @@ function CardPanel({ groupId, currency, settlement, onPaid, onBusy }: PanelProps
   const [chosen, setChosen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [paying, setPaying] = useState(false);
+  // The simulator accepted the charge and is processing it; the result comes a few seconds later.
+  const [processing, setProcessing] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const waiting = useRef<AbortController | null>(null);
+
+  // Leaving the card tab or closing the dialog stops waiting (the payment itself continues).
+  useEffect(() => () => waiting.current?.abort(), []);
   // One key per attempt. Kept after a network error (the retry must not charge twice),
   // replaced after a definite answer (a declined card may be tried again as a new attempt).
   const idempotencyKey = useRef(newIdempotencyKey());
@@ -239,20 +295,62 @@ function CardPanel({ groupId, currency, settlement, onPaid, onBusy }: PanelProps
     setFailure(null);
     try {
       const result = await paymentsApi.payWithCard(groupId, settlement.id, selected, idempotencyKey.current);
-      if (result.status === 'Succeeded' || result.status === 1) {
-        onPaid(t('payment.paid'));
+      setPaying(false);
+      onBusy(false);
+      await settle(result);
+    } catch (problem) {
+      setPaying(false);
+      onBusy(false);
+      // Already being processed (e.g. the dialog was closed and opened again): wait for it.
+      if (problem instanceof ApiError && problem.code === 'paymentInProgress') {
+        await waitForResult();
         return;
       }
-      idempotencyKey.current = newIdempotencyKey();
-      setFailure(`${t(failureKey(result.failureReason))} ${t('payment.tryOther')}`);
-    } catch (problem) {
       if (problem instanceof ApiError && !problem.isNetworkError) {
         idempotencyKey.current = newIdempotencyKey();
       }
       setFailure(errorMessage(problem));
     }
-    setPaying(false);
-    onBusy(false);
+  }
+
+  /** Shows the final result, or waits for it while the payment is pending. */
+  async function settle(result: PaymentResult) {
+    const status = statusName(result.status);
+    if (status === 'Pending') {
+      await waitForResult();
+      return;
+    }
+    if (status === 'Succeeded') {
+      onPaid(t('payment.paid'));
+      return;
+    }
+    idempotencyKey.current = newIdempotencyKey();
+    setFailure(`${t(failureKey(result.failureReason))} ${t('payment.tryOther')}`);
+  }
+
+  /**
+   * Checks the payment every 1.5 s (immediately when a payment notification arrives) until
+   * the simulator's webhook has completed it. Network errors in between are ignored.
+   */
+  async function waitForResult() {
+    waiting.current?.abort();
+    const controller = new AbortController();
+    waiting.current = controller;
+    setProcessing(true);
+    setSlow(false);
+    setFailure(null);
+
+    const result = await pollUntilCompleted(
+      (signal) => paymentsApi.status(groupId, settlement.id, signal).catch(() => null),
+      controller.signal,
+    );
+    if (controller.signal.aborted) return;
+    if (result) {
+      setProcessing(false);
+      await settle(result);
+    } else {
+      setSlow(true);
+    }
   }
 
   return (
@@ -261,7 +359,7 @@ function CardPanel({ groupId, currency, settlement, onPaid, onBusy }: PanelProps
       {loading && cards.length === 0 && <p className={styles.muted}>{t('payment.cardsLoading')}</p>}
 
       {cards.length > 0 && (
-        <fieldset className={styles.cardList} disabled={paying}>
+        <fieldset className={styles.cardList} disabled={paying || processing}>
           <legend className={styles.legend}>{t('payment.chooseCard')}</legend>
           {cards.map((card) => (
             <label key={card.id} className={card.isExpired ? `${styles.cardOption} ${styles.cardExpired}` : styles.cardOption}>
@@ -299,7 +397,7 @@ function CardPanel({ groupId, currency, settlement, onPaid, onBusy }: PanelProps
           onCancel={cards.length > 0 ? () => setAdding(false) : undefined}
         />
       ) : (
-        <button type="button" className={styles.addCard} onClick={() => setAdding(true)} disabled={paying}>
+        <button type="button" className={styles.addCard} onClick={() => setAdding(true)} disabled={paying || processing}>
           <Plus size={16} aria-hidden="true" />
           {t('payment.addCard')}
         </button>
@@ -311,7 +409,17 @@ function CardPanel({ groupId, currency, settlement, onPaid, onBusy }: PanelProps
         </Alert>
       )}
 
-      {!showForm && (
+      {processing && (
+        <div className={styles.processing} role="status">
+          <span className={styles.spinner} aria-hidden="true" />
+          <span className={styles.processingText}>
+            <strong>{t('payment.processingTitle')}</strong>
+            <span>{slow ? t('payment.processingSlow') : t('payment.processingText')}</span>
+          </span>
+        </div>
+      )}
+
+      {!showForm && !processing && (
         <Button className={styles.payButton} onClick={() => void pay()} disabled={paying || !selected}>
           {paying ? t('payment.paying') : t('payment.payNow', { amount: format.money(settlement.amount, currency) })}
         </Button>

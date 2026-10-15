@@ -3,4 +3,5 @@
   <Project Path="FairShare.Application/FairShare.Application.csproj" />
   <Project Path="FairShare.Domain/FairShare.Domain.csproj" />
   <Project Path="FairShare.Infrastructure/FairShare.Infrastructure.csproj" />
+  <Project Path="FairShare.PaymentSimulator/FairShare.PaymentSimulator.csproj" />
 </Solution>

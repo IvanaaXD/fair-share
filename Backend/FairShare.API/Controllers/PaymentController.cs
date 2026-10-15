@@ -21,8 +21,10 @@ public class PaymentController : ControllerBase
     }
 
     /// <summary>
-    /// The debtor pays the settlement with a saved card. Returns 200 also when the card is
-    /// declined - then Status = "Failed" and FailureReason says why, so the user can try again.
+    /// The debtor pays the settlement with a saved card. The payment simulator only accepts the
+    /// charge here, so the answer is usually Status = "Pending"; the result arrives a few seconds
+    /// later (webhook) and is read with GET on the same address. A charge refused at once comes
+    /// back with Status = "Failed" and FailureReason.
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<PaymentResponse>> PayWithCard(
@@ -33,6 +35,18 @@ public class PaymentController : ControllerBase
     {
         var result = await _paymentService.PayWithCardAsync(
             groupId, settlementId, request, _currentUser.UserId, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>Current state of the card payment of the settlement (debtor or creditor).</summary>
+    [HttpGet]
+    public async Task<ActionResult<PaymentResponse>> GetStatus(
+        [FromRoute] Guid groupId,
+        [FromRoute] Guid settlementId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _paymentService.GetPaymentStatusAsync(
+            groupId, settlementId, _currentUser.UserId, cancellationToken);
         return Ok(result);
     }
 }

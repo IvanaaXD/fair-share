@@ -160,8 +160,9 @@ public static class DemoDataSeeder
                 var card = new PaymentCard
                 {
                     UserId = owner.Id,
-                    // Same shape as the simulator's own tokens: "sim_<outcome>_<random>".
-                    Token = $"sim_{outcome}_{Guid.NewGuid():N}"[..(5 + outcome.Length + 24)],
+                    // Sandbox test token of the payment simulator ("tok_test_<outcome>_<random>"):
+                    // the simulator registers it on the first charge, so no card number is needed.
+                    Token = $"tok_test_{outcome}_{Guid.NewGuid():N}"[..(10 + outcome.Length + 24)],
                     Brand = brand,
                     Last4Digits = last4,
                     ExpiryDate = new DateTime(_today.Year + 2, 12, 31, 0, 0, 0, DateTimeKind.Utc),
@@ -680,7 +681,9 @@ public static class DemoDataSeeder
                 PaymentCard = card,
                 IdempotencyKey = $"demo-{Guid.NewGuid():N}",
                 Status = PaymentStatus.Succeeded,
-                CreatedAt = paidAt
+                CreatedAt = paidAt,
+                SubmittedAt = paidAt,
+                CompletedAt = paidAt.AddSeconds(3)
             };
             Audit(transaction.DebtorUser, "Payment.PayWithCard", "Payment", transaction.Id, paidAt);
 

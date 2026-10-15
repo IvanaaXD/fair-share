@@ -54,6 +54,7 @@ namespace FairShare.API.Middleware
                 ForbiddenException => (StatusCodes.Status403Forbidden, "Немате дозволу за ову радњу."),
                 ConflictException => (StatusCodes.Status409Conflict, "Захтјев је у сукобу са тренутним стањем."),
                 BadRequestException => (StatusCodes.Status400BadRequest, "Захтјев није исправан."),
+                ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Сервис тренутно није доступан."),
                 DomainException => (StatusCodes.Status400BadRequest, "Прекршено је пословно правило."),
                 ValidationException => (StatusCodes.Status400BadRequest, "Подаци у захтјеву нису исправни."),
                 UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Нисте пријављени."),
@@ -108,6 +109,6 @@ namespace FairShare.API.Middleware
 
         private static bool IsSafeToExpose(Exception exception) => exception is
             NotFoundException or ForbiddenException or ConflictException or
-            BadRequestException or DomainException or ValidationException;
+            BadRequestException or ServiceUnavailableException or DomainException or ValidationException;
     }
 }

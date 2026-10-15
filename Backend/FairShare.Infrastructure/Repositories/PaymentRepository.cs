@@ -21,4 +21,11 @@ public class PaymentRepository : GenericRepository<Payment>, IPaymentRepository
         => await DbSet
             .Include(p => p.PaymentCard)
             .FirstOrDefaultAsync(p => p.SettlementTransactionId == settlementTransactionId, cancellationToken);
+
+    public async Task<Payment?> GetWithDetailsAsync(Guid paymentId, CancellationToken cancellationToken = default)
+        => await DbSet
+            .Include(p => p.PaymentCard)
+            .Include(p => p.SettlementTransaction).ThenInclude(s => s.DebtorUser)
+            .Include(p => p.SettlementTransaction).ThenInclude(s => s.CreditorUser)
+            .FirstOrDefaultAsync(p => p.Id == paymentId, cancellationToken);
 }
