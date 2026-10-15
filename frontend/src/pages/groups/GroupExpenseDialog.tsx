@@ -25,6 +25,7 @@ import {
   validateReceipt,
 } from '../expenses/expenseValidation';
 import { ReceiptField } from '../expenses/ReceiptField';
+import { ExpenseComments } from './ExpenseComments';
 import { computeSplit, decimalText, equalCents, equalPercents, moneyText, toCents, type SplitMode, type SplitStatus } from './splitMath';
 import dialogStyles from '../expenses/ExpenseDialog.module.css';
 import styles from './GroupExpenseDialog.module.css';
@@ -520,6 +521,17 @@ export function GroupExpenseDialog({
           onUndoRemove={() => setReceiptRemoved(false)}
         />
       </form>
+
+      {expense && (
+        <ExpenseComments
+          groupId={group.id}
+          expenseId={expense.id}
+          currentUserId={currentUserId}
+          isOwner={me ? isOwnerRole(me.role) : false}
+          colorOf={colorOf}
+          onChanged={onChanged}
+        />
+      )}
     </Dialog>
   );
 }

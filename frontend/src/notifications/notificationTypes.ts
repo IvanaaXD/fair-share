@@ -4,6 +4,7 @@ import {
   CircleCheck,
   CreditCard,
   KeyRound,
+  MessageSquare,
   ReceiptText,
   type LucideIcon,
   PiggyBank,
@@ -27,6 +28,7 @@ const TYPES: NotificationType[] = [
   'RecurringExpenseCreated',
   'GroupExpenseAdded',
   'DebtReminder',
+  'GroupExpenseComment',
 ];
 
 export const NOTIFICATION_ICONS: Record<NotificationType, LucideIcon> = {
@@ -41,6 +43,7 @@ export const NOTIFICATION_ICONS: Record<NotificationType, LucideIcon> = {
   RecurringExpenseCreated: Repeat,
   GroupExpenseAdded: ReceiptText,
   DebtReminder: BellRing,
+  GroupExpenseComment: MessageSquare,
 };
 
 /** Notifications that need attention are marked in amber (budget over limit, someone owes). */
