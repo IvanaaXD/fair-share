@@ -28,4 +28,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+    <ItemGroup>
+	    <EmbeddedResource Include="Reports\Fonts\*.ttf" />
+    </ItemGroup>
 </Project>

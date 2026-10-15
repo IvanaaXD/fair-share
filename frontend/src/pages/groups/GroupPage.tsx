@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, CreditCard, LogOut, Pencil, Plus, QrCode, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { ChevronLeft, CreditCard, Download, LogOut, Pencil, Plus, QrCode, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../../api/ApiError';
 import { groupsApi } from '../../api/groups';
 import type { Group, GroupExpense, GroupMember, MemberBalance, Settlement } from '../../api/types';
 import { settlementsApi } from '../../api/groupExpenses';
+import { reportsApi } from '../../api/reports';
 import { useErrorMessage } from '../../api/useErrorMessage';
 import { useAuth } from '../../auth/useAuth';
 import { Alert } from '../../components/ui/Alert';
@@ -15,7 +16,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { balanceStatus, initials, isOwnerRole, isSettledStatus, memberColor, membersByJoinDate, settlementsAreStale } from '../../groups/groupUtils';
 import { useMyGroups } from '../../groups/myGroupsStore';
 import { useCategories } from '../../hooks/useCategories';
-import { useFormatters } from '../../i18n/format';
+import { todayDateOnly, useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import { GroupExpenseDialog, type GroupExpenseChange } from './GroupExpenseDialog';
 import { GroupExpenseList } from './GroupExpenseList';
@@ -25,6 +26,7 @@ import { InviteMemberDialog } from './InviteMemberDialog';
 import { SettlementsPanel } from './SettlementsPanel';
 import { PayDialog, type PayTab } from '../payments/PayDialog';
 import { ScanQrDialog } from '../payments/ScanQrDialog';
+import { ExportReportDialog } from '../reports/ExportReportDialog';
 import pageStyles from '../Page.module.css';
 import styles from './Groups.module.css';
 
@@ -48,6 +50,7 @@ type Dialog =
   | { kind: 'expense'; expense: GroupExpense | null }
   | { kind: 'pay'; settlement: Settlement; tab: PayTab }
   | { kind: 'scan' }
+  | { kind: 'report' }
   | null;
 
 /** One group: who is in it, how everyone stands, and the group's settings. */
@@ -215,6 +218,9 @@ export function GroupPage() {
           </div>
         </div>
         <div className={styles.headerActions}>
+          <Button variant="secondary" icon={<Download size={17} aria-hidden="true" />} onClick={() => setDialog({ kind: 'report' })}>
+            {t('reports.groupButton')}
+          </Button>
           {iAmOwner && (
             <Button variant="secondary" icon={<Pencil size={17} aria-hidden="true" />} onClick={() => setDialog({ kind: 'edit' })}>
               {t('group.edit')}
@@ -372,6 +378,17 @@ export function GroupPage() {
             refresh(message);
           }}
         />
+      )}
+
+      {dialog?.kind === 'report' && (
+        <ExportReportDialog
+          title={t('reports.groupTitle')}
+          download={(options) => reportsApi.group(group.id, options)}
+          fileName={(reportFormat) => `fairshare-group-${todayDateOnly()}.${reportFormat.toLowerCase()}`}
+          onClose={() => setDialog(null)}
+        >
+          <p>{t('reports.groupText', { name: localize(group.name) })}</p>
+        </ExportReportDialog>
       )}
 
       {dialog?.kind === 'scan' && (

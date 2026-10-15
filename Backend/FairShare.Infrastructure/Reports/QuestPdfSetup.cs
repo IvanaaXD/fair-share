@@ -14,12 +14,7 @@ public static class QuestPdfSetup
 {
     public const string FontFamily = "Onest";
 
-    // Names given with LogicalName in FairShare.Infrastructure.csproj.
-    private static readonly string[] FontResources =
-    [
-        "FairShare.Fonts.Onest-Regular.ttf",
-        "FairShare.Fonts.Onest-Bold.ttf"
-    ];
+    private static readonly string[] FontFiles = ["Onest-Regular.ttf", "Onest-Bold.ttf"];
 
     private static readonly object Lock = new();
     private static bool _configured;
@@ -39,8 +34,20 @@ public static class QuestPdfSetup
             QuestPDF.Settings.ThrowOnMissingTextGlyphs = false;
 
             var assembly = typeof(QuestPdfSetup).Assembly;
-            foreach (var resource in FontResources)
+            var resources = assembly.GetManifestResourceNames();
+
+            foreach (var file in FontFiles)
+            {
+                // The resource name depends on how the file was embedded ("FairShare.Fonts.X.ttf"
+                // with LogicalName, "FairShare.Infrastructure.Reports.Fonts.X.ttf" without it),
+                // so it is found by the file name at the end.
+                var resource = resources.FirstOrDefault(name => name.EndsWith(file, StringComparison.OrdinalIgnoreCase))
+                    ?? throw new InvalidOperationException(
+                        $"Font {file} is not embedded in {assembly.GetName().Name}. Add it to the .csproj as " +
+                        "<EmbeddedResource Include=\"Reports\\Fonts\\*.ttf\" /> and rebuild.");
+
                 FontManager.RegisterFontFromEmbeddedResource(assembly, resource);
+            }
 
             _configured = true;
         }

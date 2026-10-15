@@ -1,21 +1,23 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BarChart3, MapPin, Plus, Table2 } from 'lucide-react';
+import { BarChart3, Download, MapPin, Plus, Table2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { analyticsApi } from '../../api/analytics';
+import { reportsApi } from '../../api/reports';
 import type { AnalyticsQuery, ExpenseLocation, SpendingAnalytics } from '../../api/types';
 import { useErrorMessage } from '../../api/useErrorMessage';
 import { useAuth } from '../../auth/useAuth';
 import { SpendingChart, SpendingTable } from '../../components/charts/SpendingChart';
 import { granularityName } from '../../components/charts/chartMath';
 import { Alert } from '../../components/ui/Alert';
-import { ButtonLink } from '../../components/ui/Button';
+import { Button, ButtonLink } from '../../components/ui/Button';
 import { useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import type { ExpensesPageState } from '../expenses/ExpensesPage';
 import { CategoryBreakdown, Change } from './CategoryBreakdown';
 import { daysBetween, periodToParams, readPeriod, type PeriodSelection } from './analyticsPeriod';
 import { PeriodFilter } from './PeriodFilter';
+import { ExportReportDialog } from '../reports/ExportReportDialog';
 import pageStyles from '../Page.module.css';
 import styles from './Analytics.module.css';
 
@@ -43,6 +45,7 @@ export function AnalyticsPage() {
   const select = (next: PeriodSelection) => setParams(periodToParams(next), { replace: true, preventScrollReset: true });
 
   const [view, setView] = useState<'chart' | 'table'>('chart');
+  const [exporting, setExporting] = useState(false);
 
   const query: AnalyticsQuery =
     selection.period === 'Custom'
@@ -93,6 +96,11 @@ export function AnalyticsPage() {
             {data ? format.dateRange(data.from, data.to) : t('analytics.subtitle')}
           </p>
         </div>
+        {data && (
+          <Button variant="secondary" icon={<Download size={18} aria-hidden="true" />} onClick={() => setExporting(true)}>
+            {t('reports.button')}
+          </Button>
+        )}
       </header>
 
       <PeriodFilter selection={selection} onSelect={select} />
@@ -252,6 +260,18 @@ export function AnalyticsPage() {
             {data.unconvertedExpenseCount ? <> {t('analytics.unconverted', { count: data.unconvertedExpenseCount })}</> : null}
           </p>
         </div>
+      )}
+
+      {/* The same period and currency as the page, so the report matches what is on the screen. */}
+      {exporting && data && (
+        <ExportReportDialog
+          title={t('reports.spendingTitle')}
+          download={(options) => reportsApi.spending(query, options)}
+          fileName={(reportFormat) => `fairshare-${data.from.slice(0, 10)}-${data.to.slice(0, 10)}.${reportFormat.toLowerCase()}`}
+          onClose={() => setExporting(false)}
+        >
+          <p>{t('reports.spendingText', { range: format.dateRange(data.from, data.to), currency })}</p>
+        </ExportReportDialog>
       )}
     </div>
   );
