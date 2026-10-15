@@ -18,6 +18,7 @@ import { Checkbox } from '../../components/ui/Checkbox';
 import { Dialog } from '../../components/ui/Dialog';
 import { SelectField } from '../../components/ui/SelectField';
 import { TextField } from '../../components/ui/TextField';
+import { useCurrencyOptions } from '../../i18n/currencies';
 import { todayDateOnly, toDateOnly, useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import {
@@ -59,8 +60,6 @@ interface Values {
   isRecurring: boolean;
   interval: Exclude<RecurrenceInterval, 'None'>;
 }
-
-const CURRENCIES = ['BAM', 'EUR', 'RSD'] as const;
 
 /** 12.5 -> "12,50" in Serbian, "12.50" in English - the way the user would type it. */
 function amountToText(amount: number, language: string): string {
@@ -142,17 +141,7 @@ export function ExpenseDialog({
   };
 
   // A currency the expense already has stays selectable even if it is not one of the usual three.
-  const currencyOptions = [...new Set<string>([...CURRENCIES, values.currency])].map((code) => ({
-    value: code,
-    label:
-      code === 'BAM'
-        ? t('expenseForm.currencyBam')
-        : code === 'EUR'
-          ? t('expenseForm.currencyEur')
-          : code === 'RSD'
-            ? t('expenseForm.currencyRsd')
-            : code,
-  }));
+  const currencyOptions = useCurrencyOptions(values.currency);
 
   const categoryOptions = [
     { value: '', label: t('expenseForm.chooseCategory') },

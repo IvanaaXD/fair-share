@@ -251,6 +251,16 @@ export interface GroupExpense {
   splits: ExpenseSplit[];
   /** Number of comments (older backends do not send it). */
   commentCount?: number;
+  /**
+   * Set when the expense was entered in another currency: what was actually paid and the rate
+   * used then (group-currency units per one unit). "amount" and the splits are always in the
+   * group's currency. Null (or missing on older backends) otherwise.
+   */
+  originalCurrency?: string | null;
+  originalAmount?: number | null;
+  exchangeRate?: number | null;
+  /** When the rate was published; null for the fixed EUR/BAM rate. */
+  exchangeRateDate?: string | null;
 }
 
 /** A comment under a group expense (CommentController). */
@@ -281,6 +291,11 @@ export interface SaveGroupExpenseRequest {
   /** "YYYY-MM-DD" */
   date: string;
   splitType: SplitType;
+  /**
+   * Currency of "amount" and of exact shares. Null = the group's currency; another currency is
+   * converted on the server with today's rate.
+   */
+  currency: string | null;
   participants: SplitParticipant[];
 }
 
@@ -559,4 +574,16 @@ export interface AuditLogQuery {
   to?: string;
   page?: number;
   pageSize?: number;
+}
+
+// ---------- exchange rates (ExchangeRateController) ----------
+
+export interface ExchangeRate {
+  from: string;
+  to: string;
+  /** Units of "to" for one unit of "from". */
+  rate: number;
+  /** When the rates were published; null for the fixed EUR/BAM rate. */
+  updatedAt: string | null;
+  source: string;
 }

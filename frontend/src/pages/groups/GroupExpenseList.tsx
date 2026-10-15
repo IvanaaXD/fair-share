@@ -174,6 +174,11 @@ export function GroupExpenseList({ groupId, currency, version, myId, colorOf, on
                 </span>
                 <span className={styles.expenseRight}>
                   <span className={`${styles.expenseAmount} money`}>{money(expense.amount)}</span>
+                  {expense.originalCurrency && expense.originalAmount != null && (
+                    <span className={`${styles.expenseOriginal} money`}>
+                      {t('groupExpenses.paidIn', { amount: format.money(expense.originalAmount, expense.originalCurrency) })}
+                    </span>
+                  )}
                   <span className={`${styles.expenseShare} ${styles[`share_${share.tone}`]}`}>{share.text}</span>
                 </span>
               </button>

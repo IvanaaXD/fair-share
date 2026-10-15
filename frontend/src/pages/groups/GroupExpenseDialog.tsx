@@ -1,9 +1,10 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { CircleAlert, CircleCheck, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { ArrowLeftRight, CircleAlert, CircleCheck, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../../api/ApiError';
+import { exchangeRatesApi } from '../../api/exchangeRates';
 import { groupExpensesApi } from '../../api/groupExpenses';
-import type { Category, Group, GroupExpense, SaveGroupExpenseRequest } from '../../api/types';
+import type { Category, ExchangeRate, Group, GroupExpense, SaveGroupExpenseRequest } from '../../api/types';
 import { useErrorMessage } from '../../api/useErrorMessage';
 import { onlyErrors, required, type ValidationKey } from '../../auth/validation';
 import { Alert } from '../../components/ui/Alert';
@@ -13,6 +14,7 @@ import { Dialog } from '../../components/ui/Dialog';
 import { SelectField } from '../../components/ui/SelectField';
 import { TextField } from '../../components/ui/TextField';
 import { initials, isOwnerRole, memberColor, membersByJoinDate, splitTypeName } from '../../groups/groupUtils';
+import { useCurrencyOptions } from '../../i18n/currencies';
 import { todayDateOnly, toDateOnly, useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import {
@@ -26,7 +28,19 @@ import {
 } from '../expenses/expenseValidation';
 import { ReceiptField } from '../expenses/ReceiptField';
 import { ExpenseComments } from './ExpenseComments';
-import { computeSplit, decimalText, equalCents, equalPercents, moneyText, toCents, type SplitMode, type SplitStatus } from './splitMath';
+import {
+  computeSplit,
+  convertCents,
+  convertExactShares,
+  decimalText,
+  equalCents,
+  equalPercents,
+  moneyText,
+  originalShareCents,
+  toCents,
+  type SplitMode,
+  type SplitStatus,
+} from './splitMath';
 import dialogStyles from '../expenses/ExpenseDialog.module.css';
 import styles from './GroupExpenseDialog.module.css';
 
@@ -47,6 +61,27 @@ interface GroupExpenseDialogProps {
 type Field = 'amount' | 'date' | 'categoryId' | 'paidByUserId' | 'description';
 
 const MODES: SplitMode[] = ['Equal', 'Percentage', 'ExactAmount'];
+
+/** Today's rate for one pair of currencies ("EUR>BAM"), loaded while the dialog is open. */
+interface LoadedRate {
+  key: string;
+  rate: ExchangeRate | null;
+  error: unknown;
+}
+
+/**
+ * The amounts for the "exact amounts" inputs: in the currency the expense was entered in. An
+ * expense entered in another currency has its saved shares (group currency) turned back.
+ */
+function initialExactText(expense: GroupExpense | null, language: string): Record<string, string> {
+  if (!expense) return {};
+  const { originalAmount, exchangeRate } = expense;
+  if (originalAmount != null && exchangeRate) {
+    const cents = originalShareCents(expense.splits, toCents(originalAmount), exchangeRate);
+    return Object.fromEntries([...cents].map(([userId, value]) => [userId, moneyText(value / 100, language)]));
+  }
+  return Object.fromEntries(expense.splits.map((split) => [split.userId, moneyText(split.amount, language)]));
+}
 
 /**
  * Adding or editing a group expense: who paid, how much, and how it is split between the
@@ -76,9 +111,11 @@ export function GroupExpenseDialog({
   const canEdit = isNew || expense.paidByUserId === currentUserId || (me ? isOwnerRole(me.role) : false);
 
   const [description, setDescription] = useState(initialExpense?.description ?? '');
+  // An expense entered in another currency is edited in that currency, with what was paid.
   const [amount, setAmount] = useState(() =>
-    initialExpense ? moneyText(initialExpense.amount, language) : '',
+    initialExpense ? moneyText(initialExpense.originalAmount ?? initialExpense.amount, language) : '',
   );
+  const [currency, setCurrency] = useState(initialExpense?.originalCurrency ?? group.currency);
   const [paidBy, setPaidBy] = useState(initialExpense?.paidByUserId ?? currentUserId);
   const [categoryId, setCategoryId] = useState(initialExpense?.categoryId ?? '');
   const [date, setDate] = useState(initialExpense ? toDateOnly(initialExpense.date) : todayDateOnly());
@@ -95,9 +132,7 @@ export function GroupExpenseDialog({
         .map((split) => [split.userId, decimalText(split.percentage as number, language)]),
     ),
   );
-  const [exactText, setExactText] = useState<Record<string, string>>(() =>
-    Object.fromEntries((initialExpense?.splits ?? []).map((split) => [split.userId, moneyText(split.amount, language)])),
-  );
+  const [exactText, setExactText] = useState<Record<string, string>>(() => initialExactText(initialExpense, language));
 
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, ValidationKey>>>({});
   const [serverErrors, setServerErrors] = useState<Record<string, string[]>>({});
@@ -117,7 +152,55 @@ export function GroupExpenseDialog({
   const totalCents = amountValue === null ? null : toCents(amountValue);
   const preview = computeSplit(totalCents, mode, includedIds, percentText, exactText);
   const colorOf = new Map(members.map((member, index) => [member.userId, memberColor(index)]));
-  const money = (cents: number) => format.money(cents / 100, group.currency);
+  /** Cents in the currency the expense is entered in. */
+  const money = (cents: number) => format.money(cents / 100, currency);
+  const groupMoney = (cents: number) => format.money(cents / 100, group.currency);
+
+  // ---------- another currency ----------
+  // The amount and the shares are typed in the chosen currency; the server converts them to the
+  // group's currency with today's rate when the expense is saved. The same rate is shown here.
+  const converted = currency !== group.currency;
+  const rateKey = converted ? `${currency}>${group.currency}` : '';
+  const [loadedRate, setLoadedRate] = useState<LoadedRate | null>(null);
+
+  useEffect(() => {
+    if (!rateKey) return;
+    const [from, to] = rateKey.split('>');
+    const controller = new AbortController();
+    exchangeRatesApi.get(from, to, controller.signal).then(
+      (rate) => setLoadedRate({ key: rateKey, rate, error: null }),
+      (error: unknown) => {
+        if (!controller.signal.aborted) setLoadedRate({ key: rateKey, rate: null, error });
+      },
+    );
+    return () => controller.abort();
+  }, [rateKey]);
+
+  // An edit that keeps the original currency and amount keeps the rate saved with the expense.
+  const savedRate =
+    expense &&
+    expense.originalCurrency === currency &&
+    expense.exchangeRate &&
+    expense.originalAmount != null &&
+    totalCents === toCents(expense.originalAmount)
+      ? { rate: expense.exchangeRate, updatedAt: expense.exchangeRateDate ?? null }
+      : null;
+  const todayRate = loadedRate?.key === rateKey ? loadedRate : null;
+  const rate = !converted ? 1 : (savedRate?.rate ?? todayRate?.rate?.rate ?? null);
+  const rateDate = savedRate ? savedRate.updatedAt : (todayRate?.rate?.updatedAt ?? null);
+  const rateLoading = converted && !savedRate && todayRate === null;
+  const rateUnavailable = converted && !savedRate && todayRate !== null && todayRate.rate === null;
+
+  /** What every member's share will be in the group's currency (null while the rate is unknown). */
+  let groupShares: Map<string, number> | null = null;
+  if (converted && rate !== null && totalCents !== null) {
+    groupShares =
+      mode === 'ExactAmount'
+        ? convertExactShares(preview.shares, includedIds, totalCents, rate)
+        : computeSplit(convertCents(totalCents, rate), mode, includedIds, percentText, exactText).shares;
+  }
+
+  const currencyOptions = useCurrencyOptions(group.currency, currency);
 
   const clearServerError = (field: string) => setServerErrors((current) => ({ ...current, [field]: [] }));
   const errorsFor = (field: Field) => {
@@ -195,6 +278,10 @@ export function GroupExpenseDialog({
     if (Object.keys(errors).length > 0 || !preview.valid) {
       return;
     }
+    if (rateUnavailable) {
+      setFormError(t('apiErrors.exchangeRateUnavailable'));
+      return;
+    }
 
     const request: SaveGroupExpenseRequest = {
       categoryId,
@@ -203,6 +290,8 @@ export function GroupExpenseDialog({
       description: description.trim() || null,
       date,
       splitType: mode,
+      // Exact shares are sent in this currency too; the server converts them one by one.
+      currency: converted ? currency : null,
       participants: includedIds.map((userId) => ({
         userId,
         amount: mode === 'ExactAmount' ? (preview.shares.get(userId) ?? 0) / 100 : null,
@@ -263,7 +352,7 @@ export function GroupExpenseDialog({
   // Server errors about the split (sum of percentages...) arrive under "participants".
   const splitServerErrors = (serverErrors.participants ?? []).map(localize);
   const otherServerErrors = Object.entries(serverErrors)
-    .filter(([field]) => !['amount', 'date', 'categoryId', 'paidByUserId', 'description', 'participants'].includes(field))
+    .filter(([field]) => !['amount', 'currency', 'date', 'categoryId', 'paidByUserId', 'description', 'participants'].includes(field))
     .flatMap(([, messages]) => messages)
     .map(localize);
   const showSplitProblem = !preview.valid && (splitTouched || preview.status.kind === 'percentWrong' || preview.status.kind.startsWith('exact'));
@@ -356,24 +445,78 @@ export function GroupExpenseDialog({
             errors={errorsFor('description')}
             disabled={disabled}
           />
-          <TextField
-            label={`${t('groupExpense.amount')} (${group.currency})`}
-            name="amount"
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder={language.startsWith('sr') ? '0,00' : '0.00'}
-            value={amount}
-            onChange={(event) => {
-              setAmount(event.target.value);
-              setFieldErrors((current) => ({ ...current, amount: undefined }));
-              clearServerError('amount');
-            }}
-            errors={errorsFor('amount')}
-            className={dialogStyles.amountField}
-            disabled={disabled}
-            data-autofocus={isNew || undefined}
-          />
+          <div className={dialogStyles.amountRow}>
+            <TextField
+              label={t('groupExpense.amount')}
+              name="amount"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder={language.startsWith('sr') ? '0,00' : '0.00'}
+              value={amount}
+              onChange={(event) => {
+                setAmount(event.target.value);
+                setFieldErrors((current) => ({ ...current, amount: undefined }));
+                clearServerError('amount');
+              }}
+              errors={errorsFor('amount')}
+              className={dialogStyles.amountField}
+              disabled={disabled}
+              data-autofocus={isNew || undefined}
+            />
+            <SelectField
+              label={t('groupExpense.currency')}
+              name="currency"
+              value={currency}
+              onChange={(event) => {
+                setCurrency(event.target.value);
+                setFormError(null);
+                clearServerError('currency');
+              }}
+              options={currencyOptions}
+              errors={(serverErrors.currency ?? []).map(localize)}
+              disabled={disabled}
+            />
+          </div>
         </div>
+
+        {converted && (
+          <div className={styles.rate} aria-live="polite">
+            {rateUnavailable ? (
+              <Alert tone="error">
+                {t('groupExpense.rateUnavailable', { currency, groupCurrency: group.currency })}
+              </Alert>
+            ) : (
+              <p className={styles.rateLine}>
+                <ArrowLeftRight size={16} aria-hidden="true" className={styles.rateIcon} />
+                {rateLoading || rate === null ? (
+                  <span>{t('groupExpense.rateLoading')}</span>
+                ) : (
+                  <span>
+                    {totalCents !== null && (
+                      <>
+                        <strong className="money">
+                          {t('groupExpense.rateTotal', { amount: groupMoney(convertCents(totalCents, rate)) })}
+                        </strong>
+                        {' · '}
+                      </>
+                    )}
+                    {/* A weak currency reads better per hundred: "100 RSD = 1,6692 КМ". */}
+                    {t('groupExpense.rateLine', {
+                      from: format.moneyPrecise(rate < 0.1 ? 100 : 1, currency),
+                      to: format.moneyPrecise(Math.round(rate * (rate < 0.1 ? 100 : 1) * 1e6) / 1e6, group.currency),
+                    })}{' '}
+                    {rateDate
+                      ? t(savedRate ? 'groupExpense.rateSaved' : 'groupExpense.rateDate', {
+                          date: format.longDate(rateDate).replace(/\.$/, ''),
+                        })
+                      : t('groupExpense.rateFixed')}
+                  </span>
+                )}
+              </p>
+            )}
+            <p className={dialogStyles.hint}>{t('groupExpense.rateHint', { groupCurrency: group.currency })}</p>
+          </div>
+        )}
 
         <div className={styles.threeRow}>
           <SelectField
@@ -471,10 +614,17 @@ export function GroupExpenseDialog({
                           clearServerError('participants');
                         }}
                       />
-                      <span aria-hidden="true">{mode === 'Percentage' ? '%' : group.currency}</span>
+                      <span aria-hidden="true">{mode === 'Percentage' ? '%' : currency}</span>
                     </span>
                   )}
-                  <span className={`${styles.shareAmount} money`}>{checked && share !== undefined ? money(share) : '–'}</span>
+                  <span className={`${styles.shareAmount} money`}>
+                    {checked && share !== undefined ? money(share) : '–'}
+                    {checked && groupShares?.has(member.userId) && (
+                      <span className={styles.shareConverted}>
+                        {t('groupExpense.rateTotal', { amount: groupMoney(groupShares.get(member.userId) ?? 0) })}
+                      </span>
+                    )}
+                  </span>
                 </li>
               );
             })}

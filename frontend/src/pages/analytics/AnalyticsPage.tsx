@@ -11,6 +11,8 @@ import { SpendingChart, SpendingTable } from '../../components/charts/SpendingCh
 import { granularityName } from '../../components/charts/chartMath';
 import { Alert } from '../../components/ui/Alert';
 import { Button, ButtonLink } from '../../components/ui/Button';
+import { SelectField } from '../../components/ui/SelectField';
+import { useCurrencyOptions } from '../../i18n/currencies';
 import { useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import type { ExpensesPageState } from '../expenses/ExpensesPage';
@@ -26,6 +28,14 @@ const ExpenseMap = lazy(() => import('./ExpenseMap'));
 
 const ADD_EXPENSE_STATE: ExpensesPageState = { addExpense: true };
 
+const CURRENCY_PATTERN = /^[A-Z]{3}$/;
+
+/** "?currency=EUR" - the currency the numbers are shown in; anything invalid is ignored. */
+function readCurrency(params: URLSearchParams): string | null {
+  const value = params.get('currency')?.toUpperCase() ?? '';
+  return CURRENCY_PATTERN.test(value) ? value : null;
+}
+
 interface Loaded<T> {
   key: string;
   data: T | null;
@@ -38,11 +48,20 @@ export function AnalyticsPage() {
   const localize = useLocalizedText();
   const errorMessage = useErrorMessage();
   const { user } = useAuth();
-  const currency = user?.defaultCurrency ?? 'BAM';
+  const defaultCurrency = user?.defaultCurrency ?? 'BAM';
 
+  // The period and the currency live in the address, so a refresh or a shared link shows the
+  // same numbers. The user's default currency is not written there.
   const [params, setParams] = useSearchParams();
   const selection = readPeriod(params);
-  const select = (next: PeriodSelection) => setParams(periodToParams(next), { replace: true, preventScrollReset: true });
+  const currency = readCurrency(params) ?? defaultCurrency;
+  const update = (period: PeriodSelection, code: string) =>
+    setParams(
+      { ...periodToParams(period), ...(code === defaultCurrency ? {} : { currency: code }) },
+      { replace: true, preventScrollReset: true },
+    );
+  const select = (next: PeriodSelection) => update(next, currency);
+  const currencyOptions = useCurrencyOptions(defaultCurrency, currency);
 
   const [view, setView] = useState<'chart' | 'table'>('chart');
   const [exporting, setExporting] = useState(false);
@@ -82,6 +101,9 @@ export function AnalyticsPage() {
   const mapData = locations?.data ?? null;
   const mapError = locations?.key === key ? locations.error : null;
 
+  // The numbers on screen are in the currency they were calculated in; while another currency
+  // loads they stay (dimmed) with their own currency instead of getting the new symbol.
+  const shown = data?.currency ?? currency;
   const isEmpty = data !== null && data.expenseCount === 0 && !loading;
   const days = data ? daysBetween(data.from, data.to) : 1;
   const top = data?.byCategory[0];
@@ -96,11 +118,23 @@ export function AnalyticsPage() {
             {data ? format.dateRange(data.from, data.to) : t('analytics.subtitle')}
           </p>
         </div>
-        {data && (
-          <Button variant="secondary" icon={<Download size={18} aria-hidden="true" />} onClick={() => setExporting(true)}>
-            {t('reports.button')}
-          </Button>
-        )}
+        <div className={styles.headerActions}>
+          {/* Every expense is converted to this currency with today's rate (also in the report). */}
+          <SelectField
+            compact
+            label={t('analytics.currency')}
+            name="currency"
+            value={currency}
+            onChange={(event) => update(selection, event.target.value)}
+            options={currencyOptions}
+            className={styles.currencySelect}
+          />
+          {data && (
+            <Button variant="secondary" icon={<Download size={18} aria-hidden="true" />} onClick={() => setExporting(true)}>
+              {t('reports.button')}
+            </Button>
+          )}
+        </div>
       </header>
 
       <PeriodFilter selection={selection} onSelect={select} />
@@ -135,13 +169,13 @@ export function AnalyticsPage() {
           <section className={styles.stats} aria-label={t('analytics.summary')}>
             <div className={`${styles.stat} ${styles.statMain}`}>
               <span className={styles.statLabel}>{t('analytics.totalSpent')}</span>
-              <span className={`${styles.statValue} ${styles.statHero} money`}>{format.money(data.totalSpent, currency)}</span>
+              <span className={`${styles.statValue} ${styles.statHero} money`}>{format.money(data.totalSpent, shown)}</span>
               <span className={styles.statNote}>
                 <Change current={data.totalSpent} previous={data.previousPeriodTotal} />{' '}
                 {data.previousPeriodTotal > 0
                   ? t('analytics.comparedTo', {
                       range: format.dateRange(data.previousFrom, data.previousTo),
-                      amount: format.money(data.previousPeriodTotal, currency),
+                      amount: format.money(data.previousPeriodTotal, shown),
                     })
                   : t('analytics.noPrevious')}
               </span>
@@ -152,7 +186,7 @@ export function AnalyticsPage() {
             </div>
             <div className={styles.stat}>
               <span className={styles.statLabel}>{t('analytics.perDay')}</span>
-              <span className={`${styles.statValue} money`}>{format.money(data.totalSpent / days, currency)}</span>
+              <span className={`${styles.statValue} money`}>{format.money(data.totalSpent / days, shown)}</span>
             </div>
             {top && (
               <div className={styles.stat}>
@@ -170,7 +204,7 @@ export function AnalyticsPage() {
                   {t('analytics.timelineTitle')}
                 </h2>
                 <p className={styles.cardHint}>
-                  {t(`analytics.by_${unit}`)} · {currency}
+                  {t(`analytics.by_${unit}`)} · {shown}
                 </p>
               </div>
               <div className={styles.viewSwitch} role="group" aria-label={t('analytics.viewLabel')}>
@@ -200,11 +234,11 @@ export function AnalyticsPage() {
               <SpendingChart
                 points={data.timeline}
                 granularity={data.granularity}
-                currency={currency}
+                currency={shown}
                 label={t('analytics.timelineChartLabel')}
               />
             ) : (
-              <SpendingTable points={data.timeline} granularity={data.granularity} currency={currency} caption={t('analytics.timelineTitle')} />
+              <SpendingTable points={data.timeline} granularity={data.granularity} currency={shown} caption={t('analytics.timelineTitle')} />
             )}
           </section>
 
@@ -216,7 +250,7 @@ export function AnalyticsPage() {
                 </h2>
                 <p className={styles.cardHint}>{t('analytics.categoriesHint')}</p>
               </div>
-              <CategoryBreakdown categories={data.byCategory} currency={currency} from={data.from} to={data.to} />
+              <CategoryBreakdown categories={data.byCategory} currency={shown} from={data.from} to={data.to} />
             </section>
 
             <section className={styles.card} aria-labelledby="analytics-map-title">
@@ -244,7 +278,7 @@ export function AnalyticsPage() {
           </div>
 
           <p className={styles.note}>
-            {t('analytics.note', { currency: data.currency ?? currency })}
+            {t('analytics.note', { currency: shown })}
             {data.convertedExpenseCount ? (
               <>
                 {' '}
