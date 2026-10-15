@@ -1,5 +1,5 @@
 import { createElement, useEffect, useState, type FormEvent } from 'react';
-import { ChevronLeft, ChevronRight, Copy, Pencil, PiggyBank, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, History, Pencil, PiggyBank, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { ApiError } from '../../api/ApiError';
@@ -36,6 +36,9 @@ function levelOf(budget: Budget): Level {
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
+/** The same limit as the backend (Budget.MaxMonthsAhead). */
+const MAX_MONTHS_AHEAD = 12;
+
 type DialogState =
   | { kind: 'add' }
   | { kind: 'edit'; budget: Budget }
@@ -54,14 +57,19 @@ export function BudgetsPage() {
   const money = (amount: number) => format.money(amount, currency);
 
   // The month is in the address (?month=2026-09), so Back and a refresh keep it.
+  // Past months can only be viewed (the backend refuses changes too); the future is limited
+  // to a year ahead. Months are compared as "YYYY-MM" text, which sorts like dates.
   const [params, setParams] = useSearchParams();
+  const thisMonth = currentMonth();
+  const lastMonth = addMonths(thisMonth, MAX_MONTHS_AHEAD);
   const requested = params.get('month') ?? '';
-  const month = MONTH_PATTERN.test(requested) ? requested : currentMonth();
+  const month = MONTH_PATTERN.test(requested) && requested <= lastMonth ? requested : thisMonth;
+  const isPast = month < thisMonth;
   const [notice, setNotice] = useState<{ id: number; text: string } | null>(null);
   const setMonth = (value: string) => {
     // A message about the previous month ("Budget deleted") would be confusing here.
     setNotice(null);
-    setParams(value === currentMonth() ? {} : { month: value }, { replace: true, preventScrollReset: true });
+    setParams(value === thisMonth ? {} : { month: value }, { replace: true, preventScrollReset: true });
   };
 
   const [version, setVersion] = useState(0);
@@ -89,14 +97,14 @@ export function BudgetsPage() {
   const isEmpty = loaded?.key === key && budgets !== null && budgets.length === 0;
 
   useEffect(() => {
-    if (!isEmpty) return;
+    if (!isEmpty || isPast) return;
     const controller = new AbortController();
     budgetsApi.mine(previousMonth, controller.signal).then(
       (result) => setPrevious({ month: previousMonth, budgets: result }),
       () => undefined,
     );
     return () => controller.abort();
-  }, [isEmpty, previousMonth]);
+  }, [isEmpty, isPast, previousMonth]);
 
   useEffect(() => {
     if (!notice) return;
@@ -146,9 +154,11 @@ export function BudgetsPage() {
           <h1 className={pageStyles.title}>{t('budgets.title')}</h1>
           <p className={pageStyles.subtitle}>{t('budgets.subtitle')}</p>
         </div>
-        <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'add' })}>
-          {t('budgets.add')}
-        </Button>
+        {!isPast && (
+          <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'add' })}>
+            {t('budgets.add')}
+          </Button>
+        )}
       </header>
 
       <div className={styles.monthBar} role="group" aria-label={t('budgets.monthLabel')}>
@@ -158,10 +168,27 @@ export function BudgetsPage() {
         <span className={styles.monthName} aria-live="polite">
           {format.month(month)}
         </span>
-        <button type="button" className={styles.monthButton} aria-label={t('budgets.nextMonth')} onClick={() => setMonth(addMonths(month, 1))}>
+        <button
+          type="button"
+          className={styles.monthButton}
+          aria-label={t('budgets.nextMonth')}
+          title={month >= lastMonth ? t('budgets.maxAhead', { count: MAX_MONTHS_AHEAD }) : undefined}
+          onClick={() => setMonth(addMonths(month, 1))}
+          disabled={month >= lastMonth}
+        >
           <ChevronRight size={20} aria-hidden="true" />
         </button>
       </div>
+
+      {isPast && (
+        <p className={styles.pastNote}>
+          <History size={17} aria-hidden="true" />
+          <span>{t('budgets.pastNote')}</span>
+          <button type="button" className={styles.linkButton} onClick={() => setMonth(thisMonth)}>
+            {t('budgets.toCurrentMonth')}
+          </button>
+        </p>
+      )}
 
       <div aria-live="polite" className={styles.noticeArea}>
         {notice && (
@@ -202,25 +229,27 @@ export function BudgetsPage() {
             <PiggyBank size={28} strokeWidth={1.75} />
           </span>
           <h2 id="budgets-empty-title" className={pageStyles.emptyTitle}>
-            {t('budgets.emptyTitle')}
+            {t(isPast ? 'budgets.emptyPastTitle' : 'budgets.emptyTitle')}
           </h2>
-          <p className={pageStyles.emptyText}>{t('budgets.emptyText')}</p>
+          <p className={pageStyles.emptyText}>{t(isPast ? 'budgets.emptyPastText' : 'budgets.emptyText')}</p>
           {copyError && <Alert tone="error">{copyError}</Alert>}
-          <div className={pageStyles.actions}>
-            <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'add' })}>
-              {t('budgets.add')}
-            </Button>
-            {previousForCopy.length > 0 && (
-              <Button
-                variant="secondary"
-                icon={<Copy size={17} aria-hidden="true" />}
-                onClick={() => void copyPrevious(previousForCopy)}
-                disabled={copying}
-              >
-                {copying ? t('budgets.copying') : t('budgets.copyFrom', { month: format.month(previousMonth) })}
+          {!isPast && (
+            <div className={pageStyles.actions}>
+              <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'add' })}>
+                {t('budgets.add')}
               </Button>
-            )}
-          </div>
+              {previousForCopy.length > 0 && (
+                <Button
+                  variant="secondary"
+                  icon={<Copy size={17} aria-hidden="true" />}
+                  onClick={() => void copyPrevious(previousForCopy)}
+                  disabled={copying}
+                >
+                  {copying ? t('budgets.copying') : t('budgets.copyFrom', { month: format.month(previousMonth) })}
+                </Button>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -238,26 +267,28 @@ export function BudgetsPage() {
                     {createElement(categoryIcon(budget.categoryName, iconKeys.get(budget.categoryId)), { size: 20 })}
                   </span>
                   <h2 className={styles.name}>{name}</h2>
-                  <div className={styles.cardActions}>
-                    <button
-                      type="button"
-                      className={styles.iconButton}
-                      aria-label={t('budgets.edit', { name })}
-                      title={t('budgets.edit', { name })}
-                      onClick={() => setDialog({ kind: 'edit', budget })}
-                    >
-                      <Pencil size={17} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.iconButton} ${styles.danger}`}
-                      aria-label={t('budgets.delete', { name })}
-                      title={t('budgets.delete', { name })}
-                      onClick={() => setDialog({ kind: 'delete', budget })}
-                    >
-                      <Trash2 size={17} aria-hidden="true" />
-                    </button>
-                  </div>
+                  {!isPast && (
+                    <div className={styles.cardActions}>
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        aria-label={t('budgets.edit', { name })}
+                        title={t('budgets.edit', { name })}
+                        onClick={() => setDialog({ kind: 'edit', budget })}
+                      >
+                        <Pencil size={17} aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.iconButton} ${styles.danger}`}
+                        aria-label={t('budgets.delete', { name })}
+                        title={t('budgets.delete', { name })}
+                        onClick={() => setDialog({ kind: 'delete', budget })}
+                      >
+                        <Trash2 size={17} aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className={styles.cardMeta}>
                   <p className={styles.status}>

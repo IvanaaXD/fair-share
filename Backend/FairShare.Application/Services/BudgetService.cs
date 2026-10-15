@@ -17,12 +17,14 @@ public class BudgetService : IBudgetService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IExchangeRateProvider _exchangeRates;
     private readonly IMapper _mapper;
+    private readonly TimeProvider _time;
 
-    public BudgetService(IUnitOfWork unitOfWork, IExchangeRateProvider exchangeRates, IMapper mapper)
+    public BudgetService(IUnitOfWork unitOfWork, IExchangeRateProvider exchangeRates, IMapper mapper, TimeProvider time)
     {
         _unitOfWork = unitOfWork;
         _exchangeRates = exchangeRates;
         _mapper = mapper;
+        _time = time;
     }
 
     public async Task<BudgetResponse> CreateAsync(
@@ -31,6 +33,14 @@ public class BudgetService : IBudgetService
             CancellationToken cancellationToken = default)
     {
         // Limit and month format are checked by CreateBudgetRequestValidator.
+        var now = _time.GetUtcNow().UtcDateTime;
+        if (Budget.IsMonthClosed(request.Month, now))
+            throw new BadRequestException(
+                "Буџет се не може поставити за мјесец који је прошао.", ErrorCodes.BudgetMonthClosed);
+        if (Budget.IsMonthTooFarAhead(request.Month, now))
+            throw new BadRequestException(
+                $"Буџет се може планирати највише {Budget.MaxMonthsAhead} мјесеци унапријед.", ErrorCodes.BudgetMonthTooFar);
+
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
             ?? throw new NotFoundException("Категорија није пронађена.", ErrorCodes.CategoryNotFound);
 
@@ -55,12 +65,7 @@ public class BudgetService : IBudgetService
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var budget = await _unitOfWork.Budgets.GetByIdAsync(budgetId, cancellationToken)
-            ?? throw new NotFoundException("Буџет није пронађен.", ErrorCodes.BudgetNotFound);
-
-        // Someone else's budget is reported exactly like a missing one.
-        if (budget.UserId != currentUserId)
-            throw new NotFoundException("Буџет није пронађен.", ErrorCodes.BudgetNotFound);
+        var budget = await GetOwnOpenBudgetAsync(budgetId, currentUserId, cancellationToken);
 
         // Only the limit can change; category and month are fixed for an existing budget.
         _mapper.Map(request, budget);
@@ -73,11 +78,7 @@ public class BudgetService : IBudgetService
 
     public async Task DeleteAsync(Guid budgetId, Guid currentUserId, CancellationToken cancellationToken = default)
     {
-        var budget = await _unitOfWork.Budgets.GetByIdAsync(budgetId, cancellationToken)
-            ?? throw new NotFoundException("Буџет није пронађен.", ErrorCodes.BudgetNotFound);
-
-        if (budget.UserId != currentUserId)
-            throw new NotFoundException("Буџет није пронађен.", ErrorCodes.BudgetNotFound);
+        var budget = await GetOwnOpenBudgetAsync(budgetId, currentUserId, cancellationToken);
 
         _unitOfWork.Budgets.Remove(budget);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -103,6 +104,23 @@ public class BudgetService : IBudgetService
     }
 
     // ---------- helpers ----------
+
+    /// <summary>
+    /// The user's own budget of the current or a future month. Someone else's budget is reported
+    /// exactly like a missing one; a budget of a past month is history and stays as it was.
+    /// </summary>
+    private async Task<Budget> GetOwnOpenBudgetAsync(Guid budgetId, Guid currentUserId, CancellationToken cancellationToken)
+    {
+        var budget = await _unitOfWork.Budgets.GetByIdAsync(budgetId, cancellationToken);
+        if (budget is null || budget.UserId != currentUserId)
+            throw new NotFoundException("Буџет није пронађен.", ErrorCodes.BudgetNotFound);
+
+        if (budget.IsClosed(_time.GetUtcNow().UtcDateTime))
+            throw new ConflictException(
+                "Буџет за мјесец који је прошао не може се мијењати ни брисати.", ErrorCodes.BudgetMonthClosed);
+
+        return budget;
+    }
 
     /// <summary>
     /// A budget limit is in the user's default currency. Expenses in other currencies are
@@ -142,10 +160,7 @@ public class BudgetService : IBudgetService
 
     private static (DateTime Start, DateTime End) GetMonthRange(string month)
     {
-        var year = int.Parse(month[..4]);
-        var monthNumber = int.Parse(month[5..7]);
-        var start = new DateTime(year, monthNumber, 1, 0, 0, 0, DateTimeKind.Utc);
-        var end = start.AddMonths(1).AddTicks(-1);
-        return (start, end);
+        var start = Budget.MonthStart(month);
+        return (start, start.AddMonths(1).AddTicks(-1));
     }
 }
