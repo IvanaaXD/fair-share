@@ -1,5 +1,5 @@
 import { apiRequest, toQueryString } from './client';
-import type { GroupExpense, ImageUrlResponse, SaveGroupExpenseRequest, Settlement, SettlementStatus } from './types';
+import type { ExpenseComment, GroupExpense, ImageUrlResponse, SaveGroupExpenseRequest, Settlement, SettlementStatus } from './types';
 
 const base = (groupId: string) => `/groups/${groupId}/expenses`;
 
@@ -26,6 +26,19 @@ export const groupExpensesApi = {
 
   removeReceipt: (groupId: string, expenseId: string) =>
     apiRequest<void>(`${base(groupId)}/${expenseId}/receipt`, { method: 'DELETE' }),
+};
+
+/** CommentController - comments under a group expense, oldest first. */
+export const commentsApi = {
+  list: (groupId: string, expenseId: string, signal?: AbortSignal) =>
+    apiRequest<ExpenseComment[]>(`${base(groupId)}/${expenseId}/comments`, { signal }),
+
+  create: (groupId: string, expenseId: string, text: string) =>
+    apiRequest<ExpenseComment>(`${base(groupId)}/${expenseId}/comments`, { method: 'POST', body: { text } }),
+
+  /** The author or the group owner only. */
+  remove: (groupId: string, expenseId: string, commentId: string) =>
+    apiRequest<void>(`${base(groupId)}/${expenseId}/comments/${commentId}`, { method: 'DELETE' }),
 };
 
 /** SettlementController (balances are in groupsApi). */

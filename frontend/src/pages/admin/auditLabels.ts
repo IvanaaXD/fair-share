@@ -13,6 +13,7 @@ export const AUDIT_ENTITIES = [
   'Group',
   'GroupExpense',
   'GroupExpenseReceipt',
+  'Comment',
   'Settlement',
   'Payment',
   'PaymentCard',

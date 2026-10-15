@@ -78,7 +78,9 @@ public class GroupExpenseService : IGroupExpenseService
         await EnsureMemberAsync(groupId, currentUserId, cancellationToken);
 
         var expense = await LoadExpenseAsync(groupId, groupExpenseId, cancellationToken);
-        return _mapper.Map<GroupExpenseResponse>(expense);
+        var response = _mapper.Map<GroupExpenseResponse>(expense);
+        await FillCommentCountsAsync([response], cancellationToken);
+        return response;
     }
 
     public async Task<IReadOnlyList<GroupExpenseResponse>> GetByGroupAsync(
@@ -95,7 +97,9 @@ public class GroupExpenseService : IGroupExpenseService
         pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
 
         var expenses = await _unitOfWork.GroupExpenses.GetByGroupAsync(groupId, page, pageSize, cancellationToken);
-        return _mapper.Map<List<GroupExpenseResponse>>(expenses);
+        var responses = _mapper.Map<List<GroupExpenseResponse>>(expenses);
+        await FillCommentCountsAsync(responses, cancellationToken);
+        return responses;
     }
 
     public async Task<GroupExpenseResponse> UpdateAsync(
@@ -194,6 +198,19 @@ public class GroupExpenseService : IGroupExpenseService
     }
 
     /// <summary>Loads the group together with its members and their users (tracked).</summary>
+    /// <summary>Number of comments of every listed expense - one grouped query for the whole page.</summary>
+    private async Task FillCommentCountsAsync(IReadOnlyList<GroupExpenseResponse> responses, CancellationToken cancellationToken)
+    {
+        if (responses.Count == 0)
+            return;
+
+        var counts = await _unitOfWork.Comments.CountByGroupExpensesAsync(
+            responses.Select(r => r.Id).ToList(), cancellationToken);
+
+        foreach (var response in responses)
+            response.CommentCount = counts.GetValueOrDefault(response.Id, 0);
+    }
+
     private async Task<Group> LoadGroupAsync(Guid groupId, CancellationToken cancellationToken)
         => await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
            ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);

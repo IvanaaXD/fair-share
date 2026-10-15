@@ -935,3 +935,13 @@
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
+
+/* Number of comments next to an expense in the list. */
+.expenseComments {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}

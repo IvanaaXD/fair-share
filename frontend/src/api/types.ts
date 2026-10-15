@@ -249,6 +249,19 @@ export interface GroupExpense {
   date: string;
   splitType: SplitType | number;
   splits: ExpenseSplit[];
+  /** Number of comments (older backends do not send it). */
+  commentCount?: number;
+}
+
+/** A comment under a group expense (CommentController). */
+export interface ExpenseComment {
+  id: string;
+  text: string;
+  createdAt: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  groupExpenseId: string;
 }
 
 export interface SplitParticipant {
@@ -390,7 +403,8 @@ export type NotificationType =
   | 'GroupMembershipChanged'
   | 'RecurringExpenseCreated'
   | 'GroupExpenseAdded'
-  | 'DebtReminder';
+  | 'DebtReminder'
+  | 'GroupExpenseComment';
 
 export interface AppNotification {
   id: string;

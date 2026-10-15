@@ -11,7 +11,9 @@ namespace FairShare.Application.Mappings
             CreateMap<GroupExpense, GroupExpenseResponse>()
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
                 .ForMember(dest => dest.PaidByName,
-                    opt => opt.MapFrom(src => src.PaidByUser.FirstName + " " + src.PaidByUser.LastName));
+                    opt => opt.MapFrom(src => src.PaidByUser.FirstName + " " + src.PaidByUser.LastName))
+                // Counted in the database by GroupExpenseService, not by loading every comment.
+                .ForMember(dest => dest.CommentCount, opt => opt.Ignore());
 
             CreateMap<ExpenseSplit, ExpenseSplitResponse>()
                 .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User.FirstName))

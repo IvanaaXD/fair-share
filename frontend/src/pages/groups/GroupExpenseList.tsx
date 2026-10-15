@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ReceiptText } from 'lucide-react';
+import { MessageSquare, ReceiptText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { groupExpensesApi } from '../../api/groupExpenses';
 import type { GroupExpense } from '../../api/types';
@@ -156,6 +156,13 @@ export function GroupExpenseList({ groupId, currency, version, myId, colorOf, on
                         <span className="visually-hidden">{t('groupExpenses.hasReceipt')}</span>
                       </span>
                     )}
+                    {expense.commentCount ? (
+                      <span className={styles.expenseComments} title={t('groupExpenses.comments', { count: expense.commentCount })}>
+                        <MessageSquare size={14} aria-hidden="true" />
+                        <span aria-hidden="true">{expense.commentCount}</span>
+                        <span className="visually-hidden">{t('groupExpenses.comments', { count: expense.commentCount })}</span>
+                      </span>
+                    ) : null}
                   </span>
                   <span className={styles.splitBar} aria-hidden="true">
                     {expense.splits.map((split) =>

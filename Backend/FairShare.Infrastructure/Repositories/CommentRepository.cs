@@ -19,4 +19,14 @@ public class CommentRepository : GenericRepository<Comment>, ICommentRepository
             .Where(c => c.GroupExpenseId == groupExpenseId)
             .OrderBy(c => c.CreatedAt)
             .ToListAsync(cancellationToken);
+
+    // SELECT "GroupExpenseId", COUNT(*) ... WHERE "GroupExpenseId" = ANY(@ids) GROUP BY "GroupExpenseId"
+    public async Task<Dictionary<Guid, int>> CountByGroupExpensesAsync(
+        IReadOnlyCollection<Guid> groupExpenseIds,
+        CancellationToken cancellationToken = default)
+        => await DbSet.AsNoTracking()
+            .Where(c => groupExpenseIds.Contains(c.GroupExpenseId))
+            .GroupBy(c => c.GroupExpenseId)
+            .Select(g => new { GroupExpenseId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.GroupExpenseId, x => x.Count, cancellationToken);
 }
