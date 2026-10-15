@@ -294,8 +294,23 @@ namespace FairShare.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)");
+
+                    b.Property<DateTime?>("ExchangeRateDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("GroupId")
                         .HasColumnType("uuid");
+
+                    b.Property<decimal?>("OriginalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("OriginalCurrency")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
 
                     b.Property<Guid>("PaidByUserId")
                         .HasColumnType("uuid");

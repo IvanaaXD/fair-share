@@ -17,6 +17,13 @@ public class GroupExpenseResponse
     public SplitType SplitType { get; set; }
     public List<ExpenseSplitResponse> Splits { get; set; } = new();
 
-    // NEW: number of comments, shown next to the expense in the list.
+    // Number of comments, shown next to the expense in the list.
     public int CommentCount { get; set; }
+
+    // NEW: an expense paid in another currency - what was paid and the rate it was converted
+    // with. Amount and Splits are always in the group's currency. Null when not converted.
+    public string? OriginalCurrency { get; set; }
+    public decimal? OriginalAmount { get; set; }
+    public decimal? ExchangeRate { get; set; }
+    public DateTime? ExchangeRateDate { get; set; }
 }

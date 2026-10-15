@@ -22,7 +22,13 @@ namespace FairShare.Application.Mappings
             // Splits are calculated by ExpenseSplitCalculator, never copied from the request.
             CreateMap<CreateGroupExpenseRequest, GroupExpense>()
                 .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date.AsUtc()))
-                .ForMember(dest => dest.Splits, opt => opt.Ignore());
+                .ForMember(dest => dest.Splits, opt => opt.Ignore())
+                // Amount and currency conversion are set by GroupExpenseService (the amount may
+                // have to be converted to the group's currency first).
+                .ForMember(dest => dest.OriginalCurrency, opt => opt.Ignore())
+                .ForMember(dest => dest.OriginalAmount, opt => opt.Ignore())
+                .ForMember(dest => dest.ExchangeRate, opt => opt.Ignore())
+                .ForMember(dest => dest.ExchangeRateDate, opt => opt.Ignore());
 
             // Used as _mapper.Map(request, existingExpense). IncludeBase reuses the configuration
             // above (UTC date, ignored splits), so the two maps cannot drift apart.

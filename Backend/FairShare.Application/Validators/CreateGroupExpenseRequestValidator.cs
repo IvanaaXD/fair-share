@@ -32,6 +32,12 @@ namespace FairShare.Application.Validators
             RuleFor(x => x.SplitType)
                 .IsInEnum().WithMessage("Unknown split type.");
 
+            // NEW: optional currency of the expense - a three-letter ISO code (EUR, BAM, RSD...).
+            RuleFor(x => x.Currency)
+                .Matches("^[A-Za-z]{3}$")
+                .When(x => !string.IsNullOrWhiteSpace(x.Currency))
+                .WithMessage("Валута мора бити ознака од три слова, нпр. EUR.");
+
             RuleFor(x => x.Participants)
                 .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("The list of participants is required.")
@@ -57,6 +63,7 @@ namespace FairShare.Application.Validators
                     .WithMessage("The sum of percentages must be 100%.");
             });
 
+            // Exact amounts are in the same currency as the total, so they are compared directly.
             When(x => x.SplitType == SplitType.ExactAmount && x.Participants != null, () =>
             {
                 RuleForEach(x => x.Participants)

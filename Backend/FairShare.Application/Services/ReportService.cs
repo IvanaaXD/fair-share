@@ -139,6 +139,8 @@ public class ReportService : IReportService
                 .ToList();
         }
 
+        var text = ReportText.For(request.Language, request.TimeZone);
+
         // Expenses with category, payer and shares; newest first, like in the app.
         IReadOnlyList<GroupExpense> listed = allExpenses.Count == 0
             ? []
@@ -168,7 +170,7 @@ public class ReportService : IReportService
             Expenses = listed
                 .Select(e => new GroupReportExpense(
                     e.Date,
-                    e.Description,
+                    DescriptionWithOriginal(e, text),
                     e.Category?.Name ?? string.Empty,
                     FullName(e.PaidByUser),
                     e.Amount,
@@ -181,7 +183,6 @@ public class ReportService : IReportService
             TotalSpent = allExpenses.Sum(e => e.Amount)
         };
 
-        var text = ReportText.For(request.Language, request.TimeZone);
         var name = $"{FileBase(text, "fairshare-grupa", "fairshare-group")}-{Slug(group.Name)}-{Iso(DateTime.UtcNow)}";
 
         return request.Format == ReportFormat.Csv
@@ -190,6 +191,19 @@ public class ReportService : IReportService
     }
 
     // ---------- helpers ----------
+
+    /// <summary>
+    /// An expense entered in another currency shows what was actually paid next to its
+    /// description, e.g. "Hotel (100.00 EUR)"; the amount column stays in the group currency.
+    /// </summary>
+    private static string? DescriptionWithOriginal(GroupExpense expense, ReportText text)
+    {
+        if (expense.OriginalAmount is not { } original || expense.OriginalCurrency is null)
+            return expense.Description;
+
+        var paid = $"({text.Money(original, expense.OriginalCurrency)})";
+        return string.IsNullOrWhiteSpace(expense.Description) ? paid : $"{expense.Description} {paid}";
+    }
 
     private static string FullName(User? user)
         => user is null ? string.Empty : $"{user.FirstName} {user.LastName}".Trim();

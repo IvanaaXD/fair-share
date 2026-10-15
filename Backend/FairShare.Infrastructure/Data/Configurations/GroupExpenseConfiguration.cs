@@ -19,6 +19,18 @@ namespace FairShare.Infrastructure.Data.Configurations
             builder.Property(ge => ge.ReceiptImageUrl)
                     .HasMaxLength(500);
 
+            // An expense entered in another currency keeps what was actually paid and the rate
+            // used; Amount is always in the group's currency. All four are null otherwise.
+            builder.Property(ge => ge.OriginalCurrency)
+                    .HasMaxLength(3);
+
+            builder.Property(ge => ge.OriginalAmount)
+                    .HasPrecision(18, 2);
+
+            // Units of the group currency per one unit of the original currency, e.g. 117.17 RSD per EUR.
+            builder.Property(ge => ge.ExchangeRate)
+                    .HasPrecision(18, 8);
+
             builder.Property(ge => ge.Date)
                     .IsRequired();
 
