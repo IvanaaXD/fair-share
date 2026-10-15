@@ -21,5 +21,8 @@ public enum NotificationType
     GroupExpenseAdded,
 
     // A member this user owes money to sent a reminder. Also at the end.
-    DebtReminder
+    DebtReminder,
+
+    // Someone commented on a group expense this user paid or takes part in. Also at the end.
+    GroupExpenseComment
 }

@@ -16,4 +16,7 @@ public class GroupExpenseResponse
     public DateTime Date { get; set; }
     public SplitType SplitType { get; set; }
     public List<ExpenseSplitResponse> Splits { get; set; } = new();
+
+    // NEW: number of comments, shown next to the expense in the list.
+    public int CommentCount { get; set; }
 }
