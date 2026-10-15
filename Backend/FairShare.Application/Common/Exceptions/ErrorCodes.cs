@@ -31,6 +31,7 @@ public static class ErrorCodes
     public const string GroupExpenseFormerMember = "groupExpenseFormerMember";
     public const string PayerNotMember = "payerNotMember";
     public const string ParticipantNotMember = "participantNotMember";
+    public const string ExchangeRateUnavailable = "exchangeRateUnavailable";
     public const string CommentNotFound = "commentNotFound";
     public const string CommentDeleteForbidden = "commentDeleteForbidden";
 

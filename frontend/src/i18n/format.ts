@@ -90,6 +90,24 @@ export function useFormatters() {
         return format.format(amount);
       },
 
+      /**
+       * A price without forced decimals, e.g. for exchange rates: 1, "EUR" -> "1 €";
+       * 1.95583, "BAM" -> "1,95583 КМ"; at most six decimal places.
+       */
+      moneyPrecise(amount: number, currency: string): string {
+        try {
+          return new Intl.NumberFormat(locale, {
+            style: 'currency',
+            currency,
+            currencyDisplay: locale === 'en-GB' ? 'narrowSymbol' : 'symbol',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 6,
+          }).format(amount);
+        } catch {
+          return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 6 }).format(amount)} ${currency}`;
+        }
+      },
+
       /** "12. окт" this year, "12. окт 2025." for other years */
       shortDate(value: string): string {
         const date = dateOnlyToUtc(value);

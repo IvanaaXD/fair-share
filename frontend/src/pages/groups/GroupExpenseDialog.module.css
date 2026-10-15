@@ -13,7 +13,7 @@
 
 @media (min-width: 560px) {
   .topRow {
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.35fr);
     gap: 12px;
   }
 
@@ -156,6 +156,42 @@
   font-size: var(--text-xs);
   font-weight: 500;
   text-align: right;
+}
+
+/* The share in the group's currency, under the share in the expense's currency. */
+.shareConverted {
+  display: block;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* ---------- another currency ---------- */
+.rate {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: -6px;
+}
+
+.rateLine {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.rateLine strong {
+  font-weight: 600;
+}
+
+.rateIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-primary);
 }
 
 /* On a phone the amount moves under the name, so the row stays readable. */

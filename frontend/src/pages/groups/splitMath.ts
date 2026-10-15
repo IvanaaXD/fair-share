@@ -137,3 +137,50 @@ export function moneyText(value: number, language: string): string {
 export function equalPercents(count: number): number[] {
   return equalCents(10000, count).map((hundredths) => hundredths / 100);
 }
+
+// ---------- another currency ----------
+
+/**
+ * Cents in the expense's currency -> cents in the group's currency. The server rounds the same
+ * way (two decimals, halves away from zero), so the preview matches what will be saved.
+ */
+export function convertCents(cents: number, rate: number): number {
+  return Math.sign(cents) * Math.round(Math.abs(cents) * rate);
+}
+
+/**
+ * Exact shares typed in another currency, converted one by one the way the server does it:
+ * the rounding difference goes to the last participant, so the shares add up to the converted total.
+ */
+export function convertExactShares(
+  shares: Map<string, number>,
+  included: string[],
+  totalCents: number,
+  rate: number,
+): Map<string, number> {
+  const converted = new Map<string, number>();
+  const ids = included.filter((id) => shares.has(id));
+  for (const id of ids) converted.set(id, convertCents(shares.get(id) ?? 0, rate));
+  const sum = [...converted.values()].reduce((total, cents) => total + cents, 0);
+  const last = ids[ids.length - 1];
+  if (last !== undefined) converted.set(last, (converted.get(last) ?? 0) + convertCents(totalCents, rate) - sum);
+  return converted;
+}
+
+/**
+ * Editing an expense entered in another currency: its saved shares (group currency) are turned
+ * back into the original currency for the "exact amounts" inputs, adding up to the original total.
+ */
+export function originalShareCents(
+  splits: { userId: string; amount: number }[],
+  originalTotalCents: number,
+  rate: number,
+): Map<string, number> {
+  const result = new Map<string, number>();
+  if (splits.length === 0 || rate <= 0) return result;
+  for (const split of splits) result.set(split.userId, Math.round(toCents(split.amount) / rate));
+  const sum = [...result.values()].reduce((total, cents) => total + cents, 0);
+  const last = splits[splits.length - 1].userId;
+  result.set(last, (result.get(last) ?? 0) + originalTotalCents - sum);
+  return result;
+}

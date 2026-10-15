@@ -1,4 +1,5 @@
 using AutoMapper;
+using FairShare.Application.Abstractions;
 using FairShare.Application.Common.Exceptions;
 using FairShare.Application.Common.Extensions;
 using FairShare.Application.Common.Notifications;
@@ -17,12 +18,18 @@ public class GroupExpenseService : IGroupExpenseService
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
+    private readonly IExchangeRateProvider _exchangeRates;
     private readonly IMapper _mapper;
 
-    public GroupExpenseService(IUnitOfWork unitOfWork, INotificationService notificationService, IMapper mapper)
+    public GroupExpenseService(
+        IUnitOfWork unitOfWork,
+        INotificationService notificationService,
+        IExchangeRateProvider exchangeRates,
+        IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
+        _exchangeRates = exchangeRates;
         _mapper = mapper;
     }
 
@@ -43,12 +50,14 @@ public class GroupExpenseService : IGroupExpenseService
 
         var usersById = GetMemberUsers(group);
         var payer = ResolvePayer(request, usersById);
-        var splits = CalculateSplits(request, usersById);
+        var conversion = await ConvertAsync(request, group.Currency, previous: null, cancellationToken);
+        var splits = CalculateSplits(request, conversion, usersById);
 
         var groupExpense = _mapper.Map<GroupExpense>(request);
         groupExpense.GroupId = groupId;
         groupExpense.Category = category;
         groupExpense.PaidByUser = payer;
+        conversion.ApplyTo(groupExpense);
 
         foreach (var split in splits)
             split.GroupExpenseId = groupExpense.Id;
@@ -119,7 +128,10 @@ public class GroupExpenseService : IGroupExpenseService
 
         var usersById = GetMemberUsers(group);
         var payer = ResolvePayer(request, usersById);
-        var newSplits = CalculateSplits(request, usersById);
+        // An edit that keeps the original currency and amount keeps the original rate too, so
+        // changing e.g. the description of an old 20 EUR expense does not move the balances.
+        var conversion = await ConvertAsync(request, group.Currency, previous: expense, cancellationToken);
+        var newSplits = CalculateSplits(request, conversion, usersById);
 
         // Splits are replaced as a whole: the old ones are deleted and new ones inserted.
         // If two members edit the same expense at the same moment, the second request finds
@@ -132,6 +144,7 @@ public class GroupExpenseService : IGroupExpenseService
         _mapper.Map(request, expense);
         expense.Category = category;
         expense.PaidByUser = payer;
+        conversion.ApplyTo(expense);
 
         foreach (var split in newSplits)
         {
@@ -183,6 +196,8 @@ public class GroupExpenseService : IGroupExpenseService
     {
         var title = NotificationText.Quote(string.IsNullOrWhiteSpace(expense.Description) ? categoryName : expense.Description);
         var total = NotificationText.Money(expense.Amount, group.Currency);
+        if (expense.OriginalAmount is { } original)
+            total += $" ({NotificationText.Money(original, expense.OriginalCurrency)})";
 
         foreach (var split in expense.Splits.Where(s => s.UserId != currentUserId))
         {
@@ -270,11 +285,12 @@ public class GroupExpenseService : IGroupExpenseService
             : throw new NotFoundException("Корисник који је платио трошак није члан ове групе.", ErrorCodes.PayerNotMember);
 
     /// <summary>
-    /// Checks that every participant is a member of the group and calculates the splits.
-    /// The calculation itself (including rounding remainders) is pure domain logic.
+    /// Checks that every participant is a member of the group and calculates the splits in the
+    /// group's currency. The calculation itself (including rounding remainders) is pure domain logic.
     /// </summary>
     private static List<ExpenseSplit> CalculateSplits(
         CreateGroupExpenseRequest request,
+        CurrencyConversion conversion,
         Dictionary<Guid, User> usersById)
     {
         foreach (var participant in request.Participants)
@@ -287,12 +303,92 @@ public class GroupExpenseService : IGroupExpenseService
             .Select(p => new SplitParticipantInput(p.UserId, p.Amount, p.Percentage))
             .ToList();
 
-        var splits = ExpenseSplitCalculator.Calculate(request.Amount, request.SplitType, splitInputs);
+        // Exact amounts were typed in the expense's currency: converted one by one, and the
+        // rounding difference goes to the last participant, so they add up to the converted total.
+        // Only when they add up to the original amount - otherwise the calculator below reports
+        // the mismatch as usual instead of it being hidden in the last share.
+        if (conversion.IsConverted && request.SplitType == SplitType.ExactAmount &&
+            splitInputs.Count > 0 && splitInputs.Sum(p => p.Amount ?? 0m) == request.Amount)
+        {
+            splitInputs = splitInputs
+                .Select(p => p with { Amount = conversion.Convert(p.Amount ?? 0m) })
+                .ToList();
+            var difference = conversion.Amount - splitInputs.Sum(p => p.Amount ?? 0m);
+            if (difference != 0m)
+                splitInputs[^1] = splitInputs[^1] with { Amount = splitInputs[^1].Amount + difference };
+        }
+
+        var splits = ExpenseSplitCalculator.Calculate(conversion.Amount, request.SplitType, splitInputs);
 
         // Attach the tracked user to every split, so the response can show names.
         foreach (var split in splits)
             split.User = usersById[split.UserId];
 
         return splits;
+    }
+
+    // ---------- currencies ----------
+
+    /// <summary>
+    /// The expense in the group's currency. Another currency is converted with today's rate,
+    /// unless an edited expense keeps its original currency and amount - then its rate stays.
+    /// </summary>
+    private async Task<CurrencyConversion> ConvertAsync(
+        CreateGroupExpenseRequest request,
+        string groupCurrency,
+        GroupExpense? previous,
+        CancellationToken cancellationToken)
+    {
+        var currency = string.IsNullOrWhiteSpace(request.Currency)
+            ? groupCurrency
+            : request.Currency.Trim().ToUpperInvariant();
+
+        if (string.Equals(currency, groupCurrency, StringComparison.OrdinalIgnoreCase))
+            return CurrencyConversion.None(request.Amount);
+
+        if (previous is { OriginalCurrency: { } previousCurrency, OriginalAmount: { } previousAmount, ExchangeRate: { } previousRate }
+            && previousCurrency == currency && previousAmount == request.Amount)
+            return CurrencyConversion.With(request.Amount, currency, previousRate, previous.ExchangeRateDate);
+
+        var rates = await _exchangeRates.GetRatesAsync(cancellationToken);
+        if (!rates.TryGetRate(currency, groupCurrency, out var rate))
+            throw new ConflictException(
+                $"Курс за валуту {currency} тренутно није доступан, па трошак не може бити унесен у тој валути. " +
+                $"Унеси га у валути групе ({groupCurrency}) или покушај касније.",
+                ErrorCodes.ExchangeRateUnavailable);
+
+        var conversion = CurrencyConversion.With(request.Amount, currency, rate, rates.UpdatedAt);
+        if (conversion.Amount <= 0m)
+            throw new ConflictException("Износ је премали да би се претворио у валуту групе.", ErrorCodes.ExchangeRateUnavailable);
+
+        return conversion;
+    }
+
+    /// <summary>How an expense's amount becomes an amount in the group's currency.</summary>
+    private sealed record CurrencyConversion(
+        decimal Amount,
+        string? OriginalCurrency,
+        decimal? OriginalAmount,
+        decimal? Rate,
+        DateTime? RateDate)
+    {
+        public bool IsConverted => OriginalCurrency is not null;
+
+        public static CurrencyConversion None(decimal amount) => new(amount, null, null, null, null);
+
+        public static CurrencyConversion With(decimal originalAmount, string currency, decimal rate, DateTime? rateDate)
+            => new(Math.Round(originalAmount * rate, 2, MidpointRounding.AwayFromZero), currency, originalAmount, rate, rateDate);
+
+        public decimal Convert(decimal amount)
+            => Rate is { } rate ? Math.Round(amount * rate, 2, MidpointRounding.AwayFromZero) : amount;
+
+        public void ApplyTo(GroupExpense expense)
+        {
+            expense.Amount = Amount;
+            expense.OriginalCurrency = OriginalCurrency;
+            expense.OriginalAmount = OriginalAmount;
+            expense.ExchangeRate = Rate;
+            expense.ExchangeRateDate = RateDate;
+        }
     }
 }

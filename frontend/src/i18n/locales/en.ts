@@ -436,6 +436,17 @@ export const en: Translation = {
     statusExactInvalid: 'Every participant needs an amount above zero.',
     statusExactMissing: '{{sum}} of {{total}} is assigned. {{diff}} is missing.',
     statusExactOver: '{{sum}} is assigned, {{diff}} more than the total.',
+    currency: 'Currency',
+    rateLoading: 'Loading today’s rate…',
+    rateTotal: '≈ {{amount}}',
+    rateLine: '{{from}} = {{to}}',
+    rateDate: '(rate of {{date}})',
+    rateSaved: '(rate of {{date}}, kept from when it was entered)',
+    rateFixed: '(fixed rate)',
+    rateHint:
+      'The group keeps its expenses in {{groupCurrency}}: the amount and the shares are converted at the rate of the moment they are entered, and that rate does not change later.',
+    rateUnavailable:
+      'The rate for {{currency}} is not available right now. Enter the expense in the group’s currency ({{groupCurrency}}) or try again later.',
     receiptHint: 'JPEG, PNG or WebP, up to 5 MB. All group members can see it.',
     readOnly: 'Only the member who paid this expense or the group owner can change it.',
     delete: 'Delete',
@@ -459,6 +470,7 @@ export const en: Translation = {
     loadMore: 'Show more',
     loading: 'Loading…',
     loadError: 'Group expenses could not be loaded.',
+    paidIn: 'paid {{amount}}',
     comments_one: '{{count}} comment',
     comments_few: '{{count}} comments',
     comments_other: '{{count}} comments',
@@ -771,6 +783,7 @@ export const en: Translation = {
     unconverted_few: '{{count}} expenses in currencies without a known rate are not included.',
     unconverted_other: '{{count}} expenses in currencies without a known rate are not included.',
     ratesSource: 'Rates by ExchangeRate-API',
+    currency: 'Show in',
   },
   reports: {
     button: 'Download report',
@@ -974,6 +987,7 @@ export const en: Translation = {
     analyticsRangeRequired: 'Enter both dates.',
     analyticsRangeOrder: 'The start date cannot be after the end date.',
     analyticsRangeTooLong: 'A period can be at most one year long.',
+    exchangeRateUnavailable: 'The rate for this currency is not available right now. Enter the expense in the group’s currency or try again later.',
   },
   notificationType: {
     AccountActivation: 'Account',

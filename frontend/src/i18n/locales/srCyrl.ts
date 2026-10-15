@@ -440,6 +440,17 @@ export const srCyrl = {
     statusExactInvalid: 'Сваки учесник мора имати износ већи од нуле.',
     statusExactMissing: 'Распоређено је {{sum}} од {{total}}. Недостаје {{diff}}.',
     statusExactOver: 'Распоређено је {{sum}}, што је {{diff}} више од укупног износа.',
+    currency: 'Валута',
+    rateLoading: 'Учитавам данашњи курс…',
+    rateTotal: '≈ {{amount}}',
+    rateLine: '{{from}} = {{to}}',
+    rateDate: '(курс од {{date}})',
+    rateSaved: '(курс од {{date}}, сачуван при уносу)',
+    rateFixed: '(фиксни курс)',
+    rateHint:
+      'Група води трошкове у валути {{groupCurrency}}: износ и удјели се претварају по курсу у тренутку уноса и тај курс се касније не мијења.',
+    rateUnavailable:
+      'Курс за {{currency}} тренутно није доступан. Унеси трошак у валути групе ({{groupCurrency}}) или покушај поново касније.',
     receiptHint: 'JPEG, PNG или WebP, највише 5 MB. Могу је видјети сви чланови групе.',
     readOnly: 'Овај трошак може мијењати само члан који га је платио или власник групе.',
     delete: 'Обриши',
@@ -463,6 +474,7 @@ export const srCyrl = {
     loadMore: 'Прикажи још',
     loading: 'Учитавање…',
     loadError: 'Трошкови групе нису учитани.',
+    paidIn: 'плаћено {{amount}}',
     comments_one: '{{count}} коментар',
     comments_few: '{{count}} коментара',
     comments_other: '{{count}} коментара',
@@ -775,6 +787,7 @@ export const srCyrl = {
     unconverted_few: '{{count}} трошка у валути без познатог курса нису урачуната.',
     unconverted_other: '{{count}} трошкова у валути без познатог курса није урачунато.',
     ratesSource: 'Курсеви: ExchangeRate-API',
+    currency: 'Валута приказа',
   },
   reports: {
     button: 'Преузми извјештај',
@@ -978,6 +991,8 @@ export const srCyrl = {
     analyticsRangeRequired: 'Унеси оба датума.',
     analyticsRangeOrder: 'Почетни датум не може бити послије крајњег.',
     analyticsRangeTooLong: 'Период може трајати највише годину дана.',
+    exchangeRateUnavailable:
+      'Курс за изабрану валуту тренутно није доступан. Унеси трошак у валути групе или покушај поново касније.',
   },
   notificationType: {
     AccountActivation: 'Налог',

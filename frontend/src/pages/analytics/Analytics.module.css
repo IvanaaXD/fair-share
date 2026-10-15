@@ -1,4 +1,16 @@
 /* ---------- period filter: one row above everything it scopes ---------- */
+/* Currency and the report button, at the right of the page title. */
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.currencySelect {
+  min-width: 150px;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
