@@ -18,5 +18,8 @@ public enum NotificationType
     RecurringExpenseCreated,
 
     // Another member added a group expense in which this user takes part. Also at the end.
-    GroupExpenseAdded
+    GroupExpenseAdded,
+
+    // A member this user owes money to sent a reminder. Also at the end.
+    DebtReminder
 }

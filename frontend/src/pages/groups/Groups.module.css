@@ -924,3 +924,14 @@
   gap: 6px;
   width: 100%;
 }
+
+/* A reminder was sent less than 24 hours ago: shown instead of the "Remind" button. */
+.reminderSent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 4px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}

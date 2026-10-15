@@ -48,6 +48,7 @@ export const AUDIT_VERBS = [
   'DeleteImage',
   'Generate',
   'MarkSettled',
+  'SendReminder',
   'PayWithCard',
   'Parse',
   'MarkAsRead',
