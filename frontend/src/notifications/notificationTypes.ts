@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  BellRing,
   CircleCheck,
   CreditCard,
   KeyRound,
@@ -25,6 +26,7 @@ const TYPES: NotificationType[] = [
   'GroupMembershipChanged',
   'RecurringExpenseCreated',
   'GroupExpenseAdded',
+  'DebtReminder',
 ];
 
 export const NOTIFICATION_ICONS: Record<NotificationType, LucideIcon> = {
@@ -38,10 +40,11 @@ export const NOTIFICATION_ICONS: Record<NotificationType, LucideIcon> = {
   GroupMembershipChanged: UserCog,
   RecurringExpenseCreated: Repeat,
   GroupExpenseAdded: ReceiptText,
+  DebtReminder: BellRing,
 };
 
 /** Notifications that need attention are marked in amber (budget over limit, someone owes). */
-export const WARNING_TYPES = new Set<NotificationType>(['BudgetExceeded', 'SettlementSuggested']);
+export const WARNING_TYPES = new Set<NotificationType>(['BudgetExceeded', 'SettlementSuggested', 'DebtReminder']);
 
 export function notificationTypeName(type: AppNotification['type']): NotificationType {
   return typeof type === 'number' ? (TYPES[type] ?? 'GroupInvite') : type;

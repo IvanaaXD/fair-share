@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Check, ChevronDown, CreditCard, QrCode, ScanLine } from 'lucide-react';
+import { ArrowRight, BellRing, Check, ChevronDown, CreditCard, QrCode, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { settlementsApi } from '../../api/groupExpenses';
 import type { GroupMember, Settlement } from '../../api/types';
@@ -12,10 +12,20 @@ import { balanceStatus, initials, isSettledStatus, memberColor, settlementsAreSt
 import type { PayTab } from '../payments/PayDialog';
 import { useFormatters } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
+import { ReminderDialog } from './ReminderDialog';
 import styles from './Groups.module.css';
+
+const REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+/** The backend stores UTC; a value without a zone is read as UTC too. */
+function asUtc(value: string): string {
+  return /[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`;
+}
 
 interface SettlementsPanelProps {
   groupId: string;
+  /** For the text of a debt reminder. */
+  groupName: string;
   currency: string;
   /** Loaded by the group page (it also needs them for the "your balance" band); null = failed. */
   settlements: Settlement[] | null;
@@ -35,6 +45,7 @@ interface SettlementsPanelProps {
 /** "Who pays whom" - the debt simplification result, and marking payments as done. */
 export function SettlementsPanel({
   groupId,
+  groupName,
   currency,
   settlements: loadedSettlements,
   loadError,
@@ -56,6 +67,16 @@ export function SettlementsPanel({
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<Settlement | null>(null);
   const [showSettled, setShowSettled] = useState(false);
+  const [reminding, setReminding] = useState<Settlement | null>(null);
+  // The moment the panel was shown; enough to tell whether the last reminder is older than 24 h.
+  const [now] = useState(() => Date.now());
+
+  /** When the next reminder is possible, or null if one can be sent now. */
+  const nextReminderAt = (settlement: Settlement): number | null => {
+    if (!settlement.lastReminderSentAt) return null;
+    const next = Date.parse(asUtc(settlement.lastReminderSentAt)) + REMINDER_INTERVAL_MS;
+    return next > now ? next : null;
+  };
 
   const memberById = new Map(members.map((member) => [member.userId, member]));
   const shortName = (userId: string, fallback: string) => {
@@ -142,10 +163,18 @@ export function SettlementsPanel({
                         </Button>
                       </>
                     ) : (
-                      <Button variant="secondary" className={styles.transferButton} onClick={() => onPay(settlement, 'qr')} disabled={stale}>
-                        <QrCode size={16} aria-hidden="true" />
-                        {t('settlements.showQr')}
-                      </Button>
+                      <>
+                        <RemindButton
+                          settlement={settlement}
+                          nextAt={nextReminderAt(settlement)}
+                          disabled={stale}
+                          onClick={() => setReminding(settlement)}
+                        />
+                        <Button variant="secondary" className={styles.transferButton} onClick={() => onPay(settlement, 'qr')} disabled={stale}>
+                          <QrCode size={16} aria-hidden="true" />
+                          {t('settlements.showQr')}
+                        </Button>
+                      </>
                     )}
                     <Button variant="secondary" className={styles.transferButton} onClick={() => setConfirming(settlement)}>
                       <Check size={16} aria-hidden="true" />
@@ -211,6 +240,21 @@ export function SettlementsPanel({
         </div>
       )}
 
+      {reminding && (
+        <ReminderDialog
+          groupId={groupId}
+          groupName={localize(groupName)}
+          settlement={reminding}
+          debtorName={localize(reminding.debtorName)}
+          amount={money(reminding.amount)}
+          onClose={() => setReminding(null)}
+          onSent={(message) => {
+            setReminding(null);
+            onChanged(message);
+          }}
+        />
+      )}
+
       {confirming && (
         <ConfirmDialog
           title={t('settlements.confirmTitle')}
@@ -233,5 +277,38 @@ export function SettlementsPanel({
         </ConfirmDialog>
       )}
     </section>
+  );
+}
+
+interface RemindButtonProps {
+  settlement: Settlement;
+  /** When the next reminder is possible (ms); null if one can be sent now. */
+  nextAt: number | null;
+  disabled: boolean;
+  onClick: () => void;
+}
+
+/** "Remind" - or, within 24 hours of the last reminder, when it was sent and when the next one is possible. */
+function RemindButton({ settlement, nextAt, disabled, onClick }: RemindButtonProps) {
+  const { t } = useTranslation();
+  const format = useFormatters();
+
+  if (nextAt !== null && settlement.lastReminderSentAt) {
+    const sent = format.dateTime(asUtc(settlement.lastReminderSentAt));
+    const next = format.dateTime(new Date(nextAt).toISOString());
+    return (
+      <span className={styles.reminderSent} title={t('settlements.remindAgainAt', { when: next })}>
+        <BellRing size={15} aria-hidden="true" />
+        {t('settlements.reminderSentAt', { when: sent })}
+        <span className="visually-hidden">. {t('settlements.remindAgainAt', { when: next })}</span>
+      </span>
+    );
+  }
+
+  return (
+    <Button variant="secondary" className={styles.transferButton} onClick={onClick} disabled={disabled}>
+      <BellRing size={16} aria-hidden="true" />
+      {t('settlements.remind')}
+    </Button>
   );
 }

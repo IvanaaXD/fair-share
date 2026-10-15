@@ -31,12 +31,16 @@ export const groupExpensesApi = {
 /** SettlementController (balances are in groupsApi). */
 export const settlementsApi = {
   list: (groupId: string, status?: SettlementStatus, signal?: AbortSignal) =>
-    apiRequest<Settlement[]>(`/group/${groupId}/settlements${toQueryString({ status })}`, { signal }),
+    apiRequest<Settlement[]>(`/groups/${groupId}/settlements${toQueryString({ status })}`, { signal }),
 
   /** Replaces the earlier unsettled suggestions. useExact: exact algorithm instead of the greedy one. */
   generate: (groupId: string, useExact: boolean) =>
-    apiRequest<Settlement[]>(`/group/${groupId}/settlements/generate${toQueryString({ useExact })}`, { method: 'POST' }),
+    apiRequest<Settlement[]>(`/groups/${groupId}/settlements/generate${toQueryString({ useExact })}`, { method: 'POST' }),
 
   settle: (groupId: string, settlementId: string) =>
-    apiRequest<Settlement>(`/group/${groupId}/settlements/${settlementId}/settle`, { method: 'POST' }),
+    apiRequest<Settlement>(`/groups/${groupId}/settlements/${settlementId}/settle`, { method: 'POST' }),
+
+  /** Only the creditor; at most once every 24 hours per settlement. */
+  remind: (groupId: string, settlementId: string, message: string | null) =>
+    apiRequest<Settlement>(`/groups/${groupId}/settlements/${settlementId}/remind`, { method: 'POST', body: { message } }),
 };

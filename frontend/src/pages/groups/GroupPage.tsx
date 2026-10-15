@@ -313,6 +313,7 @@ export function GroupPage() {
         <div className={styles.column}>
           <SettlementsPanel
             groupId={group.id}
+            groupName={group.name}
             currency={group.currency}
             settlements={current.settlements}
             loadError={current.settlementsError}

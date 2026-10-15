@@ -1,0 +1,46 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.intro {
+  color: var(--color-text-muted);
+}
+
+.textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 104px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-md);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* The surrounding box already shows focus. */
+.textarea:focus-visible {
+  outline: none;
+}
+
+.counter {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.counterOver {
+  color: var(--color-negative-text);
+  font-weight: 600;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}

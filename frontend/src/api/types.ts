@@ -285,6 +285,8 @@ export interface Settlement {
   amount: number;
   status: SettlementStatus | number;
   createdAt: string;
+  /** When the creditor last sent a reminder (UTC); null if never. One per 24 hours. */
+  lastReminderSentAt?: string | null;
 }
 
 // ---------- payments (QrController, PaymentCardController, PaymentController) ----------
@@ -387,7 +389,8 @@ export type NotificationType =
   | 'SettlementCompleted'
   | 'GroupMembershipChanged'
   | 'RecurringExpenseCreated'
-  | 'GroupExpenseAdded';
+  | 'GroupExpenseAdded'
+  | 'DebtReminder';
 
 export interface AppNotification {
   id: string;
