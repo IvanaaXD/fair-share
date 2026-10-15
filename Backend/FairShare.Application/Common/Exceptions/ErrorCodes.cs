@@ -54,6 +54,8 @@ public static class ErrorCodes
     // ---------- budgets, notifications ----------
     public const string BudgetExists = "budgetExists";
     public const string BudgetNotFound = "budgetNotFound";
+    public const string BudgetMonthClosed = "budgetMonthClosed";
+    public const string BudgetMonthTooFar = "budgetMonthTooFar";
     public const string InvalidMonth = "invalidMonth";
     public const string NotificationNotFound = "notificationNotFound";
 

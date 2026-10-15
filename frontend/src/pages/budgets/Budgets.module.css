@@ -27,9 +27,14 @@
   cursor: pointer;
 }
 
-.monthButton:hover {
+.monthButton:hover:not(:disabled) {
   background: var(--color-track);
   color: var(--color-text);
+}
+
+.monthButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .monthName {
@@ -40,6 +45,29 @@
 
 .monthName::first-letter {
   text-transform: uppercase;
+}
+
+/* A past month: budgets are history and can only be viewed. */
+.pastNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: -4px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.linkButton {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
 }
 
 /* ---------- totals ---------- */
