@@ -5,6 +5,7 @@ import type { Category } from '../../api/types';
 import { SelectField } from '../../components/ui/SelectField';
 import { TextField } from '../../components/ui/TextField';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { todayDateOnly } from '../../i18n/format';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import { hasActiveFilters, isDateRangeValid, type ExpenseFilters, type SortOption, type TypeOption } from './expenseFilters';
 import styles from './ExpensesPage.module.css';
@@ -35,6 +36,8 @@ export function ExpenseFiltersBar({
   const localize = useLocalizedText();
   const isWide = useMediaQuery('(min-width: 768px)');
   const [expanded, setExpanded] = useState(false);
+  // No expense is in the future, so the date pickers stop at today.
+  const [today] = useState(() => todayDateOnly());
   const moreId = useId();
 
   const active = hasActiveFilters({ ...filters, search: searchText });
@@ -78,7 +81,7 @@ export function ExpenseFiltersBar({
             type="date"
             label={t('expenses.filters.from')}
             value={filters.from}
-            max={filters.to || undefined}
+            max={filters.to && filters.to < today ? filters.to : today}
             onChange={(event) => onChange({ from: event.target.value })}
           />
           <TextField
@@ -87,6 +90,7 @@ export function ExpenseFiltersBar({
             label={t('expenses.filters.to')}
             value={filters.to}
             min={filters.from || undefined}
+            max={today}
             onChange={(event) => onChange({ to: event.target.value })}
             errors={isDateRangeValid(filters) ? [] : [t('expenses.filters.dateRange')]}
           />

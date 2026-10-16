@@ -83,9 +83,11 @@ interface GroupExpenseListProps {
   myId: string | undefined;
   colorOf: Map<string, string>;
   onOpen: (expense: GroupExpense) => void;
+  /** Shown instead of "add the first one" when no expense can be added yet (one member). */
+  emptyText?: string;
 }
 
-export function GroupExpenseList({ groupId, currency, version, myId, colorOf, onOpen }: GroupExpenseListProps) {
+export function GroupExpenseList({ groupId, currency, version, myId, colorOf, onOpen, emptyText }: GroupExpenseListProps) {
   const { t } = useTranslation();
   const errorMessage = useErrorMessage();
   const localize = useLocalizedText();
@@ -112,7 +114,7 @@ export function GroupExpenseList({ groupId, currency, version, myId, colorOf, on
     return (
       <div className={styles.soon}>
         <ReceiptText size={22} strokeWidth={1.75} aria-hidden="true" />
-        <p>{t('groupExpenses.empty')}</p>
+        <p>{emptyText ?? t('groupExpenses.empty')}</p>
       </div>
     );
   }
