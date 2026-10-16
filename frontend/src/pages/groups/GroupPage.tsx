@@ -182,6 +182,29 @@ export function GroupPage() {
     return member ? fullName(member) : localize(fallback);
   };
 
+  // ---------- what the backend would refuse ----------
+  // The buttons are disabled with the reason next to them instead of letting the user try and
+  // get an error. Without balances (they failed to load) nothing is disabled - the backend
+  // still checks everything.
+  const balancesKnown = current.balances !== null;
+  const hasOpenBalance = (userId: string) =>
+    balancesKnown && balanceStatus(balanceOf.get(userId) ?? 0) !== 'settled';
+  const balanceText = (userId: string) => {
+    const balance = balanceOf.get(userId) ?? 0;
+    const amount = money(Math.abs(balance));
+    if (userId === user?.id) return t(balance < 0 ? 'group.blockedYouOwe' : 'group.blockedYouAreOwed', { amount });
+    const member = members.find((m) => m.userId === userId);
+    const name = member ? fullName(member) : '';
+    return t(balance < 0 ? 'group.balanceOwes' : 'group.balanceIsOwed', { name, amount });
+  };
+  const isAlone = members.length < 2;
+  const leaveBlockedReason = isAlone
+    ? t('group.leaveAlone')
+    : user && hasOpenBalance(user.id)
+      ? t('group.leaveBlocked', { balance: balanceText(user.id) })
+      : null;
+  const deleteBlockedReason = members.some((member) => hasOpenBalance(member.userId)) ? t('group.deleteBlocked') : null;
+
   const goToGroups = (message: string) => {
     void reloadMyGroups();
     const state: GroupsPageState = { notice: message };
@@ -229,7 +252,13 @@ export function GroupPage() {
           <Button variant="secondary" icon={<UserPlus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'invite' })}>
             {t('group.invite')}
           </Button>
-          <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setDialog({ kind: 'expense', expense: null })}>
+          {/* An expense needs at least two participants. */}
+          <Button
+            icon={<Plus size={18} aria-hidden="true" />}
+            onClick={() => setDialog({ kind: 'expense', expense: null })}
+            disabled={isAlone}
+            title={isAlone ? t('group.aloneHint') : undefined}
+          >
             {t('groupExpense.add')}
           </Button>
         </div>
@@ -260,6 +289,14 @@ export function GroupPage() {
             <h2 id="expenses-title" className={styles.panelTitle}>
               {t('group.expensesTitle')}
             </h2>
+            {isAlone && (
+              <div className={styles.aloneNote}>
+                <p>{t('group.aloneHint')}</p>
+                <Button variant="secondary" icon={<UserPlus size={17} aria-hidden="true" />} onClick={() => setDialog({ kind: 'invite' })}>
+                  {t('group.invite')}
+                </Button>
+              </div>
+            )}
             <GroupExpenseList
               groupId={group.id}
               currency={group.currency}
@@ -267,6 +304,7 @@ export function GroupPage() {
               myId={user?.id}
               colorOf={colorOf}
               onOpen={(expense) => setDialog({ kind: 'expense', expense })}
+              emptyText={isAlone ? t('groupExpenses.emptyAlone') : undefined}
             />
           </section>
 
@@ -292,17 +330,26 @@ export function GroupPage() {
                         {member.email} · {t('group.joined', { date: format.longDate(member.joinedAt) })}
                       </span>
                     </span>
-                    {iAmOwner && !isMe && (
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        aria-label={t('group.removeMember', { name: fullName(member) })}
-                        title={t('group.removeMember', { name: fullName(member) })}
-                        onClick={() => setDialog({ kind: 'remove', member })}
-                      >
-                        <UserMinus size={18} aria-hidden="true" />
-                      </button>
-                    )}
+                    {iAmOwner && !isMe && (() => {
+                      const label = t('group.removeMember', { name: fullName(member) });
+                      const blocked = hasOpenBalance(member.userId)
+                        ? t('group.removeBlocked', { balance: balanceText(member.userId) })
+                        : null;
+                      // A disabled button shows no tooltip in some browsers, so the reason is on the wrapper.
+                      return (
+                        <span title={blocked ?? label}>
+                          <button
+                            type="button"
+                            className={styles.iconButton}
+                            aria-label={blocked ? `${label}. ${blocked}` : label}
+                            onClick={() => setDialog({ kind: 'remove', member })}
+                            disabled={blocked !== null}
+                          >
+                            <UserMinus size={18} aria-hidden="true" />
+                          </button>
+                        </span>
+                      );
+                    })()}
                   </li>
                 );
               })}
@@ -344,9 +391,16 @@ export function GroupPage() {
             <div className={styles.settingRow}>
               <div>
                 <p className={styles.settingName}>{t('group.leave')}</p>
-                <p className={styles.settingHint}>{t('group.leaveHint')}</p>
+                <p className={leaveBlockedReason ? styles.settingBlocked : styles.settingHint}>
+                  {leaveBlockedReason ?? t('group.leaveHint')}
+                </p>
               </div>
-              <Button variant="secondary" icon={<LogOut size={17} aria-hidden="true" />} onClick={() => setDialog({ kind: 'leave' })}>
+              <Button
+                variant="secondary"
+                icon={<LogOut size={17} aria-hidden="true" />}
+                onClick={() => setDialog({ kind: 'leave' })}
+                disabled={leaveBlockedReason !== null}
+              >
                 {t('group.leave')}
               </Button>
             </div>
@@ -354,9 +408,16 @@ export function GroupPage() {
               <div className={styles.settingRow}>
                 <div>
                   <p className={styles.settingName}>{t('group.delete')}</p>
-                  <p className={styles.settingHint}>{t('group.deleteHint')}</p>
+                  <p className={deleteBlockedReason ? styles.settingBlocked : styles.settingHint}>
+                    {deleteBlockedReason ?? t('group.deleteHint')}
+                  </p>
                 </div>
-                <Button variant="danger" icon={<Trash2 size={17} aria-hidden="true" />} onClick={() => setDialog({ kind: 'delete' })}>
+                <Button
+                  variant="danger"
+                  icon={<Trash2 size={17} aria-hidden="true" />}
+                  onClick={() => setDialog({ kind: 'delete' })}
+                  disabled={deleteBlockedReason !== null}
+                >
                   {t('group.delete')}
                 </Button>
               </div>

@@ -1,4 +1,5 @@
 import type { AnalyticsPeriod } from '../../api/types';
+import { todayDateOnly } from '../../i18n/format';
 
 /** The ready-made periods, in the order of the buttons; "Custom" comes last. */
 export const PRESETS: Exclude<AnalyticsPeriod, 'Custom'>[] = ['LastWeek', 'LastMonth', 'Last3Months', 'Last6Months', 'LastYear'];
@@ -37,12 +38,16 @@ export function periodToParams(selection: PeriodSelection): Record<string, strin
   return selection.period === DEFAULT_PERIOD ? {} : { period: selection.period };
 }
 
-export type RangeError = 'required' | 'order' | 'tooLong';
+export type RangeError = 'required' | 'order' | 'future' | 'tooLong';
 
-/** The same rules as the backend (AnalyticsPeriodResolver): both dates, in order, at most a year apart. */
-export function validateCustomRange(from: string, to: string): RangeError | null {
+/**
+ * The same rules as the backend (AnalyticsPeriodResolver): both dates, in order, at most a year
+ * apart. The end cannot be in the future either - there are no expenses there yet.
+ */
+export function validateCustomRange(from: string, to: string, today = todayDateOnly()): RangeError | null {
   if (!from || !to) return 'required';
   if (from > to) return 'order';
+  if (to > today) return 'future';
   const limit = new Date(`${from}T00:00:00Z`);
   limit.setUTCFullYear(limit.getUTCFullYear() + 1);
   if (new Date(`${to}T00:00:00Z`) > limit) return 'tooLong';

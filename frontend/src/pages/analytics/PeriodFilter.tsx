@@ -6,9 +6,10 @@ import { todayDateOnly } from '../../i18n/format';
 import { PRESETS, validateCustomRange, type PeriodSelection, type RangeError } from './analyticsPeriod';
 import styles from './Analytics.module.css';
 
-const RANGE_ERRORS: Record<RangeError, 'analytics.errorRequired' | 'analytics.errorOrder' | 'analytics.errorTooLong'> = {
+const RANGE_ERRORS: Record<RangeError, 'analytics.errorRequired' | 'analytics.errorOrder' | 'analytics.errorFuture' | 'analytics.errorTooLong'> = {
   required: 'analytics.errorRequired',
   order: 'analytics.errorOrder',
+  future: 'analytics.errorFuture',
   tooLong: 'analytics.errorTooLong',
 };
 
@@ -86,7 +87,7 @@ export function PeriodFilter({ selection, onSelect }: PeriodFilterProps) {
             <input
               type="date"
               value={draft.from}
-              max={draft.to || undefined}
+              max={draft.to && draft.to < today ? draft.to : today}
               aria-invalid={draftError !== null}
               aria-describedby={draftError ? 'analytics-range-error' : undefined}
               onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))}
@@ -98,6 +99,7 @@ export function PeriodFilter({ selection, onSelect }: PeriodFilterProps) {
               type="date"
               value={draft.to}
               min={draft.from || undefined}
+              max={today}
               aria-invalid={draftError !== null}
               aria-describedby={draftError ? 'analytics-range-error' : undefined}
               onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))}
