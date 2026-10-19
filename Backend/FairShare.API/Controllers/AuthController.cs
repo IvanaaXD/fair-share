@@ -31,7 +31,7 @@ namespace FairShare.API.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
         {
             await _identityService.RegisterAsync(request, cancellationToken);
-            return Ok(new { message = "Налог је креиран. Линк за активацију је послат на вашу e-mail адресу." });
+            return Ok(new { message = "The account has been created. An activation link has been sent to your e-mail address." });
         }
 
         /// <summary>Activates the account using the token from the activation link.</summary>
@@ -40,7 +40,7 @@ namespace FairShare.API.Controllers
         public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request, CancellationToken cancellationToken)
         {
             await _identityService.ConfirmEmailAsync(request, cancellationToken);
-            return Ok(new { message = "Налог је активиран. Сада се можете пријавити." });
+            return Ok(new { message = "The account has been activated. You can now log in." });
         }
 
         /// <summary>Sends a new activation link. The answer is the same whether or not the address is registered.</summary>
@@ -49,7 +49,7 @@ namespace FairShare.API.Controllers
         public async Task<IActionResult> ResendConfirmation([FromBody] EmailRequest request, CancellationToken cancellationToken)
         {
             await _identityService.ResendConfirmationAsync(request, cancellationToken);
-            return Ok(new { message = "Ако налог са овом адресом чека активацију, послат је нови линк." });
+            return Ok(new { message = "If an account with this address is pending activation, a new link has been sent." });
         }
 
         /// <summary>Signs in. Limited to 10 attempts per minute per IP address, which makes guessing passwords impractical.</summary>
@@ -87,7 +87,7 @@ namespace FairShare.API.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] EmailRequest request, CancellationToken cancellationToken)
         {
             await _identityService.ForgotPasswordAsync(request, cancellationToken);
-            return Ok(new { message = "Ако налог са овом адресом постоји, послат је линк за промјену лозинке." });
+            return Ok(new { message = "If an account with this address exists, a password reset link has been sent." });
         }
 
         /// <summary>Sets a new password using the token from the reset link.</summary>
@@ -96,7 +96,7 @@ namespace FairShare.API.Controllers
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
         {
             await _identityService.ResetPasswordAsync(request, cancellationToken);
-            return Ok(new { message = "Лозинка је промијењена. Пријавите се новом лозинком." });
+            return Ok(new { message = "The password has been changed. Please log in with your new password." });
         }
     }
 }

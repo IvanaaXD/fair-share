@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FairShare.API.Controllers;
 
 [ApiController]
-[Route("api/notifications")]
+[Route("api/[controller]")]
 [Authorize]
 public class NotificationController : ControllerBase
 {

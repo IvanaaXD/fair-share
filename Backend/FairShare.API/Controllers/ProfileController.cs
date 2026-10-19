@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FairShare.API.Controllers;
 
 [ApiController]
-[Route("api/profile")]
+[Route("api/[controller]")]
 [Authorize]
 public class ProfileController : ControllerBase
 {

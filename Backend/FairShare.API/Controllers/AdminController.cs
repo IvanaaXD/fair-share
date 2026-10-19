@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FairShare.API.Controllers;
 
 [ApiController]
-[Route("api/admin")]
+[Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {

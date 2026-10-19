@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FairShare.Api.Controllers;
 
 [ApiController]
-[Route("api/account")]
+[Route("api/[controller]")]
 [Authorize]
 public class AccountController : ControllerBase
 {

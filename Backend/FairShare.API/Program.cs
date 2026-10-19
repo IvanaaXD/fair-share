@@ -14,7 +14,7 @@ builder.Services
 
 var app = builder.Build();
 
-// ---------- request pipeline (the order matters) ----------
+// ---------- request pipeline ----------
 if (app.Configuration.IsBehindReverseProxy())
     app.UseForwardedHeaders();
 
@@ -27,7 +27,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// CORS -> authentication -> rate limiting (knows the user) -> authorization.
+// CORS -> authentication -> rate limiting (knows the user) -> authorization
 app.UseCors(WebApiExtensions.FrontendCorsPolicy);
 app.UseAuthentication();
 app.UseRateLimiter();
