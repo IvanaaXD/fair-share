@@ -58,36 +58,36 @@ public class PaymentService : IPaymentService
         if (repeated is not null)
         {
             if (repeated.SettlementTransactionId != settlementTransactionId || repeated.PaymentCard.UserId != currentUserId)
-                throw new ConflictException("Кључ захтјева је већ искоришћен за друго плаћање.", ErrorCodes.PaymentKeyReused);
+                throw new ConflictException("The request key has already been used for another payment.", ErrorCodes.PaymentKeyReused);
             return await ToResponseAsync(repeated, cancellationToken);
         }
 
         var settlement = await _unitOfWork.SettlementTransactions.GetByIdWithDetailsAsync(settlementTransactionId, cancellationToken);
         if (settlement is null || settlement.GroupId != groupId)
-            throw new NotFoundException("Поравнање није пронађено.", ErrorCodes.SettlementNotFound);
+            throw new NotFoundException("Settlement not found.", ErrorCodes.SettlementNotFound);
 
         if (settlement.DebtorUserId != currentUserId)
-            throw new ForbiddenException("Картицом може платити само члан који дугује.", ErrorCodes.PaymentOnlyDebtor);
+            throw new ForbiddenException("Only the owing member can pay with a card.", ErrorCodes.PaymentOnlyDebtor);
 
         if (settlement.Status == SettlementStatus.Settled)
-            throw new ConflictException("Поравнање је већ измирено.", ErrorCodes.SettlementAlreadySettled);
+            throw new ConflictException("Settlement is already settled.", ErrorCodes.SettlementAlreadySettled);
 
         var card = await _unitOfWork.PaymentCards.GetByIdAsync(request.PaymentCardId, cancellationToken);
         if (card is null || card.UserId != currentUserId)
-            throw new NotFoundException("Картица није пронађена.", ErrorCodes.CardNotFound);
+            throw new NotFoundException("Card not found.", ErrorCodes.CardNotFound);
 
         if (card.ExpiryDate.Date < Now.Date)
-            throw new ConflictException("Картица је истекла. Изаберите другу картицу.", ErrorCodes.CardExpired);
+            throw new ConflictException("Card has expired. Select another card.", ErrorCodes.CardExpired);
 
         var group = await _unitOfWork.Groups.GetByIdAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
+            ?? throw new NotFoundException("Group not found.", ErrorCodes.GroupNotFound);
 
         // A settlement has at most one payment row (unique index). A failed attempt is reused.
         var payment = await _unitOfWork.Payments.GetBySettlementAsync(settlementTransactionId, cancellationToken);
         if (payment is { Status: PaymentStatus.Succeeded })
-            throw new ConflictException("Поравнање је већ плаћено картицом.", ErrorCodes.PaymentAlreadyPaid);
+            throw new ConflictException("Settlement is already paid by card.", ErrorCodes.PaymentAlreadyPaid);
         if (payment is { Status: PaymentStatus.Pending })
-            throw new ConflictException("Плаћање овог поравнања је већ у току. Сачекајте неколико секунди.", ErrorCodes.PaymentInProgress);
+            throw new ConflictException("Payment for this settlement is already in progress. Please wait a few seconds.", ErrorCodes.PaymentInProgress);
 
         // 2) Pending record first: if the server stops during the call, the attempt is still visible.
         if (payment is null)
@@ -139,13 +139,13 @@ public class PaymentService : IPaymentService
     {
         var settlement = await _unitOfWork.SettlementTransactions.GetByIdWithDetailsAsync(settlementTransactionId, cancellationToken);
         if (settlement is null || settlement.GroupId != groupId)
-            throw new NotFoundException("Поравнање није пронађено.", ErrorCodes.SettlementNotFound);
+            throw new NotFoundException("Settlement not found.", ErrorCodes.SettlementNotFound);
 
         if (settlement.DebtorUserId != currentUserId && settlement.CreditorUserId != currentUserId)
-            throw new ForbiddenException("Плаћање може видјети само члан који дугује или члан коме се дугује.", ErrorCodes.SettlementNotParticipant);
+            throw new ForbiddenException("Payment can only be viewed by the debtor or creditor member.", ErrorCodes.SettlementNotParticipant);
 
         var payment = await _unitOfWork.Payments.GetBySettlementAsync(settlementTransactionId, cancellationToken)
-            ?? throw new NotFoundException("Плаћање картицом за ово поравнање не постоји.", ErrorCodes.PaymentNotFound);
+            ?? throw new NotFoundException("Card payment for this settlement does not exist.", ErrorCodes.PaymentNotFound);
 
         // 5) No webhook for a while (the API was down, a wrong webhook address...): ask the provider.
         if (payment.Status == PaymentStatus.Pending && Now - payment.SubmittedAt >= ReconcileAfter)
@@ -289,8 +289,8 @@ public class PaymentService : IPaymentService
             await _notificationService.NotifyAsync(
                 settlement.DebtorUserId,
                 NotificationType.PaymentFailed,
-                "Плаћање није успјело",
-                $"Плаћање картицом {card} није успјело ({amount} у групи {groupName}). Покушај поново или изабери другу картицу.",
+                "Payment failed",
+                $"Card payment with {card} failed ({amount} in group {groupName}). Try again or select another card.",
                 cancellationToken,
                 sendEmail: false);
             return;
@@ -302,8 +302,8 @@ public class PaymentService : IPaymentService
             await _notificationService.NotifyAsync(
                 settlement.CreditorUserId,
                 NotificationType.PaymentConfirmation,
-                "Стигла је уплата",
-                $"Стигла је уплата картицом у групи {groupName}: {NotificationText.FullName(settlement.DebtorUser)}, {amount}. Поравнање је измирено.",
+                "Payment received",
+                $"A card payment has been received in group {groupName}: {NotificationText.FullName(settlement.DebtorUser)}, {amount}. The settlement is complete.",
                 cancellationToken);
         }
 
@@ -311,8 +311,8 @@ public class PaymentService : IPaymentService
         await _notificationService.NotifyAsync(
             settlement.DebtorUserId,
             NotificationType.PaymentConfirmation,
-            "Потврда плаћања",
-            $"Плаћање картицом {card} је успјело: {amount} за {NotificationText.FullName(settlement.CreditorUser)} у групи {groupName}.",
+            "Payment confirmation",
+            $"Card payment with {card} was successful: {amount} for {NotificationText.FullName(settlement.CreditorUser)} in group {groupName}.",
             cancellationToken);
     }
 

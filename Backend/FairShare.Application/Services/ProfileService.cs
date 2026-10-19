@@ -14,7 +14,7 @@ public class ProfileService : IProfileService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly IImageStorageService _images; // NEW
+    private readonly IImageStorageService _images; 
 
     public ProfileService(IUnitOfWork unitOfWork, IMapper mapper, IImageStorageService images)
     {

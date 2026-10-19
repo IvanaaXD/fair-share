@@ -37,7 +37,7 @@ public class CommentService : ICommentService
 
         // Loaded through the repository (tracked), so EF does not try to insert the user again.
         var author = await _unitOfWork.Users.GetByIdAsync(currentUserId, cancellationToken)
-            ?? throw new NotFoundException("Корисник није пронађен.", ErrorCodes.UserNotFound);
+            ?? throw new NotFoundException("User not found.", ErrorCodes.UserNotFound);
 
         var comment = _mapper.Map<Comment>(request);
         comment.CreatedAt = DateTime.UtcNow;
@@ -77,13 +77,13 @@ public class CommentService : ICommentService
         // A comment of another expense is reported exactly like a missing one.
         var comment = await _unitOfWork.Comments.GetByIdAsync(commentId, cancellationToken);
         if (comment is null || comment.GroupExpenseId != groupExpenseId)
-            throw new NotFoundException("Коментар није пронађен.", ErrorCodes.CommentNotFound);
+            throw new NotFoundException("Comment not found.", ErrorCodes.CommentNotFound);
 
         // The author, or the group owner who keeps the conversation tidy.
         var isOwner = group.Members.Any(m => m.UserId == currentUserId && m.Role == GroupRole.Owner);
         if (comment.UserId != currentUserId && !isOwner)
             throw new ForbiddenException(
-                "Коментар може обрисати само његов аутор или власник групе.", ErrorCodes.CommentDeleteForbidden);
+                "A comment can only be deleted by its author or the group owner.", ErrorCodes.CommentDeleteForbidden);
 
         _unitOfWork.Comments.Remove(comment);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -102,16 +102,16 @@ public class CommentService : ICommentService
         CancellationToken cancellationToken)
     {
         var group = await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
+            ?? throw new NotFoundException("Group not found.", ErrorCodes.GroupNotFound);
 
         if (group.Members.All(m => m.UserId != currentUserId))
             throw new ForbiddenException(
-                "Само члан групе може видјети или остављати коментаре на групне трошкове.", ErrorCodes.NotGroupMember);
+                "Only a group member can view or leave comments on group expenses.", ErrorCodes.NotGroupMember);
 
         // An expense of another group is reported exactly like a missing one.
         var expense = await _unitOfWork.GroupExpenses.GetWithDetailsAsync(groupExpenseId, cancellationToken);
         if (expense is null || expense.GroupId != groupId)
-            throw new NotFoundException("Групни трошак није пронађен.", ErrorCodes.GroupExpenseNotFound);
+            throw new NotFoundException("Group expense not found.", ErrorCodes.GroupExpenseNotFound);
 
         return (group, expense);
     }
@@ -134,7 +134,7 @@ public class CommentService : ICommentService
             ? comment.Text[..NotificationQuoteLength].TrimEnd() + "…"
             : comment.Text;
 
-        var message = $"Нови коментар на трошку {NotificationText.Quote(title)} у групи {NotificationText.Quote(group.Name)} " +
+        var message = $"New comment on expense {NotificationText.Quote(title)} in group {NotificationText.Quote(group.Name)} " +
                       $"({NotificationText.FullName(comment.User)}): {NotificationText.Quote(text)}";
 
         foreach (var userId in recipients)
@@ -142,7 +142,7 @@ public class CommentService : ICommentService
             await _notificationService.NotifyAsync(
                 userId,
                 NotificationType.GroupExpenseComment,
-                "Нови коментар",
+                "New comment",
                 message,
                 cancellationToken,
                 sendEmail: false);

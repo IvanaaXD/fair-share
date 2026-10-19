@@ -43,16 +43,16 @@ public class ReportService : IReportService
     }
 
     public async Task<ReportFile> GetSpendingReportAsync(
-        Guid currentUserId,
-        AnalyticsPeriod period,
-        DateTime? from,
-        DateTime? to,
-        string? currency,
-        ReportRequest request,
-        CancellationToken cancellationToken = default)
+            Guid currentUserId,
+            AnalyticsPeriod period,
+            DateTime? from,
+            DateTime? to,
+            string? currency,
+            ReportRequest request,
+            CancellationToken cancellationToken = default)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(currentUserId, cancellationToken)
-            ?? throw new NotFoundException("Корисник није пронађен.", ErrorCodes.UserNotFound);
+            ?? throw new NotFoundException("User not found.", ErrorCodes.UserNotFound);
 
         // Also validates the period (custom dates, at most one year), exactly like the analytics page.
         var analytics = await _analytics.GetSpendingAnalyticsAsync(
@@ -105,10 +105,10 @@ public class ReportService : IReportService
         CancellationToken cancellationToken = default)
     {
         var group = await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-            ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
+            ?? throw new NotFoundException("Group not found.", ErrorCodes.GroupNotFound);
 
         if (group.Members.All(m => m.UserId != currentUserId))
-            throw new ForbiddenException("Само члан групе може преузети извјештај групе.", ErrorCodes.NotGroupMember);
+            throw new ForbiddenException("Only a group member can download the group report.", ErrorCodes.NotGroupMember);
 
         var usersById = group.Members.ToDictionary(m => m.UserId, m => m.User);
 

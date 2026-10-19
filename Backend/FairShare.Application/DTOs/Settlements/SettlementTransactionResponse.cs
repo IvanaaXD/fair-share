@@ -14,7 +14,7 @@ public class SettlementTransactionResponse
     public SettlementStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    // NEW: when the creditor last sent a reminder for this debt (UTC); null if never.
+    // When the creditor last sent a reminder for this debt (UTC); null if never.
     // The app uses it to show "reminder sent" and when the next one is possible.
     public DateTime? LastReminderSentAt { get; set; }
 
