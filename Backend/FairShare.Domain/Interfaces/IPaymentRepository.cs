@@ -10,6 +10,6 @@ public interface IPaymentRepository : IRepository<Payment>
     /// <summary>The payment of a settlement, if there was an attempt (tracked, with card).</summary>
     Task<Payment?> GetBySettlementAsync(Guid settlementTransactionId, CancellationToken cancellationToken = default);
 
-    /// <summary>NEW: tracked, with card and the settlement with both of its users - everything a webhook needs.</summary>
+    /// <summary>Tracked, with card and the settlement with both of its users - everything a webhook needs.</summary>
     Task<Payment?> GetWithDetailsAsync(Guid paymentId, CancellationToken cancellationToken = default);
 }

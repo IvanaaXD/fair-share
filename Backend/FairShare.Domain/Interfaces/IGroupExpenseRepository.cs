@@ -6,7 +6,7 @@ public interface IGroupExpenseRepository : IRepository<GroupExpense>
 {
     Task<GroupExpense?> GetWithSplitsAsync(Guid groupExpenseId, CancellationToken cancellationToken = default);
 
-    // NEW: tracked expense with category, payer and splits (with users) - everything needed
+    // Tracked expense with category, payer and splits (with users) - everything needed
     // to edit the expense and to map it to a response without further queries.
     Task<GroupExpense?> GetWithDetailsAsync(Guid groupExpenseId, CancellationToken cancellationToken = default);
 

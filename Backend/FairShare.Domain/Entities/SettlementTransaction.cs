@@ -25,7 +25,7 @@ public class SettlementTransaction : BaseEntity
     // silently overwriting the first.
     public uint Version { get; set; }
 
-    // NEW: when the creditor last reminded the debtor of this debt; null if never.
+    // When the creditor last reminded the debtor of this debt; null if never.
     public DateTime? LastReminderSentAt { get; set; }
 
     // One-to-one: QR data is generated for every settlement transaction.
