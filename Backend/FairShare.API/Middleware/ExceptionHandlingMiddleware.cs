@@ -50,19 +50,19 @@ namespace FairShare.API.Middleware
         {
             var (status, title) = exception switch
             {
-                NotFoundException => (StatusCodes.Status404NotFound, "Ресурс није пронађен."),
-                ForbiddenException => (StatusCodes.Status403Forbidden, "Немате дозволу за ову радњу."),
-                ConflictException => (StatusCodes.Status409Conflict, "Захтјев је у сукобу са тренутним стањем."),
-                BadRequestException => (StatusCodes.Status400BadRequest, "Захтјев није исправан."),
-                ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Сервис тренутно није доступан."),
-                DomainException => (StatusCodes.Status400BadRequest, "Прекршено је пословно правило."),
-                ValidationException => (StatusCodes.Status400BadRequest, "Подаци у захтјеву нису исправни."),
-                UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Нисте пријављени."),
+                NotFoundException => (StatusCodes.Status404NotFound, "Resource not found."),
+                ForbiddenException => (StatusCodes.Status403Forbidden, "You do not have permission for this action."),
+                ConflictException => (StatusCodes.Status409Conflict, "The request conflicts with the current state."),
+                BadRequestException => (StatusCodes.Status400BadRequest, "The request is invalid."),
+                ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "The service is currently unavailable."),
+                DomainException => (StatusCodes.Status400BadRequest, "A business rule was violated."),
+                ValidationException => (StatusCodes.Status400BadRequest, "The data in the request is invalid."),
+                UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "You are not authenticated."),
                 // Optimistic concurrency: someone else changed the same row in the meantime.
-                DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Податак је у међувремену измијењен. Освјежите и покушајте поново."),
+                DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "The data has been modified in the meantime. Please refresh and try again."),
                 // Usually a unique index violation (e.g. two requests creating the same category at once).
-                DbUpdateException => (StatusCodes.Status409Conflict, "Податак није могуће сачувати јер се коси са постојећим подацима."),
-                _ => (StatusCodes.Status500InternalServerError, "Дошло је до неочекиване грешке.")
+                DbUpdateException => (StatusCodes.Status409Conflict, "The data cannot be saved because it conflicts with existing data."),
+                _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
             };
 
             if (status == StatusCodes.Status500InternalServerError)

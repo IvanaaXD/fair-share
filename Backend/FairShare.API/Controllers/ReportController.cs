@@ -9,7 +9,7 @@ namespace FairShare.API.Controllers;
 
 /// <summary>Downloadable reports (PDF or CSV) of personal spending and of group debts.</summary>
 [ApiController]
-[Route("api/reports")]
+[Route("api/[controller]")]
 [Authorize]
 public class ReportController : ControllerBase
 {

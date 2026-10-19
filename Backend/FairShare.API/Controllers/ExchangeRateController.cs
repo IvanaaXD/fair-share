@@ -35,7 +35,7 @@ public partial class ExchangeRateController : ControllerBase
         CancellationToken cancellationToken)
     {
         if (!IsCurrencyCode(from) || !IsCurrencyCode(to))
-            throw new BadRequestException("Валута мора бити ознака од три слова, нпр. EUR.");
+            throw new BadRequestException("The currency must be a three-letter code, e.g., EUR.");
 
         var fromCode = from!.ToUpperInvariant();
         var toCode = to!.ToUpperInvariant();
@@ -43,7 +43,7 @@ public partial class ExchangeRateController : ControllerBase
         var rates = await _exchangeRates.GetRatesAsync(cancellationToken);
         if (!rates.TryGetRate(fromCode, toCode, out var rate))
             throw new ConflictException(
-                $"Курс између {fromCode} и {toCode} тренутно није доступан.",
+                $"The exchange rate between {fromCode} and {toCode} is currently unavailable.",
                 ErrorCodes.ExchangeRateUnavailable);
 
         // The fixed EUR/BAM rate has no publication date; it is valid by law.

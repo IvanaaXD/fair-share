@@ -56,7 +56,7 @@ public class PaymentWebhookController : ControllerBase
         if (!WebhookSignatureVerifier.IsValid(_options.WebhookSecret, body, signature, _timeProvider.GetUtcNow(), Tolerance))
         {
             _logger.LogWarning("Payment webhook with a missing or wrong signature was rejected.");
-            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Неисправан потпис.");
+            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Invalid signature.");
         }
 
         PaymentWebhookRequest? webhook;

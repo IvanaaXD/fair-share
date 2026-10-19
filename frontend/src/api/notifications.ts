@@ -5,11 +5,11 @@ import type { AppNotification } from './types';
 export const notificationsApi = {
   /** isRead=false returns only the unread ones. */
   mine: (isRead?: boolean, signal?: AbortSignal) =>
-    apiRequest<AppNotification[]>(`/notifications/mine${toQueryString({ isRead })}`, { signal }),
+    apiRequest<AppNotification[]>(`/notification/mine${toQueryString({ isRead })}`, { signal }),
 
-  unreadCount: (signal?: AbortSignal) => apiRequest<{ count: number }>('/notifications/unread-count', { signal }),
+  unreadCount: (signal?: AbortSignal) => apiRequest<{ count: number }>('/notification/unread-count', { signal }),
 
-  markRead: (id: string) => apiRequest<void>(`/notifications/${id}/read`, { method: 'POST' }),
+  markRead: (id: string) => apiRequest<void>(`/notification/${id}/read`, { method: 'POST' }),
 
-  markAllRead: () => apiRequest<void>('/notifications/read-all', { method: 'POST' }),
+  markAllRead: () => apiRequest<void>('/notification/read-all', { method: 'POST' }),
 };

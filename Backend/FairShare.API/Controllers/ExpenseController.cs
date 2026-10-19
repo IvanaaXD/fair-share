@@ -55,7 +55,6 @@ public class ExpenseController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _expenseService.CreateAsync(request, _currentUser.UserId, cancellationToken);
-        // CHANGED: Location header now points to the new expense, not to the whole list.
         return CreatedAtAction(nameof(GetById), new { expenseId = result.Id }, result);
     }
 

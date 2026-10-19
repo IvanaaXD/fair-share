@@ -24,14 +24,14 @@ export function browserTimeZone(): string | undefined {
 export const reportsApi = {
   /** Personal spending for the same period as the analytics page. */
   spending: (query: AnalyticsQuery, options: ReportOptions, signal?: AbortSignal) =>
-    apiRequest<DownloadedFile>(`/reports/spending${toQueryString({ ...query, ...options })}`, {
+    apiRequest<DownloadedFile>(`/report/spending${toQueryString({ ...query, ...options })}`, {
       responseType: 'file',
       signal,
     }),
 
   /** Balances, how to settle them, completed settlements and all expenses of a group. */
   group: (groupId: string, options: ReportOptions, signal?: AbortSignal) =>
-    apiRequest<DownloadedFile>(`/reports/groups/${groupId}${toQueryString({ ...options })}`, {
+    apiRequest<DownloadedFile>(`/report/groups/${groupId}${toQueryString({ ...options })}`, {
       responseType: 'file',
       signal,
     }),
