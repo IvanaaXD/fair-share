@@ -4,7 +4,7 @@ namespace FairShare.Application.Interfaces;
 
 public interface IUserManagementService
 {
-    /// <summary>Search and filter users for administrative review (feature 5.2).</summary>
+    /// <summary>Search and filter users for administrative review </summary>
     Task<IReadOnlyList<UserResponse>> SearchAsync(
         string? searchTerm,
         bool? isBlocked,

@@ -18,10 +18,10 @@ public interface IExpenseService
 
     Task DeleteAsync(Guid expenseId, Guid currentUserId, CancellationToken cancellationToken = default);
 
-    /// <summary>NEW: one expense of the current user.</summary>
+    /// <summary>NEW: one expense of the current user </summary>
     Task<ExpenseResponse> GetByIdAsync(Guid expenseId, Guid currentUserId, CancellationToken cancellationToken = default);
 
-    /// <summary>CHANGED: search, filtering, sorting and paging of the current user's expenses (5.3).</summary>
+    /// <summary>CHANGED: search, filtering, sorting and paging of the current user's expenses </summary>
     Task<PagedResponse<ExpenseResponse>> GetMyExpensesAsync(
         Guid currentUserId,
         ExpenseQueryParameters query,

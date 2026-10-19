@@ -16,7 +16,7 @@ public class CreateGroupExpenseRequest
     public List<SplitParticipantRequest> Participants { get; set; } = new();
 
     /// <summary>
-    /// NEW: currency in which the expense was paid (ISO code, e.g. "EUR"). Empty or the group's
+    /// currency in which the expense was paid (ISO code, e.g. "EUR"). Empty or the group's
     /// own currency means no conversion; any other currency is converted to the group's currency.
     /// </summary>
     public string? Currency { get; set; }

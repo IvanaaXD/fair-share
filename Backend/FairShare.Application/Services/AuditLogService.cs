@@ -49,7 +49,7 @@ public class AuditLogService : IAuditLogService
         pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
 
         // Dates come from the query string as whole days ("2026-10-14") with no time zone.
-        // Npgsql only accepts UTC values for timestamptz columns, and "to" must include the
+        // Npgsql only accepts UTC values for timestamp columns, and "to" must include the
         // whole last day, so the range becomes [from 00:00, to 23:59:59.9999999] in UTC.
         var fromUtc = from.HasValue
             ? DateTime.SpecifyKind(from.Value.Date, DateTimeKind.Utc)

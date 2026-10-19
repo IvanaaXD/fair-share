@@ -76,10 +76,10 @@ public class BudgetAlertService : IBudgetAlertService
                 var limit = NotificationText.Money(budget.MonthlyLimit, budgetCurrency);
 
                 var (subject, message) = fraction >= 1.0m
-                    ? ("Буџет је потрошен",
-                       $"Буџет за категорију {category} за {period} је потрошен: достигнуто је 100% лимита од {limit}.")
-                    : ("Буџет: 80% лимита",
-                       $"Потрошено је 80% буџета за категорију {category} за {period} (лимит {limit}).");
+                    ? ("Budget exhausted",
+                        $"The budget for category {category} for {period} has been exhausted: 100% of the {limit} limit has been reached.")
+                    : ("Budget: 80% of limit",
+                        $"80% of the budget for category {category} for {period} has been spent (limit {limit}).");
 
                 await _notificationService.NotifyAsync(
                     userId, NotificationType.BudgetExceeded, subject, message, cancellationToken);

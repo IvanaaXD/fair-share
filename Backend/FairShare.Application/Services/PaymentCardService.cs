@@ -50,7 +50,7 @@ public class PaymentCardService : IPaymentCardService
             cancellationToken);
 
         if (!result.Success || result.Token is null)
-            throw new BadRequestException("Картица није прихваћена. Провјерите број, датум истека и CVV.");
+            throw new BadRequestException("Card not accepted. Please check the card number, expiration date, and CVV.");
 
         var card = new PaymentCard
         {
@@ -76,11 +76,11 @@ public class PaymentCardService : IPaymentCardService
 
         // Someone else's card is reported exactly like a missing one.
         if (card is null || card.UserId != currentUserId)
-            throw new NotFoundException("Картица није пронађена.");
+            throw new NotFoundException("Card not found.");
 
         // Payments keep a reference to the card they were made with (ON DELETE RESTRICT).
         if (await _unitOfWork.PaymentCards.HasPaymentsAsync(paymentCardId, cancellationToken))
-            throw new ConflictException("Картица је коришћена за плаћања, па се не може обрисати.");
+            throw new ConflictException("The card has been used for payments and cannot be deleted.");
 
         _unitOfWork.PaymentCards.Remove(card);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

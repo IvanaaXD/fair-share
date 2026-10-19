@@ -72,9 +72,9 @@ public class RecurringExpenseService : IRecurringExpenseService
             await _notificationService.NotifyAsync(
                 template.UserId,
                 NotificationType.RecurringExpenseCreated,
-                "Понављајући трошак",
-                $"Аутоматски је додат понављајући трошак {NotificationText.Quote(template.Description ?? categoryName)}: " +
-                $"{NotificationText.Money(occurrence.Amount, occurrence.Currency)} за {NotificationText.Date(occurrence.Date)}.",
+                "Recurring expense",
+                $"Automatically added recurring expense {NotificationText.Quote(template.Description ?? categoryName)}: " +
+                $"{NotificationText.Money(occurrence.Amount, occurrence.Currency)} for {NotificationText.Date(occurrence.Date)}.",
                 cancellationToken,
                 sendEmail: false);
 

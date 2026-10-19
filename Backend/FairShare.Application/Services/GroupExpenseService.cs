@@ -32,21 +32,20 @@ public class GroupExpenseService : IGroupExpenseService
         _exchangeRates = exchangeRates;
         _mapper = mapper;
     }
-
     public async Task<GroupExpenseResponse> CreateAsync(
-        Guid groupId,
-        CreateGroupExpenseRequest request,
-        Guid currentUserId,
-        CancellationToken cancellationToken = default)
+            Guid groupId,
+            CreateGroupExpenseRequest request,
+            Guid currentUserId,
+            CancellationToken cancellationToken = default)
     {
         // Request shape (amount, participants, sums, duplicates) is checked by
         // CreateGroupExpenseRequestValidator. Here we check what only the database knows.
         var group = await LoadGroupAsync(groupId, cancellationToken);
         if (group.Members.All(m => m.UserId != currentUserId))
-            throw new ForbiddenException("Само члан групе може додати групни трошак.", ErrorCodes.NotGroupMember);
+            throw new ForbiddenException("Only a group member can add a group expense.", ErrorCodes.NotGroupMember);
 
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.", ErrorCodes.CategoryNotFound);
+            ?? throw new NotFoundException("Category not found.", ErrorCodes.CategoryNotFound);
 
         var usersById = GetMemberUsers(group);
         var payer = ResolvePayer(request, usersById);
@@ -124,7 +123,7 @@ public class GroupExpenseService : IGroupExpenseService
         EnsureCanModify(group, expense, currentUserId);
 
         var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Категорија није пронађена.", ErrorCodes.CategoryNotFound);
+            ?? throw new NotFoundException("Category not found.", ErrorCodes.CategoryNotFound);
 
         var usersById = GetMemberUsers(group);
         var payer = ResolvePayer(request, usersById);
@@ -204,9 +203,9 @@ public class GroupExpenseService : IGroupExpenseService
             await _notificationService.NotifyAsync(
                 split.UserId,
                 NotificationType.GroupExpenseAdded,
-                "Нови групни трошак",
-                $"Нови трошак у групи {NotificationText.Quote(group.Name)}: {title}, укупно {total}. " +
-                $"Твој дио је {NotificationText.Money(split.Amount, group.Currency)}.",
+                "New group expense",
+                $"New expense in group {NotificationText.Quote(group.Name)}: {title}, total {total}. " +
+                $"Your share is {NotificationText.Money(split.Amount, group.Currency)}.",
                 cancellationToken,
                 sendEmail: false);
         }
@@ -228,7 +227,7 @@ public class GroupExpenseService : IGroupExpenseService
 
     private async Task<Group> LoadGroupAsync(Guid groupId, CancellationToken cancellationToken)
         => await _unitOfWork.Groups.GetWithMembersAsync(groupId, cancellationToken)
-           ?? throw new NotFoundException("Група није пронађена.", ErrorCodes.GroupNotFound);
+           ?? throw new NotFoundException("Group not found.", ErrorCodes.GroupNotFound);
 
     /// <summary>Loads the expense with all details and checks that it belongs to the given group.</summary>
     private async Task<GroupExpense> LoadExpenseAsync(
@@ -241,7 +240,7 @@ public class GroupExpenseService : IGroupExpenseService
         // An expense of another group is reported exactly like a missing one, so the response
         // does not reveal that it exists.
         if (expense is null || expense.GroupId != groupId)
-            throw new NotFoundException("Групни трошак није пронађен.", ErrorCodes.GroupExpenseNotFound);
+            throw new NotFoundException("Group expense not found.", ErrorCodes.GroupExpenseNotFound);
 
         return expense;
     }
@@ -249,7 +248,7 @@ public class GroupExpenseService : IGroupExpenseService
     private async Task EnsureMemberAsync(Guid groupId, Guid userId, CancellationToken cancellationToken)
     {
         if (!await _unitOfWork.GroupMembers.IsMemberAsync(groupId, userId, cancellationToken))
-            throw new ForbiddenException("Само члан групе може видјети трошкове групе.", ErrorCodes.NotGroupMember);
+            throw new ForbiddenException("Only a group member can view group expenses.", ErrorCodes.NotGroupMember);
     }
 
     /// <summary>
@@ -260,12 +259,12 @@ public class GroupExpenseService : IGroupExpenseService
     private static void EnsureCanModify(Group group, GroupExpense expense, Guid currentUserId)
     {
         var membership = group.Members.FirstOrDefault(m => m.UserId == currentUserId)
-            ?? throw new ForbiddenException("Нисте члан ове групе.", ErrorCodes.NotGroupMember);
+            ?? throw new ForbiddenException("You are not a member of this group.", ErrorCodes.NotGroupMember);
 
         var isPayer = expense.PaidByUserId == currentUserId;
         var isOwner = membership.Role == GroupRole.Owner;
         if (!isPayer && !isOwner)
-            throw new ForbiddenException("Трошак може мијењати или брисати само члан који га је платио или власник групе.", ErrorCodes.GroupExpenseModifyForbidden);
+            throw new ForbiddenException("An expense can only be modified or deleted by the member who paid it or the group owner.", ErrorCodes.GroupExpenseModifyForbidden);
 
         var memberIds = group.Members.Select(m => m.UserId).ToHashSet();
         var involvesFormerMember =
@@ -273,7 +272,7 @@ public class GroupExpenseService : IGroupExpenseService
             expense.Splits.Any(s => !memberIds.Contains(s.UserId));
 
         if (involvesFormerMember)
-            throw new ConflictException("Трошак у којем учествује бивши члан групе није могуће мијењати нити брисати.", ErrorCodes.GroupExpenseFormerMember);
+            throw new ConflictException("An expense involving a former group member cannot be modified or deleted.", ErrorCodes.GroupExpenseFormerMember);
     }
 
     private static Dictionary<Guid, User> GetMemberUsers(Group group)
@@ -282,7 +281,7 @@ public class GroupExpenseService : IGroupExpenseService
     private static User ResolvePayer(CreateGroupExpenseRequest request, Dictionary<Guid, User> usersById)
         => usersById.TryGetValue(request.PaidByUserId, out var payer)
             ? payer
-            : throw new NotFoundException("Корисник који је платио трошак није члан ове групе.", ErrorCodes.PayerNotMember);
+            : throw new NotFoundException("The user who paid the expense is not a member of this group.", ErrorCodes.PayerNotMember);
 
     /// <summary>
     /// Checks that every participant is a member of the group and calculates the splits in the
@@ -296,7 +295,7 @@ public class GroupExpenseService : IGroupExpenseService
         foreach (var participant in request.Participants)
         {
             if (!usersById.ContainsKey(participant.UserId))
-                throw new NotFoundException("Неко од учесника трошка није члан ове групе.", ErrorCodes.ParticipantNotMember);
+                throw new NotFoundException("One of the expense participants is not a member of this group.", ErrorCodes.ParticipantNotMember);
         }
 
         var splitInputs = request.Participants
@@ -353,13 +352,13 @@ public class GroupExpenseService : IGroupExpenseService
         var rates = await _exchangeRates.GetRatesAsync(cancellationToken);
         if (!rates.TryGetRate(currency, groupCurrency, out var rate))
             throw new ConflictException(
-                $"Курс за валуту {currency} тренутно није доступан, па трошак не може бити унесен у тој валути. " +
-                $"Унеси га у валути групе ({groupCurrency}) или покушај касније.",
+                $"The exchange rate for currency {currency} is currently unavailable, so the expense cannot be entered in that currency. " +
+                $"Enter it in the group currency ({groupCurrency}) or try again later.",
                 ErrorCodes.ExchangeRateUnavailable);
 
         var conversion = CurrencyConversion.With(request.Amount, currency, rate, rates.UpdatedAt);
         if (conversion.Amount <= 0m)
-            throw new ConflictException("Износ је премали да би се претворио у валуту групе.", ErrorCodes.ExchangeRateUnavailable);
+            throw new ConflictException("The amount is too small to be converted to the group currency.", ErrorCodes.ExchangeRateUnavailable);
 
         return conversion;
     }
