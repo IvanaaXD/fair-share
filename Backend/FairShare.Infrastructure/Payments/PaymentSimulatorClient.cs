@@ -153,7 +153,7 @@ public sealed class PaymentSimulatorClient : IPaymentGateway
     }
 
     private static ServiceUnavailableException Unavailable()
-        => new("Сервис за плаћање тренутно није доступан. Покушајте поново за минут.", ErrorCodes.PaymentServiceUnavailable);
+        => new("The payment service is currently unavailable. Please try again in a minute.", ErrorCodes.PaymentServiceUnavailable);
 
     private sealed record TokenDto(string Token, string Brand, string Last4Digits);
 

@@ -24,7 +24,7 @@ namespace FairShare.Infrastructure.Data.Configurations
             builder.Property(p => p.FailureReason)
                     .HasMaxLength(50);
 
-            // NEW: the simulator's charge id ("ch_..."); webhooks are matched by it.
+            // The simulator's charge id ("ch_..."); webhooks are matched by it.
             builder.Property(p => p.ProviderChargeId)
                     .HasMaxLength(64);
 
@@ -33,7 +33,7 @@ namespace FairShare.Infrastructure.Data.Configurations
             builder.Property(p => p.CreatedAt)
                     .IsRequired();
 
-            // NEW: optimistic concurrency - PostgreSQL's system column "xmin", no real column is
+            // Optimistic concurrency - PostgreSQL's system column "xmin", no real column is
             // added. The webhook and the status check cannot both complete the same payment.
             builder.Property(p => p.Version)
                     .IsRowVersion();
