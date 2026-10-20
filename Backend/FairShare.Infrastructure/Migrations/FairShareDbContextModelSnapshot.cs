@@ -114,10 +114,31 @@ namespace FairShare.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<DateTime?>("ProposedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ProposedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"Status\" <> 2");
+
+                    b.HasIndex("ProposedByUserId");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("Categories");
                 });
@@ -745,6 +766,16 @@ namespace FairShare.Infrastructure.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FairShare.Domain.Entities.Category", b =>
+                {
+                    b.HasOne("FairShare.Domain.Entities.User", "ProposedByUser")
+                        .WithMany()
+                        .HasForeignKey("ProposedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ProposedByUser");
                 });
 
             modelBuilder.Entity("FairShare.Domain.Entities.Comment", b =>

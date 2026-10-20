@@ -8,6 +8,7 @@ import {
   House,
   LogOut,
   ReceiptText,
+  Tags,
   UserCog,
   UserRound,
   Users,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
+import { usePendingCategoryCount } from '../../admin/pendingCategoriesStore';
 import { isAdminRole } from '../../auth/roles';
 import { useAuth } from '../../auth/useAuth';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
@@ -46,12 +48,13 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'profile', to: '/profile', icon: UserRound },
 ];
 
-type AdminNavKey = 'adminStatistics' | 'adminUsers' | 'adminAudit';
+type AdminNavKey = 'adminStatistics' | 'adminUsers' | 'adminCategories' | 'adminAudit';
 
 /** Shown only to administrators. */
 const ADMIN_ITEMS: { key: AdminNavKey; to: string; icon: LucideIcon }[] = [
   { key: 'adminStatistics', to: '/admin', icon: Gauge },
   { key: 'adminUsers', to: '/admin/users', icon: UserCog },
+  { key: 'adminCategories', to: '/admin/categories', icon: Tags },
   { key: 'adminAudit', to: '/admin/audit', icon: FileClock },
 ];
 
@@ -83,6 +86,7 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
   const { user, logout } = useAuth();
   const { groups } = useMyGroups();
   const unreadNotifications = useUnreadCount();
+  const pendingCategories = usePendingCategoryCount(isAdminRole(user?.role));
 
   const className = [styles.sidebar, isDrawer && styles.drawer, isDrawer && isOpen && styles.open]
     .filter(Boolean)
@@ -144,6 +148,14 @@ export function Sidebar({ id, isDrawer, isOpen, onClose, onNavigate, closeButton
                 <NavLink to={to} end={to === '/admin'} className={navLinkClass} onClick={onNavigate}>
                   <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
                   <span className={styles.navLabel}>{t(`nav.${key}`)}</span>
+                  {key === 'adminCategories' && pendingCategories > 0 && (
+                    <>
+                      <span className={styles.badge} aria-hidden="true">
+                        {pendingCategories}
+                      </span>
+                      <span className="visually-hidden">{t('nav.pendingCategories', { count: pendingCategories })}</span>
+                    </>
+                  )}
                 </NavLink>
               </li>
             ))}

@@ -15,6 +15,7 @@ import { UserAvatar } from '../../components/ui/UserAvatar';
 import { useLocalizedText } from '../../i18n/useLocalizedText';
 import { RECEIPT_TYPES, validateReceipt } from '../expenses/expenseValidation';
 import { formatBankAccount, validateBankAccount } from './bankAccount';
+import { CategoryProposalsSection } from '../categories/CategoryProposalsSection';
 import { PaymentCardsSection } from '../payments/PaymentCardsSection';
 import { isAdminRole } from '../../auth/roles';
 import { PasswordForm } from './PasswordForm';
@@ -78,6 +79,10 @@ export function ProfilePage() {
         <div className={styles.column}>
           <DetailsCard key={user.id} user={user} onNotice={show} />
           <PaymentCardsSection onNotice={show} cardClassName={styles.card} titleClassName={styles.cardTitle} />
+          {/* An administrator adds categories directly in the administration. */}
+          {!isAdminRole(user.role) && (
+            <CategoryProposalsSection onNotice={show} cardClassName={styles.card} titleClassName={styles.cardTitle} />
+          )}
         </div>
       </div>
     </div>

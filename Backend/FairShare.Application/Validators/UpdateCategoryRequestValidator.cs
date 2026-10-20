@@ -1,18 +1,14 @@
 using FairShare.Application.DTOs.Categories;
 using FluentValidation;
 
-namespace FairShare.Application.Validators
-{
-    public class UpdateCategoryRequestValidator : AbstractValidator<UpdateCategoryRequest>
-    {
-        public UpdateCategoryRequestValidator()
-        {
-            RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Category name is required.")
-                .MaximumLength(50).WithMessage("Category name can have at most 50 characters.");
+namespace FairShare.Application.Validators;
 
-            RuleFor(x => x.Icon)
-                .MaximumLength(50).WithMessage("Icon name can have at most 50 characters.");
-        }
+/// <summary>Renaming a category, and approving a proposal (the administrator may correct it).</summary>
+public class UpdateCategoryRequestValidator : AbstractValidator<UpdateCategoryRequest>
+{
+    public UpdateCategoryRequestValidator()
+    {
+        RuleFor(x => x.Name).CategoryName();
+        RuleFor(x => x.Icon).CategoryIcon();
     }
 }
