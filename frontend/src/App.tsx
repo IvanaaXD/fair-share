@@ -97,6 +97,11 @@ const router = createBrowserRouter([
                 lazy: () => import('./pages/admin/AdminUsersPage').then((module) => ({ Component: module.AdminUsersPage })),
               },
               {
+                path: 'categories',
+                lazy: () =>
+                  import('./pages/admin/AdminCategoriesPage').then((module) => ({ Component: module.AdminCategoriesPage })),
+              },
+              {
                 path: 'audit',
                 lazy: () => import('./pages/admin/AdminAuditPage').then((module) => ({ Component: module.AdminAuditPage })),
               },

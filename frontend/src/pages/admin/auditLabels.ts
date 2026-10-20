@@ -56,6 +56,8 @@ export const AUDIT_VERBS = [
   'MarkAllAsRead',
   'Block',
   'Unblock',
+  'Approve',
+  'Reject',
 ] as const;
 
 export type AuditVerb = (typeof AUDIT_VERBS)[number];

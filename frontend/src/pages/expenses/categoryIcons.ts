@@ -78,6 +78,14 @@ const BY_KEY: Record<string, LucideIcon> = {
   tag: Tag,
 };
 
+/** The icons an administrator or a user can pick for a category, in the order of the picker. */
+export const CATEGORY_ICON_KEYS = Object.keys(BY_KEY);
+
+/** The icon picked for a category, or a guess from its name while none is picked. */
+export function iconForKey(key: string | null | undefined, name = ''): LucideIcon {
+  return categoryIcon(name, key);
+}
+
 /** The icon saved with the category if it is a known one, otherwise a guess from the name. */
 export function categoryIcon(name: string, iconKey?: string | null): LucideIcon {
   const saved = iconKey ? BY_KEY[iconKey.trim().toLowerCase()] : undefined;

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { categoriesApi } from '../api/categories';
 import type { Category } from '../api/types';
+import { notificationTypeName } from '../notifications/notificationTypes';
+import { onNotificationCreated } from '../notifications/realtime';
 
 // The list is the same for every user and changes rarely, so it is loaded once per visit and
 // shared by every screen (filters, expense form, budgets). A failed load is retried next time.
@@ -25,6 +27,19 @@ export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<unknown>(null);
 
+  // A proposal of this user was approved: the list gets the new category without a refresh.
+  const [version, setVersion] = useState(0);
+  useEffect(
+    () =>
+      onNotificationCreated((notification) => {
+        if (notificationTypeName(notification.type) === 'CategoryReviewed') {
+          invalidateCategories();
+          setVersion((value) => value + 1);
+        }
+      }),
+    [],
+  );
+
   useEffect(() => {
     let active = true;
     loadCategories().then(
@@ -43,7 +58,7 @@ export function useCategories() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [version]);
 
   return { categories, error };
 }

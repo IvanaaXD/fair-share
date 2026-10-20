@@ -27,5 +27,8 @@ public enum NotificationType
     GroupExpenseComment,
 
     // A card payment was declined by the payment simulator. Also at the end.
-    PaymentFailed
+    PaymentFailed,
+
+    // An administrator approved or rejected a category this user proposed. Also at the end.
+    CategoryReviewed
 }

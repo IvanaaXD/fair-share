@@ -371,9 +371,23 @@
   vertical-align: middle;
 }
 
-.iconLink:hover {
+.iconLink:hover:not(:disabled) {
   background: var(--color-track);
   color: var(--color-text);
+}
+
+/* The same look for a <button> (categories) as for a link (users). */
+button.iconLink {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.iconLink:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .rowButton {

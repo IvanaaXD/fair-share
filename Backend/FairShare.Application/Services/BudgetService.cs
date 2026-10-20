@@ -36,18 +36,18 @@ public class BudgetService : IBudgetService
         var now = _time.GetUtcNow().UtcDateTime;
         if (Budget.IsMonthClosed(request.Month, now))
             throw new BadRequestException(
-                "A budget cannot be set for a month that has passed.", ErrorCodes.BudgetMonthClosed);
+                "Буџет се не може поставити за мјесец који је прошао.", ErrorCodes.BudgetMonthClosed);
         if (Budget.IsMonthTooFarAhead(request.Month, now))
             throw new BadRequestException(
-                $"A budget can be planned at most {Budget.MaxMonthsAhead} months in advance.", ErrorCodes.BudgetMonthTooFar);
+                $"Буџет се може планирати највише {Budget.MaxMonthsAhead} мјесеци унапријед.", ErrorCodes.BudgetMonthTooFar);
 
-        var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId, cancellationToken)
-            ?? throw new NotFoundException("Category not found.", ErrorCodes.CategoryNotFound);
+        var category = await _unitOfWork.Categories.GetUsableByIdAsync(request.CategoryId, cancellationToken)
+            ?? throw new NotFoundException("Категорија није пронађена.", ErrorCodes.CategoryNotFound);
 
         var existing = await _unitOfWork.Budgets.GetByUserCategoryAndMonthAsync(
             currentUserId, request.CategoryId, request.Month, cancellationToken);
         if (existing is not null)
-            throw new ConflictException("A budget for this category and month already exists.", ErrorCodes.BudgetExists);
+            throw new ConflictException("Буџет за ову категорију и мјесец већ постоји.", ErrorCodes.BudgetExists);
 
         var budget = _mapper.Map<Budget>(request);
         budget.UserId = currentUserId;
@@ -91,7 +91,7 @@ public class BudgetService : IBudgetService
     {
         // "month" comes from the query string, not from a DTO, so it is validated here.
         if (string.IsNullOrWhiteSpace(month) || !MonthFormat.IsMatch(month))
-            throw new BadRequestException("The month must be in the YYYY-MM format (e.g., 2026-09).", ErrorCodes.InvalidMonth);
+            throw new BadRequestException("Мјесец мора бити у облику ГГГГ-ММ (нпр. 2026-09).", ErrorCodes.InvalidMonth);
 
         var budgets = await _unitOfWork.Budgets.GetByUserAndMonthAsync(currentUserId, month, cancellationToken);
         var context = await SpendingContextAsync(currentUserId, cancellationToken);
@@ -113,11 +113,11 @@ public class BudgetService : IBudgetService
     {
         var budget = await _unitOfWork.Budgets.GetByIdAsync(budgetId, cancellationToken);
         if (budget is null || budget.UserId != currentUserId)
-            throw new NotFoundException("Budget not found.", ErrorCodes.BudgetNotFound);
+            throw new NotFoundException("Буџет није пронађен.", ErrorCodes.BudgetNotFound);
 
         if (budget.IsClosed(_time.GetUtcNow().UtcDateTime))
             throw new ConflictException(
-                "A budget for a month that has passed cannot be modified or deleted.", ErrorCodes.BudgetMonthClosed);
+                "Буџет за мјесец који је прошао не може се мијењати ни брисати.", ErrorCodes.BudgetMonthClosed);
 
         return budget;
     }

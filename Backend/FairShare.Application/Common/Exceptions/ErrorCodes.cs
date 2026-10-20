@@ -11,6 +11,10 @@ public static class ErrorCodes
     public const string DataConflict = "dataConflict";
     public const string ServerError = "serverError";
     public const string CategoryNotFound = "categoryNotFound";
+    public const string CategoryExists = "categoryExists";
+    public const string CategoryInUse = "categoryInUse";
+    public const string CategoryNotPending = "categoryNotPending";
+    public const string CategoryPendingLimit = "categoryPendingLimit";
     public const string UserNotFound = "userNotFound";
 
     // ---------- groups ----------

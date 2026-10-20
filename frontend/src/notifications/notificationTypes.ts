@@ -10,6 +10,7 @@ import {
   type LucideIcon,
   PiggyBank,
   Repeat,
+  Tags,
   UserCog,
   UserPlus,
   UserRoundCheck,
@@ -31,6 +32,7 @@ const TYPES: NotificationType[] = [
   'DebtReminder',
   'GroupExpenseComment',
   'PaymentFailed',
+  'CategoryReviewed',
 ];
 
 export const NOTIFICATION_ICONS: Record<NotificationType, LucideIcon> = {
@@ -47,6 +49,7 @@ export const NOTIFICATION_ICONS: Record<NotificationType, LucideIcon> = {
   DebtReminder: BellRing,
   GroupExpenseComment: MessageSquare,
   PaymentFailed: CreditCardX,
+  CategoryReviewed: Tags,
 };
 
 /** Notifications that need attention are marked in amber (budget over limit, someone owes). */

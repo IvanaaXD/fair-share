@@ -115,6 +115,34 @@ export interface Category {
   icon?: string | null;
 }
 
+/** A proposed category waits for an administrator; only approved ones can be chosen. */
+export type CategoryStatus = 'Approved' | 'Pending' | 'Rejected';
+
+export interface SaveCategoryRequest {
+  name: string;
+  icon: string | null;
+}
+
+/** A category the signed-in user proposed (CategoryController, proposals/mine). */
+export interface CategoryProposal {
+  id: string;
+  name: string;
+  icon: string | null;
+  status: CategoryStatus | number;
+  proposedAt: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+}
+
+/** A category as the administrator sees it. */
+export interface AdminCategory extends CategoryProposal {
+  isSystemDefined: boolean;
+  proposedByName: string | null;
+  proposedByEmail: string | null;
+  /** Expenses, group expenses and budgets using it - only 0 can be deleted. */
+  usageCount: number;
+}
+
 // ---------- personal expenses (ExpenseController, ExpenseReceiptController) ----------
 
 export type RecurrenceInterval = 'None' | 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
@@ -420,7 +448,8 @@ export type NotificationType =
   | 'GroupExpenseAdded'
   | 'DebtReminder'
   | 'GroupExpenseComment'
-  | 'PaymentFailed';
+  | 'PaymentFailed'
+  | 'CategoryReviewed';
 
 export interface AppNotification {
   id: string;
