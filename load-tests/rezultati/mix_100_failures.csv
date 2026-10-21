@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,POST group expense (equal split),"CatchResponseError('409: {""title"":""The data has been modified in the meantime. Please refresh and try again."",""status"":409,""detail"":""The database operation was expected to affect 1 row(s), but actually affected 0 row(s); data')",2,2026-10-21T17:27:12Z,2026-10-21T17:27:44Z
