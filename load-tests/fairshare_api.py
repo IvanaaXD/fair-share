@@ -1,10 +1,10 @@
 """
 Shared pieces of the FairShare load tests: test accounts, sign-in, finding the API routes and
-the test data that is sent. Used by locustfile.py and provjera.py.
+the test data that is sent. Used by locustfile.py and check.py.
 
 Settings come from environment variables, so nothing has to be changed in the code:
   FS_USERS       e-mail addresses of the test accounts, separated by commas
-                 (default: the 8 demo accounts created by DemoDataSeeder)
+                 (default: 7 demo accounts created by DemoDataSeeder)
   FS_PASSWORD    their password (default: the demo password)
   FS_VERIFY_TLS  "1" to check the HTTPS certificate (default: no - the local development
                  certificate is self-signed)
@@ -144,15 +144,15 @@ def sign_in(client, account: Account, force: bool = False) -> None:
                 response.failure(f"{response.status_code}: {response.text[:200]}")
                 if response.status_code != 429 or attempt == 3:
                     raise RuntimeError(
-                        f"Prijava nije uspjela za {account.email}: HTTP {response.status_code}. "
-                        + ("Ograničenje prijava – da li je API pokrenut sa --RateLimiting:Enabled=false?"
+                        f"Sign-in failed for {account.email}: HTTP {response.status_code}. "
+                        + ("Sign-in limit hit - was the API started with --RateLimiting:Enabled=false?"
                            if response.status_code == 429
-                           else "API ne odgovara – da li je pokrenut i na ovoj adresi?"
+                           else "The API does not respond - is it running at this address?"
                            if response.status_code == 0
                            else response.text[:200]))
                 # 10 sign-ins per minute per address: wait as long as the API says, then try again.
                 wait = int(response.headers.get("Retry-After", "20"))
-            print(f"Prijava {account.email}: 429, čekam {wait} s…")
+            print(f"Sign-in {account.email}: 429, waiting {wait} s...")
             time.sleep(wait)
 
         # Still under the account's lock: other virtual users of the same account wait here
@@ -200,11 +200,11 @@ def discover_routes(host: str, headers: dict[str, str]) -> None:
                 ROUTES[key] = path
                 break
         else:
-            MISSING_ROUTES.append(f"{key} (probano: {', '.join(candidates)})")
+            MISSING_ROUTES.append(f"{key} (tried: {', '.join(candidates)})")
 
     required_missing = [item for item in MISSING_ROUTES if item.split(" ")[0] not in OPTIONAL_ROUTES]
     if required_missing:
-        raise RuntimeError("Nije pronađena ruta za: " + "; ".join(required_missing))
+        raise RuntimeError("No route found for: " + "; ".join(required_missing))
 
 
 def discover_group_routes(host: str, headers: dict[str, str], group_id: str) -> None:
@@ -216,10 +216,10 @@ def discover_group_routes(host: str, headers: dict[str, str], group_id: str) -> 
                 ROUTES[key] = template
                 break
         else:
-            missing.append(f"{key} (probano: {', '.join(candidates)})")
+            missing.append(f"{key} (tried: {', '.join(candidates)})")
     if missing:
         MISSING_ROUTES.extend(missing)
-        raise RuntimeError("Nije pronađena ruta za: " + "; ".join(missing))
+        raise RuntimeError("No route found for: " + "; ".join(missing))
 
 
 def group_path(key: str, group_id: str, suffix: str = "") -> str:
@@ -241,7 +241,7 @@ def personal_expense() -> dict:
         "currency": "BAM",
         "date": today(),
         "categoryId": random.choice(CATEGORY_IDS),
-        "description": "Locust – тест оптерећења",
+        "description": "Locust - load test",
         "latitude": None,
         "longitude": None,
         "isRecurring": False,
@@ -255,7 +255,7 @@ def group_expense(account: Account, group: dict, amount: float | None = None) ->
         "categoryId": random.choice(CATEGORY_IDS),
         "paidByUserId": account.user_id,
         "amount": amount if amount is not None else round(random.uniform(5, 120), 2),
-        "description": "Locust – групни трошак",
+        "description": "Locust - group expense",
         "date": today(),
         "splitType": "Equal",
         "currency": None,

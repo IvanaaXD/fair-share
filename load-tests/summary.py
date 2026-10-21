@@ -1,10 +1,10 @@
 """
 Turns the CSV results of the stepped runs into one table for the thesis.
 
-  python sazetak.py rezultati/mix
+  python summary.py results/mix
 
-reads rezultati/mix_10_stats.csv, rezultati/mix_50_stats.csv ... (the "Aggregated" row of each)
-and prints a Markdown table; it also saves it as rezultati/mix_tabela.md.
+reads results/mix_10_stats.csv, results/mix_50_stats.csv ... (the "Aggregated" row of each)
+and prints a Markdown table; it also saves it as results/mix_table.md.
 """
 from __future__ import annotations
 
@@ -22,7 +22,8 @@ def main() -> int:
     prefix = sys.argv[1]
     rows = []
     for path in glob.glob(f"{prefix}_*_stats.csv"):
-        match = re.search(r"_(\d+)_stats\.csv$", path)
+        # Only "<prefix>_<number>_stats.csv": results/mix must not pick up results/mix_after_200.
+        match = re.fullmatch(re.escape(Path(prefix).name) + r"_(\d+)_stats\.csv", Path(path).name)
         if not match:
             continue
         with open(path, newline="", encoding="utf-8") as file:
@@ -40,18 +41,18 @@ def main() -> int:
                         requests_total,
                     ))
     if not rows:
-        print(f"Nema fajlova {prefix}_*_stats.csv")
+        print(f"No files {prefix}_*_stats.csv")
         return 1
 
     lines = [
-        "| Korisnika | Zahtjeva/s | Medijan (ms) | p95 (ms) | p99 (ms) | Greške (%) | Ukupno zahtjeva |",
+        "| Users | Requests/s | Median (ms) | p95 (ms) | p99 (ms) | Failures (%) | Total requests |",
         "|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for users, rps, p50, p95, p99, error_rate, total in sorted(rows):
         lines.append(f"| {users} | {rps:.1f} | {p50:.0f} | {p95:.0f} | {p99:.0f} | {error_rate:.2f} | {total} |")
     table = "\n".join(lines)
     print(table)
-    Path(f"{prefix}_tabela.md").write_text(table + "\n", encoding="utf-8")
+    Path(f"{prefix}_table.md").write_text(table + "\n", encoding="utf-8")
     return 0
 
 

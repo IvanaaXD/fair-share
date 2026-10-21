@@ -1,4 +1,4 @@
-| Korisnika | Zahtjeva/s | Medijan (ms) | p95 (ms) | p99 (ms) | Greške (%) | Ukupno zahtjeva |
+| Users | Requests/s | Median (ms) | p95 (ms) | p99 (ms) | Failures (%) | Total requests |
 |---:|---:|---:|---:|---:|---:|---:|
 | 400 | 150.3 | 14 | 210 | 610 | 0.16 | 17839 |
 | 800 | 214.4 | 110 | 740 | 1100 | 0.39 | 25446 |

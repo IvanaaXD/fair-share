@@ -1,9 +1,9 @@
 """
 Quick check before a load test: signs in with the first test account, finds the routes and calls
-every endpoint the tests use once. Writes nothing to the database unless --pisanje is given.
+every endpoint the tests use once. Writes nothing to the database unless --write is given.
 
-  python provjera.py https://localhost:7221
-  python provjera.py https://localhost:7221 --pisanje
+  python check.py https://localhost:7221
+  python check.py https://localhost:7221 --write
 """
 from __future__ import annotations
 
@@ -34,14 +34,14 @@ def main() -> int:
         print(__doc__)
         return 2
     host = sys.argv[1].rstrip("/")
-    write = "--pisanje" in sys.argv[2:]
+    write = "--write" in sys.argv[2:]
     account = POOL.accounts[0]
 
     login = requests.post(host + LOGIN_PATH, json={"username": account.email, "password": PASSWORD}, verify=VERIFY_TLS, timeout=30)
-    print(f"{'OK ' if login.status_code == 200 else 'NE '} {login.status_code}  POST {LOGIN_PATH}  ({account.email})")
+    print(f"{'OK  ' if login.status_code == 200 else 'FAIL'} {login.status_code}  POST {LOGIN_PATH}  ({account.email})")
     if login.status_code != 200:
         print("    ", login.text[:300])
-        print("\nPrijava ne radi: provjeri da je API pokrenut, adresu i da demo nalozi postoje (DemoData:Enabled).")
+        print("\nSign-in does not work: check that the API is running, the address, and that the demo accounts exist (DemoData:Enabled).")
         return 1
     account.token = login.json()["accessToken"]
     account.user_id = login.json().get("id")
@@ -49,12 +49,12 @@ def main() -> int:
     try:
         prepare(host, account)
     finally:
-        print("\nPronađene rute:")
+        print("\nRoutes found:")
         for key, path in ROUTES.items():
             print(f"   {key:<11} {path}")
         for item in MISSING_ROUTES:
-            print(f"   NIJE NAĐENO: {item}")
-    print(f"\nGrupe naloga: {len(account.groups)}, kategorije: OK")
+            print(f"   NOT FOUND: {item}")
+    print(f"\nAccount groups: {len(account.groups)}, categories: OK")
 
     headers = auth_header(account.token)
     group = account.groups[0]["id"] if account.groups else None
@@ -88,11 +88,11 @@ def main() -> int:
         response = requests.request(method, host + path, json=body, headers=headers, verify=VERIFY_TLS, timeout=60)
         ok = response.status_code < 400 or (path.endswith("useExact=false") and response.status_code == 409)
         failed += not ok
-        print(f"{'OK ' if ok else 'NE '} {response.status_code}  {method} {path}")
+        print(f"{'OK  ' if ok else 'FAIL'} {response.status_code}  {method} {path}")
         if not ok:
             print("     ", response.text[:300])
 
-    print("\nSve je spremno za Locust." if failed == 0 else f"\n{failed} poziva nije prošlo - pošalji ovaj ispis.")
+    print("\nEverything is ready for Locust." if failed == 0 else f"\n{failed} call(s) failed - send this output.")
     return 0 if failed == 0 else 1
 
 

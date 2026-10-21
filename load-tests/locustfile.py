@@ -7,7 +7,7 @@ FairShare load tests (Locust). One scenario per class - always name the class yo
   locust -f locustfile.py RateLimitUser    shows the sign-in limit (expects HTTP 429)
   locust -f locustfile.py ReportUser       PDF reports - a few users, a stability check
 
-See PROCITAJ.md for how to start the API and run each scenario.
+See README.md for how to start the API and run each scenario.
 """
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ class FairShareUser(HttpUser):
             sign_in(self.client, self.account)
         except Exception as error:  # noqa: BLE001 - shown to the person running the test
             # Without a sign-in nothing can be measured: stop the whole test with the reason.
-            print(f"\n*** Test je prekinut: {error}\n")
+            print(f"\n*** Test stopped: {error}\n")
             self.environment.runner.quit()
             raise
 
@@ -77,7 +77,7 @@ class FairShareUser(HttpUser):
                 response.success()
             elif response.status_code == 0:
                 # No HTTP answer at all: the API is not running, crashed or refused the connection.
-                response.failure(f"API ne odgovara: {response.error}")
+                response.failure(f"API does not respond: {response.error}")
             else:
                 response.failure(f"{response.status_code}: {response.text[:200]}")
             return response
@@ -280,7 +280,7 @@ class ReportUser(FairShareUser):
     @task
     def spending_pdf(self):
         if "report" not in ROUTES:
-            raise RuntimeError("Ruta za PDF izvještaj nije pronađena - vidi provjera.py.")
+            raise RuntimeError("Route for the PDF report not found - run check.py.")
         self.call("GET", f"{ROUTES['report']}?period=LastMonth&currency=BAM&format=Pdf&lang=sr-Cyrl", "GET spending report (PDF)")
 
 
@@ -291,7 +291,7 @@ def only_one_scenario(environment, **_kwargs):
     # Without a class name Locust would run all scenarios together, which measures nothing useful.
     if environment.user_classes and len(environment.user_classes) > 1:
         names = ", ".join(cls.__name__ for cls in environment.user_classes)
-        print(f"\n*** Pokreni JEDAN scenario, npr.: locust -f locustfile.py MixedUser (sada: {names})\n")
+        print(f"\n*** Run ONE scenario, e.g.: locust -f locustfile.py MixedUser (selected now: {names})\n")
         environment.runner.quit()
 
 
@@ -299,13 +299,13 @@ def only_one_scenario(environment, **_kwargs):
 def summary(environment, **_kwargs):
     if CONCURRENCY:
         total = sum(CONCURRENCY.values())
-        print("\n=== Konkurentnost: isti grupni trošak ===")
+        print("\n=== Concurrency: the same group expense ===")
         for status, count in sorted(CONCURRENCY.items()):
             print(f"  HTTP {status}: {count} ({count * 100 / total:.1f} %)")
         errors = sum(count for status, count in CONCURRENCY.items() if status >= 500)
-        print("  Grešaka 5xx:", errors, "- ispravno" if errors == 0 else "- PROBLEM")
+        print("  5xx errors:", errors, "- correct" if errors == 0 else "- PROBLEM")
     if RATE_LIMIT:
-        print("\n=== Ograničenje prijava ===")
+        print("\n=== Sign-in rate limit ===")
         for status, count in sorted(RATE_LIMIT.items()):
             print(f"  HTTP {status}: {count}")
-        print("  Ograničenje radi." if RATE_LIMIT.get(429) else "  Nijedan 429 - da li je API pokrenut sa RateLimiting:Enabled=false?")
+        print("  The limit works." if RATE_LIMIT.get(429) else "  No 429 at all - was the API started with RateLimiting:Enabled=false?")
