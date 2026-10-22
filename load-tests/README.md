@@ -10,7 +10,7 @@ Locust starts many "virtual users" at once. Each one signs in and does what a re
 
 | File | Purpose |
 |---|---|
-| `locustfile.py` | scenarios (classes `MixedUser`, `CacheUser`, `ConcurrencyUser`, `RateLimitUser`, `ReportUser`) |
+| `locustfile.py` | scenarios (classes `MixedUser`, `CacheUser`, `BalanceUser`, `ConcurrencyUser`, `RateLimitUser`, `ReportUser`) |
 | `fairshare_api.py` | shared part: sign-in, test accounts, route discovery, data that is sent |
 | `check.py` | quick check before a test: do sign-in and all routes work |
 | `run_levels.ps1` | runs a scenario at 10, 50, 100 and 200 users and builds the table |
@@ -154,6 +154,18 @@ The same analytics over and over. It runs twice, and the difference in response 
    ```
 3. Compare `results/cache_on_table.md` and `results/cache_off_table.md`.
 
+**Group balances (`BalanceUser`).** Calculating balances loads every expense of the group, so it was the slowest read in the main test. This scenario mostly reads balances (10 : 1) and now and then adds a group expense, which invalidates the cached balances of that group. Because it writes, start each of the two runs on a fresh database copy (section 2):
+
+1. API as in section 3 (cache on):
+   ```powershell
+   .\run_levels.ps1 -Scenario BalanceUser -Name balances_cache_on -Levels 50,200
+   ```
+2. Fresh copy, API with `--Caching:Enabled=false`:
+   ```powershell
+   .\run_levels.ps1 -Scenario BalanceUser -Name balances_cache_off -Levels 50,200
+   ```
+3. Compare the "GET group balances" rows in `results/balances_cache_on_50.html` / `_200.html` and the `_off_` ones (the table holds all requests together, including the writes).
+
 ### C) Concurrency (`ConcurrencyUser`)
 
 50 users change the **same** group expense at the same time (all as Jelena, who paid it). Correct behaviour:
@@ -201,7 +213,7 @@ locust -f locustfile.py ReportUser --headless --host https://localhost:7221 -u 5
 - **Environment:** CPU, RAM, Windows, .NET 10 in Release mode, PostgreSQL. A note that Locust and the API run on the same laptop and share the CPU, so the results are conservative. Why rate limiting is off for the main test and tested separately.
 - **Table** from `results/mix_table.md`: users, requests per second, median, p95, p99, failures.
 - **Charts** from `results/mix_100.html` (or 200): "Total Requests per Second" and "Response Times". Open the HTML in a browser and take a screenshot.
-- **Cache:** the two tables side by side (on / off) and a sentence about the difference.
+- **Cache:** the two tables side by side (on / off) and a sentence about the difference; the same for group balances (`BalanceUser`).
 - **Concurrency:** number of 200/409, 0 errors 5xx, the query from 6C returning 0 rows.
 - **Rate limiting:** number of 429 from scenario D.
 
@@ -229,3 +241,4 @@ PowerShell example: `$env:FS_USERS = "jelena@demo.fairshare.local,marko@demo.fai
 | `mix_after_800_*` | MixedUser, 800 users, 4 minutes |
 | `stress_*` | MixedUser, 400 and 800 users, before the concurrency fix |
 | `cache_on_*`, `cache_off_*` | CacheUser, 50 and 200 users, cache on / off |
+| `balances_cache_on_*`, `balances_cache_off_*` | BalanceUser, 50 and 200 users, cache on / off |

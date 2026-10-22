@@ -1,4 +1,5 @@
 using AutoMapper;
+using FairShare.Application.Abstractions;
 using FairShare.Application.Common.Exceptions;
 using FairShare.Application.Common.Extensions;
 using FairShare.Application.Common.Notifications;
@@ -16,12 +17,18 @@ public class SettlementService : ISettlementService
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
     private readonly IMapper _mapper;
+    private readonly ICacheService _cache;
 
-    public SettlementService(IUnitOfWork unitOfWork, INotificationService notificationService, IMapper mapper)
+    public SettlementService(
+        IUnitOfWork unitOfWork,
+        INotificationService notificationService,
+        IMapper mapper,
+        ICacheService cache)
     {
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
         _mapper = mapper;
+        _cache = cache;
     }
 
     public async Task<IReadOnlyList<BalanceResponse>> GetGroupBalancesAsync(
@@ -32,7 +39,8 @@ public class SettlementService : ISettlementService
         var group = await LoadGroupForMemberAsync(
             groupId, currentUserId, "Only a group member can view group balances.", cancellationToken);
 
-        var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
+        // Membership was checked against the database above; only the numbers come from the cache.
+        var balances = await _unitOfWork.GetCachedGroupNetBalancesAsync(_cache, groupId, cancellationToken);
 
         // Balances are calculated values, not entity fields, so they are built by hand.
         return group.Members
@@ -56,6 +64,8 @@ public class SettlementService : ISettlementService
             groupId, currentUserId, "Only a group member can calculate settlement suggestions.", cancellationToken);
 
         var usersById = group.Members.ToDictionary(m => m.UserId, m => m.User);
+
+        // Fresh from the database, not from the cache: these amounts become transfers people pay.
         var balances = await _unitOfWork.GetGroupNetBalancesAsync(groupId, cancellationToken);
 
         // Members can leave only with a settled balance, so this should never happen. The check

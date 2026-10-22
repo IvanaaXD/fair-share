@@ -3,6 +3,7 @@ FairShare load tests (Locust). One scenario per class - always name the class yo
 
   locust -f locustfile.py MixedUser        realistic mix of reading and writing (main test)
   locust -f locustfile.py CacheUser        analytics only - run with the cache on and off
+  locust -f locustfile.py BalanceUser      group balances (mostly reads) - cache on and off
   locust -f locustfile.py ConcurrencyUser  many requests change the same group expense at once
   locust -f locustfile.py RateLimitUser    shows the sign-in limit (expects HTTP 429)
   locust -f locustfile.py ReportUser       PDF reports - a few users, a stability check
@@ -189,6 +190,35 @@ class CacheUser(FairShareUser):
     @task
     def categories(self):
         self.call("GET", ROUTES["categories"], "GET categories")
+
+
+# ---------- 2b. cache: group balances ----------
+
+class BalanceUser(FairShareUser):
+    """
+    People opening their groups: mostly reading balances, now and then a new group expense,
+    which invalidates the cached balances of that group. Run it with the cache on and with
+    "Caching:Enabled=false" and compare "GET group balances".
+    """
+
+    @task(10)
+    def group_balances(self):
+        group = self.any_group()
+        if group:
+            self.call("GET", group_path("settlements", group["id"], "/balances"), "GET group balances")
+
+    @task(1)
+    def add_group_expense(self):
+        groups = groups_with_others(self.account)
+        if groups:
+            group = random.choice(groups)
+            self.call(
+                "POST",
+                group_path("group_expenses", group["id"]),
+                "POST group expense (equal split)",
+                expected=(200, 201),
+                json=group_expense(self.account, group),
+            )
 
 
 # ---------- 3. concurrency: the same group expense changed at once ----------
