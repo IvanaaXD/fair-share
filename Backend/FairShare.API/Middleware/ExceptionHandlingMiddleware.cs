@@ -58,6 +58,7 @@ namespace FairShare.API.Middleware
                 DomainException => (StatusCodes.Status400BadRequest, "A business rule was violated."),
                 ValidationException => (StatusCodes.Status400BadRequest, "The data in the request is invalid."),
                 UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "You are not authenticated."),
+                InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid e-mail or password."),
                 // Optimistic concurrency: someone else changed the same row in the meantime.
                 DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "The data has been modified in the meantime. Please refresh and try again."),
                 // Usually a unique index violation (e.g. two requests creating the same category at once).
@@ -109,6 +110,7 @@ namespace FairShare.API.Middleware
 
         private static bool IsSafeToExpose(Exception exception) => exception is
             NotFoundException or ForbiddenException or ConflictException or
-            BadRequestException or ServiceUnavailableException or DomainException or ValidationException;
+            BadRequestException or ServiceUnavailableException or DomainException or ValidationException or
+            InvalidCredentialsException;
     }
 }
