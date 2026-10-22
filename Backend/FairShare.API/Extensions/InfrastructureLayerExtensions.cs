@@ -33,7 +33,7 @@ public static class InfrastructureLayerExtensions
 
         AddDatabase(services, config);
         AddRepositories(services);
-        AddCache(services);
+        AddCache(services, config);
         AddEmail(services, config);
         AddExchangeRates(services);
         AddPaymentSimulator(services);
@@ -104,7 +104,7 @@ public static class InfrastructureLayerExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 
-    private static void AddCache(IServiceCollection services)
+    private static void AddCache(IServiceCollection services, IConfiguration config)
     {
         services.AddHybridCache(options =>
         {
@@ -121,7 +121,13 @@ public static class InfrastructureLayerExtensions
         //   dotnet add FairShare.API package Microsoft.Extensions.Caching.StackExchangeRedis
         //   services.AddStackExchangeRedisCache(o => o.Configuration = config.GetConnectionString("Redis"));
 
-        services.AddSingleton<ICacheService, HybridCacheService>();
+        // "Caching:Enabled": false only for the load test that measures the cache - the same
+        // requests are then answered from the database every time.
+        if (config.GetValue("Caching:Enabled", true))
+            services.AddSingleton<ICacheService, HybridCacheService>();
+        else
+            services.AddSingleton<ICacheService, NoCacheService>();
+
         services.AddSingleton<CacheInvalidationInterceptor>();
     }
 

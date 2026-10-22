@@ -10,11 +10,11 @@ builder.Services
     .AddInfrastructureLayer(builder.Configuration, builder.Environment)        // database, e-mail, payments...
     .AddIdentityServices(builder.Configuration)                               // JWT, current user, passwords
     .AddWebApi(builder.Configuration)                                         // controllers, OpenAPI, CORS, SignalR
-    .AddApiRateLimiting();
+    .AddApiRateLimiting(builder.Configuration);                               // limits from "RateLimiting"
 
 var app = builder.Build();
 
-// ---------- request pipeline ----------
+// ---------- request pipeline (the order matters) ----------
 if (app.Configuration.IsBehindReverseProxy())
     app.UseForwardedHeaders();
 
@@ -27,7 +27,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// CORS -> authentication -> rate limiting (knows the user) -> authorization
+// CORS -> authentication -> rate limiting (knows the user) -> authorization.
 app.UseCors(WebApiExtensions.FrontendCorsPolicy);
 app.UseAuthentication();
 app.UseRateLimiter();

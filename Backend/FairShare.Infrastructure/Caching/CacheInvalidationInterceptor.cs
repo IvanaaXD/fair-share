@@ -2,7 +2,9 @@ using System.Runtime.CompilerServices;
 using FairShare.Application.Abstractions;
 using FairShare.Application.Common.Caching;
 using FairShare.Domain.Entities;
+using FairShare.Domain.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +12,8 @@ namespace FairShare.Infrastructure.Caching;
 
 /// <summary>
 /// Keeps the cache correct without any service having to remember it: whenever SaveChanges
-/// writes an expense, a category or a user, the cache entries built from that data are invalidated.
+/// writes an expense, a category, a user or anything that changes group balances, the cache
+/// entries built from that data are invalidated.
 /// This also covers writes that are easy to forget - copies of recurring expenses created by the
 /// background job, blocking a user from the admin panel, a password change.
 ///
@@ -87,7 +90,10 @@ public sealed class CacheInvalidationInterceptor : SaveChangesInterceptor
 
         var tags = new HashSet<string>();
 
-        foreach (var entry in context.ChangeTracker.Entries())
+        // Materialized once: the split case below looks through the same entries.
+        var entries = context.ChangeTracker.Entries().ToList();
+
+        foreach (var entry in entries)
         {
             if (entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted))
                 continue;
@@ -96,6 +102,22 @@ public sealed class CacheInvalidationInterceptor : SaveChangesInterceptor
             {
                 case Expense expense:
                     tags.Add(CacheTags.UserSpending(expense.UserId));
+                    break;
+
+                // Group balances: every group expense and split counts, ...
+                case GroupExpense groupExpense:
+                    tags.Add(CacheTags.GroupLedger(groupExpense.GroupId));
+                    break;
+
+                case ExpenseSplit split:
+                    if (FindGroupOfSplit(split, entries) is { } splitGroupId)
+                        tags.Add(CacheTags.GroupLedger(splitGroupId));
+                    break;
+
+                // ... but of the settlements only completed ones. Generating or deleting
+                // suggestions (Proposed) happens often and leaves the balances as they are.
+                case SettlementTransaction settlement when IsOrWasSettled(entry, settlement):
+                    tags.Add(CacheTags.GroupLedger(settlement.GroupId));
                     break;
 
                 case Category:
@@ -113,6 +135,29 @@ public sealed class CacheInvalidationInterceptor : SaveChangesInterceptor
         else
             _pending.Remove(context);
     }
+
+    /// <summary>
+    /// A split changed on its own (e.g. only the shares were edited) still belongs to a group.
+    /// The group is read from the loaded expense - the service always loads the expense together
+    /// with its splits, so no extra query is needed.
+    /// </summary>
+    private static Guid? FindGroupOfSplit(ExpenseSplit split, IEnumerable<EntityEntry> entries)
+    {
+        if (split.GroupExpense is { } loaded)
+            return loaded.GroupId;
+
+        return entries
+            .Select(e => e.Entity)
+            .OfType<GroupExpense>()
+            .FirstOrDefault(e => e.Id == split.GroupExpenseId)
+            ?.GroupId;
+    }
+
+    /// <summary>True when the settlement is completed now or was completed before this save.</summary>
+    private static bool IsOrWasSettled(EntityEntry entry, SettlementTransaction settlement)
+        => settlement.Status == SettlementStatus.Settled
+           || (entry.State == EntityState.Modified
+               && entry.Property(nameof(SettlementTransaction.Status)).OriginalValue is SettlementStatus.Settled);
 
     private async Task InvalidatePendingAsync(DbContext? context)
     {

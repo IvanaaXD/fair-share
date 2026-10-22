@@ -22,6 +22,12 @@ public static class CacheKeys
     public static string AdminStatistics(AnalyticsPeriod period, DateTime? from, DateTime? to)
         => $"admin:statistics:{period}:{Format(from)}:{Format(to)}";
 
+    /// <summary>
+    /// Net balances of a group's members. Shared by all members of the group - the service
+    /// checks membership against the database BEFORE reading this entry, never from the cache.
+    /// </summary>
+    public static string GroupBalances(Guid groupId) => $"group:balances:{groupId:N}";
+
     private static string Format(DateTime? value)
         => value?.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture) ?? "-";
 }
@@ -40,6 +46,12 @@ public static class CacheTags
 
     /// <summary>A user's account state (blocked, must change password).</summary>
     public static string User(Guid userId) => $"user:{userId:N}";
+
+    /// <summary>
+    /// Everything calculated from a group's expenses, splits and completed settlements
+    /// (net balances). Proposed settlements do not change balances, so they do not touch it.
+    /// </summary>
+    public static string GroupLedger(Guid groupId) => $"group-ledger:{groupId:N}";
 }
 
 /// <summary>
@@ -51,6 +63,7 @@ public static class CacheDurations
     public static readonly TimeSpan Categories = TimeSpan.FromHours(1);
     public static readonly TimeSpan Analytics = TimeSpan.FromMinutes(10);
     public static readonly TimeSpan AccountStatus = TimeSpan.FromMinutes(5);
+    public static readonly TimeSpan GroupBalances = TimeSpan.FromMinutes(10);
 
     /// <summary>
     /// Admin statistics count rows across the whole system and are not invalidated on every save

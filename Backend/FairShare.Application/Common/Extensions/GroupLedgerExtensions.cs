@@ -1,3 +1,5 @@
+using FairShare.Application.Abstractions;
+using FairShare.Application.Common.Caching;
 using FairShare.Domain.Entities.Enums;
 using FairShare.Domain.Interfaces;
 using FairShare.Domain.Services;
@@ -10,7 +12,11 @@ namespace FairShare.Application.Common.Extensions;
 /// </summary>
 public static class GroupLedgerExtensions
 {
-    /// <summary>Loads the group's expenses and completed settlements and calculates net balances.</summary>
+    /// <summary>
+    /// Loads the group's expenses and completed settlements and calculates net balances.
+    /// Always reads the database - used wherever the result decides whether data may be
+    /// changed (leaving or deleting a group, removing a member, new settlement suggestions).
+    /// </summary>
     public static async Task<Dictionary<Guid, decimal>> GetGroupNetBalancesAsync(
         this IUnitOfWork unitOfWork,
         Guid groupId,
@@ -22,6 +28,25 @@ public static class GroupLedgerExtensions
 
         return GroupBalanceCalculator.Calculate(expenses, settled);
     }
+
+    /// <summary>
+    /// The same balances, from the cache when possible - for DISPLAYING them only.
+    /// Calculating balances loads every expense of the group, so it is the slowest read in the
+    /// app (see the load tests). The entry is invalidated by CacheInvalidationInterceptor as soon
+    /// as an expense, a split or a completed settlement of the group is saved.
+    /// Only the numbers are cached, never the members: the caller checks membership itself.
+    /// </summary>
+    public static Task<Dictionary<Guid, decimal>> GetCachedGroupNetBalancesAsync(
+        this IUnitOfWork unitOfWork,
+        ICacheService cache,
+        Guid groupId,
+        CancellationToken cancellationToken = default)
+        => cache.GetOrCreateAsync(
+            CacheKeys.GroupBalances(groupId),
+            token => unitOfWork.GetGroupNetBalancesAsync(groupId, token),
+            CacheDurations.GroupBalances,
+            new[] { CacheTags.GroupLedger(groupId) },
+            cancellationToken);
 
     /// <summary>
     /// Marks still-unsettled settlement suggestions for deletion. Suggestions are a snapshot of

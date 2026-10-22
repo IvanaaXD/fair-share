@@ -48,7 +48,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
                     Kpi(row.RelativeItem(0.8f), text["change"],
                         a.ChangePercentage is { } change ? text.SignedPercent(change) : text["noData"],
                         // More spending than before is shown in amber, less in petrol - like in the app.
-                        a.ChangePercentage > 0 ? Palette.Negative : a.ChangePercentage < 0 ? Palette.Primary : null!);
+                        a.ChangePercentage > 0 ? Palette.Negative : a.ChangePercentage < 0 ? Palette.Primary : (Color?)null);
                 });
 
                 if (a.ConvertedExpenseCount > 0)
@@ -246,7 +246,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
                         note: $"{text["expenseCount"]}: {report.TotalExpenseCount}");
                     Kpi(row.RelativeItem(0.8f), text["members"], report.Balances.Count.ToString(CultureInfo.InvariantCulture));
                     Kpi(row.RelativeItem(1.2f), text["outstanding"], text.Money(outstanding, report.Currency),
-                        outstanding > 0 ? Palette.Negative : null!);
+                        outstanding > 0 ? Palette.Negative : (Color?)null);
                     Kpi(row.RelativeItem(0.8f), text["paymentsNeeded"],
                         report.SuggestionUnavailable ? "–" : report.SuggestedTransfers.Count.ToString(CultureInfo.InvariantCulture));
                 });

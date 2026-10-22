@@ -12,23 +12,44 @@ namespace FairShare.WebAPI.Extensions
         public const string Authentication = "authentication";
     }
 
+    /// <summary>Section "RateLimiting" of appsettings.json.</summary>
+    public sealed class RateLimitingOptions
+    {
+        public const string SectionName = "RateLimiting";
+
+        /// <summary>
+        /// false only for load tests: every virtual user comes from the same IP address and a few
+        /// accounts, so the limits would measure themselves instead of the API.
+        /// </summary>
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>Global limit: generous, protects the API from a single client flooding it.</summary>
+        public int PermitsPerMinute { get; set; } = 300;
+
+        /// <summary>Strict: makes guessing passwords and spamming someone's inbox impractical.</summary>
+        public int AuthenticationPermitsPerMinute { get; set; } = 10;
+    }
+
     public static class RateLimitingServiceExtensions
     {
-        // Global limit: generous, protects the API from a single client flooding it.
-        private const int GlobalPermitsPerMinute = 300;
-
-        // Authentication limit: strict, makes guessing passwords and spamming someone's inbox impractical.
-        private const int AuthenticationPermitsPerMinute = 10;
-
         /// <summary>
         /// Built-in ASP.NET Core rate limiting (no external service). Requests over the limit get
         /// HTTP 429 with a Retry-After header. Limits are kept in memory, per API instance.
         /// </summary>
-        public static IServiceCollection AddApiRateLimiting(this IServiceCollection services)
+        public static IServiceCollection AddApiRateLimiting(this IServiceCollection services, IConfiguration config)
         {
+            var settings = config.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>() ?? new RateLimitingOptions();
+
             services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                if (!settings.Enabled)
+                {
+                    // The policy name still has to exist, because controllers refer to it.
+                    options.AddPolicy(RateLimitPolicies.Authentication, _ => RateLimitPartition.GetNoLimiter("off"));
+                    return;
+                }
 
                 // Applies to every request: one bucket per signed-in user, or per IP address for
                 // anonymous requests.
@@ -37,7 +58,7 @@ namespace FairShare.WebAPI.Extensions
                         partitionKey: GetUserOrIpKey(httpContext),
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
-                            PermitLimit = GlobalPermitsPerMinute,
+                            PermitLimit = settings.PermitsPerMinute,
                             Window = TimeSpan.FromMinutes(1),
                             QueueLimit = 0
                         }));
@@ -49,7 +70,7 @@ namespace FairShare.WebAPI.Extensions
                         partitionKey: GetIpKey(httpContext),
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
-                            PermitLimit = AuthenticationPermitsPerMinute,
+                            PermitLimit = settings.AuthenticationPermitsPerMinute,
                             Window = TimeSpan.FromMinutes(1),
                             QueueLimit = 0
                         }));
