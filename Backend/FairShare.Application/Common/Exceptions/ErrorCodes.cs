@@ -44,6 +44,7 @@ public static class ErrorCodes
     public const string SettlementNotParticipant = "settlementNotParticipant";
     public const string SettlementAlreadySettled = "settlementAlreadySettled";
     public const string FormerMemberBalance = "formerMemberBalance";
+    public const string ExactTooManyParticipants = "exactTooManyParticipants";
     public const string PaymentKeyReused = "paymentKeyReused";
     public const string PaymentOnlyDebtor = "paymentOnlyDebtor";
     public const string CardNotFound = "cardNotFound";

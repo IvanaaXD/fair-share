@@ -1073,6 +1073,7 @@ export const en: Translation = {
     settlementNotParticipant: 'Only the member who owes or the member who is owed can mark the settlement as settled.',
     settlementAlreadySettled: 'This settlement is already settled.',
     formerMemberBalance: 'A former member still has an unsettled balance, so a suggestion cannot be calculated.',
+    exactTooManyParticipants: 'The exact algorithm is available for groups with at most 12 members with an unsettled balance. Use the standard algorithm.',
     paymentKeyReused: 'This payment request has already been used. Please try again.',
     paymentOnlyDebtor: 'Only the member who owes can pay by card.',
     cardNotFound: 'Card not found.',
