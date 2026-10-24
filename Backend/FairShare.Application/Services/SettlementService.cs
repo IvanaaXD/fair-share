@@ -77,6 +77,15 @@ public class SettlementService : ISettlementService
             .Where(b => usersById.ContainsKey(b.Key))
             .ToDictionary(b => b.Key, b => b.Value);
 
+        // The exact search is exponential, so it is offered only for small groups. Checked before
+        // anything is changed, so a refused request leaves the old suggestions untouched.
+        if (useExactAlgorithm &&
+            memberBalances.Count(b => !GroupBalanceCalculator.IsSettled(b.Value)) > DebtSimplifier.MaxExactParticipants)
+            throw new ConflictException(
+                $"The exact algorithm is available for groups with at most {DebtSimplifier.MaxExactParticipants} members " +
+                "with an unsettled balance. Use the standard algorithm.",
+                ErrorCodes.ExactTooManyParticipants);
+
         // Old, still unsettled suggestions are replaced by the new calculation.
         await _unitOfWork.RemoveProposedSettlementsAsync(groupId, null, cancellationToken);
 

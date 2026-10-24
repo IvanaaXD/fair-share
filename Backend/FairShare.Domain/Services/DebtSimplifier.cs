@@ -13,7 +13,7 @@ public static class DebtSimplifier
     private const decimal Tolerance = 0.01m;
 
     /// <summary>The maximum number of participants (with a non-zero balance) for which the exact algorithm is run.</summary>
-    private const int MaxExactParticipants = 12;
+    public const int MaxExactParticipants = 12;
 
     /// <summary>
     /// Heuristic (greedy) approach: at each step, it pairs the current largest debtor
