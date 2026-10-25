@@ -10,8 +10,9 @@ namespace FairShare.WebAPI.Extensions
     public static class FileStorageServiceExtensions
     {
         /// <summary>
-        /// Uploaded images (profile images, receipt photos) on the local disk. Replacing the disk
-        /// with an object store later means registering a different IFileStorage here - nothing else.
+        /// Uploaded images (profile images, receipt photos): on the local disk by default, or in an
+        /// S3-compatible object storage (SeaweedFS in Docker) when "FileStorage:Provider" is "S3". Only the
+        /// IFileStorage registration differs - the services work with keys and do not know which one is used.
         /// </summary>
         public static IServiceCollection AddFileStorage(
             this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
@@ -24,7 +25,11 @@ namespace FairShare.WebAPI.Extensions
             services.PostConfigure<FileStorageSettings>(settings =>
                 settings.RootPath = Path.GetFullPath(Path.Combine(environment.ContentRootPath, settings.RootPath)));
 
-            services.AddSingleton<IFileStorage, LocalFileStorage>();
+            var settings = config.GetSection("FileStorage").Get<FileStorageSettings>() ?? new FileStorageSettings();
+            if (settings.UsesS3)
+                services.AddSingleton<IFileStorage, S3FileStorage>();
+            else
+                services.AddSingleton<IFileStorage, LocalFileStorage>();
 
             // Used by the DbContext registration in Program.cs.
             services.AddSingleton<FileCleanupInterceptor>();

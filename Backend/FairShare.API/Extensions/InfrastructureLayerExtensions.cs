@@ -65,6 +65,9 @@ public static class InfrastructureLayerExtensions
 
         await AdminUserSeeder.SeedAsync(app.Services);
 
+        // The basic categories, only on an empty database (a new installation, e.g. in Docker).
+        await CategorySeeder.SeedAsync(app.Services);
+
         if (app.Configuration.GetValue<bool>("DemoData:Enabled"))
             await DemoDataSeeder.SeedAsync(app.Services);
     }
@@ -116,10 +119,18 @@ public static class InfrastructureLayerExtensions
             };
         });
 
-        // Redis as a second cache level (shared by several API instances, survives restarts)
-        // is just this - no other code changes, HybridCache picks it up automatically:
-        //   dotnet add FairShare.API package Microsoft.Extensions.Caching.StackExchangeRedis
-        //   services.AddStackExchangeRedisCache(o => o.Configuration = config.GetConnectionString("Redis"));
+        // Redis as the second cache level (L2): shared by all API instances and kept when the API
+        // restarts. HybridCache uses any registered IDistributedCache on its own, so no other code
+        // changes. Without "ConnectionStrings:Redis" (local development) only the in-memory level is used.
+        var redis = config.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redis))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redis;
+                options.InstanceName = "fairshare:";
+            });
+        }
 
         // "Caching:Enabled": false only for the load test that measures the cache - the same
         // requests are then answered from the database every time.

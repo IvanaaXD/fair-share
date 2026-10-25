@@ -1,0 +1,7 @@
+# Keeps local build output and secrets out of the image build context.
+node_modules/
+dist/
+.env.local
+.env.*.local
+Dockerfile
+.dockerignore
