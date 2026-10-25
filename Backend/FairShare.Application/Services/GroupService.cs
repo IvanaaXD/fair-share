@@ -139,12 +139,12 @@ public class GroupService : IGroupService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var inviter = await _unitOfWork.Users.GetByIdAsync(currentUserId, cancellationToken);
-        var invitedBy = inviter is null ? string.Empty : $" (invited by: {NotificationText.FullName(inviter)})";
+        var invitedBy = inviter is null ? string.Empty : $" (на позив корисника {NotificationText.FullName(inviter)})";
         await _notificationService.NotifyAsync(
             userToAdd.Id,
             NotificationType.GroupInvite,
-            "New group",
-            $"You are now a member of group {NotificationText.Quote(group.Name)}{invitedBy}.",
+            "Нова група",
+            $"Сада си члан групе {NotificationText.Quote(group.Name)}{invitedBy}.",
             cancellationToken);
 
         return _mapper.Map<GroupMemberResponse>(member);
@@ -180,8 +180,8 @@ public class GroupService : IGroupService
         await _notificationService.NotifyAsync(
             userId,
             NotificationType.GroupMembershipChanged,
-            "Removal from group",
-            $"You are no longer a member of group {NotificationText.Quote(group.Name)} – the group owner has removed you from it.",
+            "Уклањање из групе",
+            $"Више ниси члан групе {NotificationText.Quote(group.Name)}: власник групе те је уклонио.",
             cancellationToken);
     }
 
@@ -224,8 +224,8 @@ public class GroupService : IGroupService
             await _notificationService.NotifyAsync(
                 newOwner.UserId,
                 NotificationType.GroupMembershipChanged,
-                "New role in group",
-                $"You are now the owner of group {NotificationText.Quote(group.Name)}, because the previous owner left the group.",
+                "Нова улога у групи",
+                $"Сада си власник групе {NotificationText.Quote(group.Name)}, јер је претходни власник напустио групу.",
                 cancellationToken);
         }
     }

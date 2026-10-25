@@ -30,6 +30,13 @@ public sealed record ExpenseFilter
     public bool? IsRecurring { get; init; }
 
     public ExpenseSortField SortBy { get; init; } = ExpenseSortField.Date;
+
+    /// <summary>
+    /// Units of each currency per euro (1 EUR = value), needed only when sorting by amount:
+    /// amounts are compared converted to euros, so 16 EUR comes before 20 BAM.
+    /// A currency missing here is compared as if it were euros.
+    /// </summary>
+    public IReadOnlyDictionary<string, decimal>? PerEuro { get; init; }
     public bool SortDescending { get; init; } = true;
 
     public int Page { get; init; } = 1;

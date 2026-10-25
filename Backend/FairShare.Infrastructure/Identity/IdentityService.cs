@@ -220,13 +220,13 @@ namespace FairShare.Infrastructure.Identity
 
             var url = BuildFrontendUrl("reset-password", token);
             var body =
-                "We received a request to change the password for your FairShare account.\n\n" +
-                "You can set a new password at the following link:\n" +
+                "Примили смо захтјев за промјену лозинке твог FairShare налога.\n\n" +
+                "Нову лозинку можеш поставити на сљедећем линку:\n" +
                 url + "\n\n" +
-                $"The link is valid for {_settings.PasswordResetMinutes} min. If you did not request this change, " +
-                "ignore this message - your password will remain the same.";
+                $"Линк важи {_settings.PasswordResetMinutes} мин. Ако ниси тражио/ла промјену лозинке, " +
+                "занемари ову поруку - лозинка остаје иста.";
 
-            await SendEmailAsync(user, "Password Reset", body, url, cancellationToken);
+            await SendEmailAsync(user, "Промјена лозинке", body, url, cancellationToken);
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
@@ -369,13 +369,13 @@ namespace FairShare.Infrastructure.Identity
         {
             var url = BuildFrontendUrl("confirm-email", token);
             var body =
-                "Welcome to FairShare!\n\n" +
-                "To activate your account, open the following link:\n" +
+                "Добро дошао/ла у FairShare!\n\n" +
+                "Да би активирао/ла налог, отвори сљедећи линк:\n" +
                 url + "\n\n" +
-                $"The link is valid for {_settings.EmailConfirmationHours} h. If you did not create this account, " +
-                "ignore this message.";
+                $"Линк важи {_settings.EmailConfirmationHours} h. Ако ниси направио/ла овај налог, " +
+                "занемари ову поруку.";
 
-            return SendEmailAsync(user, "Account Activation", body, url, cancellationToken);
+            return SendEmailAsync(user, "Активација налога", body, url, cancellationToken);
         }
 
         /// <summary>Link to a page of the web application; that page then calls the API with the token.</summary>

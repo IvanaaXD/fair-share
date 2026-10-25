@@ -37,6 +37,9 @@ public sealed class ExchangeRates
     /// <summary>"exchangerate-api" or "fixed".</summary>
     public string Source { get; }
 
+    /// <summary>Units of each known currency per euro (1 EUR = value); always has EUR and BAM.</summary>
+    public IReadOnlyDictionary<string, decimal> PerEuro => _perEuro;
+
     public bool TryConvert(decimal amount, string fromCurrency, string toCurrency, out decimal converted)
     {
         if (string.Equals(fromCurrency, toCurrency, StringComparison.OrdinalIgnoreCase))

@@ -1,4 +1,5 @@
 using AutoMapper;
+using FairShare.Application.Abstractions;
 using FairShare.Application.Common.Exceptions;
 using FairShare.Application.DTOs.Common;
 using FairShare.Application.DTOs.Expenses;
@@ -14,12 +15,18 @@ public class ExpenseService : IExpenseService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBudgetAlertService _budgetAlerts; // CHANGED: budget check moved to its own service
+    private readonly IExchangeRateProvider _exchangeRates;
     private readonly IMapper _mapper;
 
-    public ExpenseService(IUnitOfWork unitOfWork, IBudgetAlertService budgetAlerts, IMapper mapper)
+    public ExpenseService(
+        IUnitOfWork unitOfWork,
+        IBudgetAlertService budgetAlerts,
+        IExchangeRateProvider exchangeRates,
+        IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _budgetAlerts = budgetAlerts;
+        _exchangeRates = exchangeRates;
         _mapper = mapper;
     }
 
@@ -123,6 +130,13 @@ public class ExpenseService : IExpenseService
         CancellationToken cancellationToken = default)
     {
         // Value ranges are checked by ExpenseQueryParametersValidator.
+
+        // Sorting by amount compares the amounts in one currency (16 EUR is more than 20 BAM),
+        // so the repository needs today's rates. Sorting by date does not.
+        IReadOnlyDictionary<string, decimal>? perEuro = null;
+        if (query.SortBy == ExpenseSortField.Amount)
+            perEuro = (await _exchangeRates.GetRatesAsync(cancellationToken)).PerEuro;
+
         var filter = new ExpenseFilter
         {
             UserId = currentUserId,
@@ -137,6 +151,7 @@ public class ExpenseService : IExpenseService
             IsRecurring = query.IsRecurring,
             SortBy = query.SortBy,
             SortDescending = query.SortDescending,
+            PerEuro = perEuro,
             Page = query.Page,
             PageSize = query.PageSize
         };

@@ -33,7 +33,8 @@ public class QrPaymentService : IQrPaymentService
 
         var qrData = settlement.QrPaymentData!;
         var recipientName = $"{settlement.CreditorUser.FirstName} {settlement.CreditorUser.LastName}";
-        var purpose = $"FairShare settlement - {group.Name}";
+        // Purpose of payment (field S, at most 35 characters): "Поравнање - Викенд на Тари".
+        var purpose = $"Поравнање - {group.Name}";
 
         var payload = IpsQrCodec.Build(new IpsQrPayload(
             qrData.RecipientAccount,

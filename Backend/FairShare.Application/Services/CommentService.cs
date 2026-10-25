@@ -134,7 +134,7 @@ public class CommentService : ICommentService
             ? comment.Text[..NotificationQuoteLength].TrimEnd() + "…"
             : comment.Text;
 
-        var message = $"New comment on expense {NotificationText.Quote(title)} in group {NotificationText.Quote(group.Name)} " +
+        var message = $"Нови коментар на трошак {NotificationText.Quote(title)} у групи {NotificationText.Quote(group.Name)} " +
                       $"({NotificationText.FullName(comment.User)}): {NotificationText.Quote(text)}";
 
         foreach (var userId in recipients)
@@ -142,7 +142,7 @@ public class CommentService : ICommentService
             await _notificationService.NotifyAsync(
                 userId,
                 NotificationType.GroupExpenseComment,
-                "New comment",
+                "Нови коментар",
                 message,
                 cancellationToken,
                 sendEmail: false);
