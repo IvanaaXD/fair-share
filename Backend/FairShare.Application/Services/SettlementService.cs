@@ -130,15 +130,15 @@ public class SettlementService : ISettlementService
             await _notificationService.NotifyAsync(
                 t.DebtorUserId,
                 NotificationType.SettlementSuggested,
-                "New settlement suggestion",
-                $"New settlement suggestion in group {groupName}: you need to pay {amount}, receiver is {NotificationText.FullName(t.CreditorUser)}.",
+                "Нови приједлог поравнања",
+                $"Нови приједлог поравнања у групи {groupName}: треба да уплатиш {amount}, прималац је {NotificationText.FullName(t.CreditorUser)}.",
                 cancellationToken);
 
             await _notificationService.NotifyAsync(
                 t.CreditorUserId,
                 NotificationType.SettlementSuggested,
-                "New settlement suggestion",
-                $"New settlement suggestion in group {groupName}: {NotificationText.FullName(t.DebtorUser)} should pay you {amount}.",
+                "Нови приједлог поравнања",
+                $"Нови приједлог поравнања у групи {groupName}: {NotificationText.FullName(t.DebtorUser)} треба да ти уплати {amount}.",
                 cancellationToken,
                 sendEmail: false);
         }
@@ -181,8 +181,8 @@ public class SettlementService : ISettlementService
         await _notificationService.NotifyAsync(
             otherUserId,
             NotificationType.SettlementCompleted,
-            "Settlement settled",
-            $"Settlement in group {NotificationText.Quote(group?.Name ?? string.Empty)} was marked as settled: " +
+            "Поравнање је измирено",
+            $"Поравнање у групи {NotificationText.Quote(group?.Name ?? string.Empty)} означено је као измирено: " +
             $"{NotificationText.FullName(transaction.DebtorUser)} → {NotificationText.FullName(transaction.CreditorUser)}, " +
             $"{NotificationText.Money(transaction.Amount, group?.Currency)}.",
             cancellationToken);
@@ -224,19 +224,19 @@ public class SettlementService : ISettlementService
 
         var group = await _unitOfWork.Groups.GetByIdAsync(groupId, cancellationToken);
         var creditor = NotificationText.FullName(transaction.CreditorUser);
-        var text = $"{creditor} is reminding you of a debt in group {NotificationText.Quote(group?.Name ?? string.Empty)}: " +
-                   $"you need to pay {NotificationText.Money(transaction.Amount, group?.Currency)}.";
+        var text = $"{creditor} те подсјећа на дуг у групи {NotificationText.Quote(group?.Name ?? string.Empty)}: " +
+                   $"треба да уплатиш {NotificationText.Money(transaction.Amount, group?.Currency)}.";
 
         // The personal message is plain text: the app shows it as text and the e-mail template
         // HTML-encodes it, so it cannot inject anything.
         var personal = message?.Trim();
         if (!string.IsNullOrEmpty(personal))
-            text += $" Message: {NotificationText.Quote(personal)}";
+            text += $" Порука: {NotificationText.Quote(personal)}";
 
         await _notificationService.NotifyAsync(
             transaction.DebtorUserId,
             NotificationType.DebtReminder,
-            "Debt reminder",
+            "Подсјетник на дуг",
             text,
             cancellationToken);
 

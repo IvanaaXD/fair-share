@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using FairShare.Domain.Entities;
 using FairShare.Domain.Interfaces;
 using FairShare.Domain.Models;
@@ -61,13 +62,23 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
         // Counted before paging: the frontend needs the total to show the number of pages.
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var ordered = (filter.SortBy, filter.SortDescending) switch
+        IOrderedQueryable<Expense> ordered;
+        if (filter.SortBy == ExpenseSortField.Amount)
         {
-            (ExpenseSortField.Amount, true) => query.OrderByDescending(e => e.Amount).ThenByDescending(e => e.Date),
-            (ExpenseSortField.Amount, false) => query.OrderBy(e => e.Amount).ThenBy(e => e.Date),
-            (_, false) => query.OrderBy(e => e.Date),
-            _ => query.OrderByDescending(e => e.Date)
-        };
+            // Amounts in different currencies are compared converted to euros. Only the currencies
+            // that occur in the result go into the SQL CASE expression.
+            var currencies = await query.Select(e => e.Currency).Distinct().ToListAsync(cancellationToken);
+            var amountInEuros = AmountInEuros(currencies, filter.PerEuro);
+            ordered = filter.SortDescending
+                ? query.OrderByDescending(amountInEuros).ThenByDescending(e => e.Date)
+                : query.OrderBy(amountInEuros).ThenBy(e => e.Date);
+        }
+        else
+        {
+            ordered = filter.SortDescending
+                ? query.OrderByDescending(e => e.Date)
+                : query.OrderBy(e => e.Date);
+        }
 
         // The Id as the last sort key makes the order stable: two expenses with the same date
         // can never swap places between pages (and appear twice or not at all).
@@ -162,6 +173,33 @@ public class ExpenseRepository : GenericRepository<Expense>, IExpenseRepository
                 e.Id, e.Amount, e.Currency, e.Date, e.Description, e.Category.Name,
                 e.Latitude!.Value, e.Longitude!.Value))
             .ToListAsync(cancellationToken);
+
+    /// <summary>
+    /// e => e.Currency == "RSD" ? e.Amount / 117.2 : e.Currency == "BAM" ? e.Amount / 1.95583 : ... : e.Amount,
+    /// which EF Core translates to a CASE expression. The rates are numbers from the rate service,
+    /// never user input; a currency without a known rate is compared as if it were euros.
+    /// </summary>
+    private static Expression<Func<Expense, decimal>> AmountInEuros(
+        IEnumerable<string> currencies,
+        IReadOnlyDictionary<string, decimal>? perEuro)
+    {
+        var e = Expression.Parameter(typeof(Expense), "e");
+        var amount = Expression.Property(e, nameof(Expense.Amount));
+        var currency = Expression.Property(e, nameof(Expense.Currency));
+
+        Expression body = amount;
+        foreach (var code in currencies)
+        {
+            if (perEuro is null || !perEuro.TryGetValue(code, out var rate) || rate <= 0m || rate == 1m)
+                continue;
+            body = Expression.Condition(
+                Expression.Equal(currency, Expression.Constant(code)),
+                Expression.Divide(amount, Expression.Constant(rate)),
+                body);
+        }
+
+        return Expression.Lambda<Func<Expense, decimal>>(body, e);
+    }
 
     /// <summary>Makes \, % and _ match themselves instead of acting as LIKE wildcards.</summary>
     private static string EscapeLikePattern(string text)

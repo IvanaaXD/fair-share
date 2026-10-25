@@ -289,8 +289,8 @@ public class PaymentService : IPaymentService
             await _notificationService.NotifyAsync(
                 settlement.DebtorUserId,
                 NotificationType.PaymentFailed,
-                "Payment failed",
-                $"Card payment with {card} failed ({amount} in group {groupName}). Try again or select another card.",
+                "Плаћање није успјело",
+                $"Плаћање картицом {card} није успјело ({amount} у групи {groupName}). Покушај поново или изабери другу картицу.",
                 cancellationToken,
                 sendEmail: false);
             return;
@@ -302,8 +302,8 @@ public class PaymentService : IPaymentService
             await _notificationService.NotifyAsync(
                 settlement.CreditorUserId,
                 NotificationType.PaymentConfirmation,
-                "Payment received",
-                $"A card payment has been received in group {groupName}: {NotificationText.FullName(settlement.DebtorUser)}, {amount}. The settlement is complete.",
+                "Уплата је примљена",
+                $"Примљена је уплата картицом у групи {groupName}: {NotificationText.FullName(settlement.DebtorUser)}, {amount}. Поравнање је измирено.",
                 cancellationToken);
         }
 
@@ -311,8 +311,8 @@ public class PaymentService : IPaymentService
         await _notificationService.NotifyAsync(
             settlement.DebtorUserId,
             NotificationType.PaymentConfirmation,
-            "Payment confirmation",
-            $"Card payment with {card} was successful: {amount} for {NotificationText.FullName(settlement.CreditorUser)} in group {groupName}.",
+            "Потврда плаћања",
+            $"Плаћање картицом {card} је успјело: {amount} за корисника {NotificationText.FullName(settlement.CreditorUser)} у групи {groupName}.",
             cancellationToken);
     }
 
