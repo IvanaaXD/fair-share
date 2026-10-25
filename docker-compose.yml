@@ -1,11 +1,18 @@
-# FairShare - the whole system in containers: PostgreSQL + API + Nginx, and the separate
-# payment simulator service with its own PostgreSQL database.
-# Start:   docker compose up --build -d
-# Stop:    docker compose down          (data stays in the volumes)
-# Reset:   docker compose down -v       (also deletes the database and uploaded files)
+# FairShare - the whole system in containers.
+#
+#   web (Nginx, HTTPS) -> api -> db (PostgreSQL)
+#                             -> redis (second cache level)
+#                             -> storage (uploaded images, SeaweedFS - S3-compatible object storage)
+#                             -> mailpit (test SMTP server: e-mails are caught, never delivered)
+#                             -> payments (payment simulator) -> payments-db (its own PostgreSQL)
+#
+# Start:   docker compose up --build -d      then open https://localhost
+# Stop:    docker compose down               (data stays in the volumes)
+# Reset:   docker compose down -v            (also deletes the databases, images and cache)
 #
 # Secrets are read from a ".env" file next to this file (see .env.example) and are never
-# committed to git.
+# committed to git. Only Nginx (80, 443) is reachable from other computers; the Mailpit and
+# storage web pages listen on 127.0.0.1 only, the databases, Redis and the API not at all.
 
 services:
   db:
@@ -22,7 +29,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # No "ports": the database is reachable only from the other containers.
 
   # ---------- payment simulator: its own service and its own database ----------
   # Card data and charges live only here (PCI-DSS style isolation): the API stores tokens and
@@ -56,53 +62,126 @@ services:
       # Results go straight to the API container (inside the Docker network, not through Nginx).
       Simulator__WebhookUrl: http://api:8080/api/webhooks/payments
 
+  # ---------- cache: Redis as the second level of HybridCache ----------
+  # Only a cache, so nothing is written to disk: after a restart it simply fills up again.
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ---------- uploaded images: SeaweedFS, an S3-compatible object storage ----------
+  # The API talks to it through the standard S3 API (S3FileStorage), so any S3-compatible storage
+  # would do. (MinIO, the usual choice, no longer publishes public Docker images.)
+  # The access keys come from .env and are written into SeaweedFS's S3 configuration at start.
+  storage:
+    image: chrislusf/seaweedfs:4.47
+    restart: unless-stopped
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cat > /tmp/s3.json <<JSON
+        {"identities":[{"name":"fairshare","credentials":[{"accessKey":"$${S3_ACCESS_KEY}","secretKey":"$${S3_SECRET_KEY}"}],"actions":["Admin","Read","Write","List","Tagging"]}]}
+        JSON
+        exec weed server -dir=/data -filer -s3 -s3.port=8333 -s3.config=/tmp/s3.json
+    volumes:
+      - storagedata:/data
+    ports:
+      # File browser of the storage (read the uploaded images): http://localhost:8888
+      - "127.0.0.1:8888:8888"
+
+  # ---------- e-mail: Mailpit catches every message the API sends ----------
+  # Activation, password reset and notification e-mails can be read at http://localhost:8025
+  # without a real mailbox and without sending anything to real addresses.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+
   api:
     build: ./Backend
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      storage:
+        condition: service_started
       payments:
         condition: service_started
     environment:
-      # Development keeps Swagger UI available at http://localhost/swagger for the defence.
+      # Development keeps Swagger UI available at https://localhost/swagger for the defence.
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__PostgresConnection: "Host=db;Port=5432;Database=fairshare;Username=fairshare;Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=fairshare;Username=fairshare;Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__Redis: "redis:6379"
       # Issuer and Audience come from appsettings.json inside the image; only the secret is overridden.
       JwtSettings__Secret: ${JWT_SECRET}
-      AuthSettings__FrontendBaseUrl: http://localhost
-      Cors__AllowedOrigins__0: http://localhost
+      AuthSettings__FrontendBaseUrl: https://localhost
+      Cors__AllowedOrigins__0: https://localhost
       ReverseProxy__Enabled: "true"
       Database__MigrateOnStartup: "true"
-      FileStorage__RootPath: /app/uploads
-      EmailSettings__Host: ${EMAIL_HOST}
-      EmailSettings__Port: ${EMAIL_PORT}
-      EmailSettings__UseStartTls: "true"
-      EmailSettings__Username: ${EMAIL_USERNAME}
-      EmailSettings__Password: ${EMAIL_PASSWORD}
-      EmailSettings__FromAddress: ${EMAIL_USERNAME}
+      # Demo users and groups for the defence (created only once, on an empty database).
+      DemoData__Enabled: "true"
+      FileStorage__Provider: S3
+      FileStorage__S3__ServiceUrl: http://storage:8333
+      FileStorage__S3__BucketName: fairshare
+      FileStorage__S3__AccessKey: ${S3_ACCESS_KEY}
+      FileStorage__S3__SecretKey: ${S3_SECRET_KEY}
+      EmailSettings__Host: mailpit
+      EmailSettings__Port: "1025"
+      EmailSettings__UseStartTls: "false"
+      EmailSettings__Username: ""
+      EmailSettings__FromAddress: noreply@fairshare.local
       EmailSettings__FromName: FairShare
       PaymentSimulator__BaseUrl: http://payments:8080
       PaymentSimulator__ApiKey: ${PAYMENT_API_KEY}
       PaymentSimulator__WebhookSecret: ${PAYMENT_WEBHOOK_SECRET}
-    volumes:
-      - uploads:/app/uploads
     # No "ports": only Nginx can reach the API. That is also why the API may trust the
-    # X-Forwarded-For header without listing the proxy address (see Program.cs).
+    # X-Forwarded-For header without listing the proxy address (see WebApiExtensions).
 
-  nginx:
-    image: nginx:1.27-alpine
+  # ---------- HTTPS certificate for localhost ----------
+  # Runs once: creates a self-signed certificate in nginx/certs if there is none yet.
+  certs:
+    image: alpine:3.20
+    volumes:
+      - ./nginx/certs:/certs
+    command:
+      - sh
+      - -c
+      - |
+        if [ -f /certs/fullchain.pem ] && [ -f /certs/privkey.pem ]; then echo "certificate exists"; exit 0; fi
+        apk add --no-cache openssl >/dev/null
+        openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
+          -keyout /certs/privkey.pem -out /certs/fullchain.pem \
+          -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+        echo "certificate created"
+
+  # ---------- Nginx: the single entry point (web app + API), HTTPS ----------
+  web:
+    build: ./frontend
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_started
+      certs:
+        condition: service_completed_successfully
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      # Build output of the React web app ("npm run build" in Frontend/web).
-      - ./Frontend/web/dist:/usr/share/nginx/html:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
 
 volumes:
   pgdata:
-  uploads:
   paymentsdata:
+  storagedata:

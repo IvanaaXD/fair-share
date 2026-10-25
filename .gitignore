@@ -29,3 +29,5 @@ build/
 Thumbs.db
 ehthumbs.db
 .DS_Store
+# HTTPS certificate created by docker compose (private key!)
+nginx/certs/

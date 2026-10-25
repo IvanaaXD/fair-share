@@ -1,6 +1,8 @@
 # Pokretanje sistema FairShare
 
-Ovaj dokument opisuje dva načina pokretanja: lokalno, bez Dockera (način na koji je sistem razvijan i testiran), i u kontejnerima pomoću Docker Compose-a (pripremljena konfiguracija za postavljanje na server).
+Ovaj dokument opisuje dva načina pokretanja: lokalno, bez Dockera (način na koji je sistem razvijan), i cijeli sistem u kontejnerima pomoću Docker Compose-a.
+
+Za slike se u Dockeru koristi SeaweedFS, S3-kompatibilno skladište. MinIO, koji se najčešće koristi za ovu namjenu, od septembra 2026. više ne objavljuje javne Docker slike; pošto API koristi standardni S3 API, skladište se može zamijeniti bez izmjene koda.
 
 ## 1. Lokalno pokretanje (bez Dockera)
 
@@ -13,9 +15,9 @@ Ovaj dokument opisuje dva načina pokretanja: lokalno, bez Dockera (način na ko
 
 ### Koraci
 
-1. U PostgreSQL-u napraviti praznu bazu `fairshare`.
-2. U `Backend/FairShare.API/appsettings.json` podesiti `ConnectionStrings:PostgresConnection`.
-3. Tajne podatke (JWT ključ, lozinku e-mail naloga) ne upisivati u `appsettings.json`, nego u User Secrets, koji se ne nalaze u repozitorijumu:
+1. U PostgreSQL-u napraviti praznu bazu `FairShareDb`.
+2. U `Backend/FairShare.API/appsettings.json` podesiti `ConnectionStrings:DefaultConnection`.
+3. Tajne podatke (JWT ključ, lozinku e-mail naloga, ključeve simulatora plaćanja) ne upisivati u `appsettings.json`, nego u User Secrets, koji se ne nalaze u repozitorijumu:
 
    ```
    cd Backend
@@ -30,67 +32,85 @@ Ovaj dokument opisuje dva načina pokretanja: lokalno, bez Dockera (način na ko
    dotnet ef database update --project FairShare.Infrastructure --startup-project FairShare.API
    ```
 
-5. Pokrenuti API:
+5. Pokrenuti simulator plaćanja, pa API (dva prozora, iz foldera `Backend`):
 
    ```
-   dotnet run --project FairShare.API
+   dotnet run --project FairShare.PaymentSimulator
+   dotnet run --project FairShare.API --launch-profile https
    ```
 
-   Pri prvom pokretanju kreira se administratorski nalog. Swagger UI je dostupan na `https://localhost:<port>/swagger` (samo u Development okruženju).
+   Pri prvom pokretanju kreira se administratorski nalog. Swagger UI je dostupan na `https://localhost:7221/swagger` (samo u Development okruženju).
 
-6. Pokrenuti veb aplikaciju (`Frontend/web`): `npm install`, zatim `npm run dev`. Aplikacija radi na `http://localhost:5173`, a ta adresa je dozvoljena u CORS podešavanjima API-ja.
+6. Pokrenuti veb aplikaciju (folder `frontend`): `npm install`, zatim `npm run dev`. Aplikacija radi na `http://localhost:5173`.
 
-### Zamjene za servise iz Docker konfiguracije
+### Razlike u odnosu na Docker
 
-| Servis u produkciji | Lokalno | Obrazloženje |
+| Servis u Dockeru | Lokalno | Obrazloženje |
 |---|---|---|
-| Nginx (reverse proxy) | nije potreban | Veb aplikacija se poziva direktno na API, a CORS dozvoljava adresu Vite servera. |
-| Redis (keš) | `IMemoryCache` | Keš u memoriji procesa, iza interfejsa `ICacheService`. Prelazak na Redis (ili Garnet, koji koristi isti protokol) zahtijeva samo drugu implementaciju interfejsa. |
-| MinIO (skladište fajlova) | lokalni disk | Fajlovi se čuvaju u folderu `FileStorage:RootPath`, iza interfejsa `IFileStorage`, i preuzimaju se isključivo preko API-ja uz provjeru prava pristupa. |
-| Ograničavanje broja zahtjeva | ugrađeno u ASP.NET Core | Ne zahtijeva poseban servis; brojači se drže u memoriji. |
-
-Zahvaljujući ovim interfejsima, poslovna logika ne zavisi od toga koja implementacija je u upotrebi.
+| Nginx (HTTPS, reverse proxy) | Vite dev server | Vite prosljeđuje `/api` na API, pa nema CORS problema. |
+| Redis (drugi nivo keša) | samo keš u memoriji | Bez `ConnectionStrings:Redis` HybridCache koristi samo memoriju procesa. Kod je isti. |
+| SeaweedFS (skladište slika, S3 API) | lokalni disk | `FileStorage:Provider` je `Local`; fajlovi su u folderu `FileStorage:RootPath`. Oba načina su iza interfejsa `IFileStorage`. |
+| Mailpit (test SMTP) | Gmail SMTP | Lokalno se mejlovi stvarno šalju preko naloga iz `EmailSettings`. |
 
 ## 2. Pokretanje u kontejnerima (Docker Compose)
 
-> Napomena: ova konfiguracija je pripremljena za postavljanje na server i nije testirana na razvojnom računaru, jer Docker Desktop zahtijeva više prostora na disku nego što je bilo dostupno.
-
-### Struktura
-
-```
-FairShare/
-├── docker-compose.yml
-├── .env                 (lokalno, nije u repozitorijumu; šablon je .env.example)
-├── nginx/nginx.conf
-├── Backend/
-│   ├── Dockerfile
-│   └── FairShare.API, FairShare.Application, FairShare.Domain, FairShare.Infrastructure
-└── Frontend/web/dist    (rezultat komande npm run build)
-```
-
 ### Kontejneri
 
-- **db** – PostgreSQL 17. Podaci se čuvaju u volumenu `pgdata`. Port nije izložen van Docker mreže.
-- **api** – FairShare API, izgrađen iz `Backend/Dockerfile` u dvije faze: u prvoj se kod kompajlira pomoću .NET SDK slike, a u drugoj se rezultat kopira u znatno manju sliku koja sadrži samo ASP.NET Core runtime. Aplikacija u kontejneru radi pod korisnikom bez administratorskih prava. Pri pokretanju sama primjenjuje migracije (`Database:MigrateOnStartup`). Otpremljeni fajlovi čuvaju se u volumenu `uploads`.
-- **nginx** – jedina tačka ulaza (port 80). Isporučuje izgrađenu React aplikaciju, a zahtjeve na `/api/` prosljeđuje API-ju uz zaglavlja `X-Forwarded-For` i `X-Forwarded-Proto`, tako da API vidi stvarnu IP adresu klijenta (važno za ograničavanje broja zahtjeva po IP adresi).
+| Kontejner | Slika | Namjena | Dostupno spolja |
+|---|---|---|---|
+| **web** | `frontend/Dockerfile` (Node → Nginx) | Isporučuje React aplikaciju i prosljeđuje `/api/` API-ju; HTTPS | 80 (preusmjerava na HTTPS), 443 |
+| **api** | `Backend/Dockerfile` | FairShare API | ne |
+| **db** | `postgres:17-alpine` | baza API-ja | ne |
+| **redis** | `redis:7.4-alpine` | drugi nivo keša (HybridCache L2) | ne |
+| **storage** | `chrislusf/seaweedfs` | skladište slika računa i profilnih slika (S3 API) | pregled fajlova: `http://localhost:8888` (samo sa ovog računara) |
+| **mailpit** | `axllent/mailpit` | hvata sve mejlove koje API pošalje | `http://localhost:8025` (samo sa ovog računara) |
+| **payments** | `Backend/FairShare.PaymentSimulator/Dockerfile` | simulator plaćanja | ne |
+| **payments-db** | `postgres:17-alpine` | posebna baza simulatora | ne |
+| **certs** | `alpine` | jednom napravi samopotpisani sertifikat za `localhost` u `nginx/certs` | – |
 
-Podešavanja API-ja se u kontejneru zadaju promjenljivim okruženja (npr. `JwtSettings__Secret` odgovara ključu `JwtSettings:Secret`), a tajne vrijednosti se čitaju iz fajla `.env`.
+Podešavanja API-ja se u kontejneru zadaju promjenljivim okruženja (npr. `JwtSettings__Secret` odgovara ključu `JwtSettings:Secret`), a tajne vrijednosti se čitaju iz fajla `.env`, koji nije u repozitorijumu.
 
-### Pokretanje
+### Prvo pokretanje
+
+1. Napraviti `.env` od šablona i popuniti vrijednosti (PowerShell, u korijenu repozitorijuma):
+
+   ```
+   Copy-Item .env.example .env
+   ```
+
+   Nasumične ključeve (JWT_SECRET, PAYMENT_API_KEY, PAYMENT_WEBHOOK_SECRET, S3_SECRET_KEY) može napraviti ova komanda, pokrenuta tri puta:
+
+   ```
+   [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
+   ```
+
+2. Pokrenuti sve:
+
+   ```
+   docker compose up --build -d
+   ```
+
+   Prvi build traje nekoliko minuta (preuzimaju se .NET, Node i ostale slike).
+
+3. Otvoriti `https://localhost`. Pregledač će upozoriti na sertifikat, jer je samopotpisan; za lokalno testiranje se prihvata („Advanced → Continue“). Sertifikat se može i dodati u pouzdane (Windows: dvoklik na `nginx/certs/fullchain.pem` nije dovoljan za .pem, pa se koristi `certutil -addstore -user Root nginx\certs\fullchain.pem`).
+
+4. Prijava: demo nalozi (npr. `jelena@demo.fairshare.local`, lozinka `Demo1234!`) prave se automatski na praznoj bazi. Početna lozinka administratora:
+
+   ```
+   docker compose exec api cat admin-initial-password.txt
+   ```
+
+### Korisne adrese i komande
+
+- Aplikacija: `https://localhost`, Swagger UI: `https://localhost/swagger`
+- Mejlovi (Mailpit): `http://localhost:8025`
+- Slike (SeaweedFS): `http://localhost:8888/buckets/fairshare/`
 
 ```
-cp .env.example .env          # zatim popuniti vrijednosti
-cd Frontend/web && npm run build && cd ../..
-docker compose up --build -d
-```
-
-Aplikacija je dostupna na `http://localhost`, a Swagger UI na `http://localhost/swagger`.
-
-Korisne komande:
-
-```
-docker compose logs -f api                              # log API-ja
-docker compose exec api cat admin-initial-password.txt  # početna lozinka administratora
-docker compose down                                     # zaustavljanje (podaci ostaju)
-docker compose down -v                                  # zaustavljanje i brisanje svih podataka
+docker compose ps                     # stanje kontejnera
+docker compose logs -f api            # log API-ja
+docker compose exec redis redis-cli --scan --pattern "fairshare:*"   # ključevi u Redis kešu
+docker compose up --build -d api      # ponovo izgraditi i pokrenuti samo API (poslije izmjene koda)
+docker compose down                   # zaustavljanje (podaci ostaju)
+docker compose down -v                # zaustavljanje i brisanje svih podataka
 ```
